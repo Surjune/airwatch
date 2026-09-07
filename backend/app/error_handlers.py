@@ -44,9 +44,7 @@ async def handle_airwatch_error(request: Request, exc: AirWatchError) -> JSONRes
     )
 
 
-async def handle_validation_error(
-    request: Request, exc: RequestValidationError
-) -> JSONResponse:
+async def handle_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
     """Render a Pydantic request-validation failure in the same envelope.
 
     FastAPI's default 422 body has a different shape from every other error this
@@ -67,9 +65,7 @@ async def handle_validation_error(
     )
 
 
-async def handle_http_exception(
-    request: Request, exc: StarletteHTTPException
-) -> JSONResponse:
+async def handle_http_exception(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     """Render Starlette's own HTTP errors — 404, 405 — in the same envelope."""
     return JSONResponse(
         status_code=exc.status_code,

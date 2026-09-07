@@ -13,9 +13,7 @@ from app.core.exceptions import MissingCredentialError
 
 
 class TestCredentialResolution:
-    def test_require_returns_a_configured_credential(
-        self, configured_settings: Settings
-    ) -> None:
+    def test_require_returns_a_configured_credential(self, configured_settings: Settings) -> None:
         assert configured_settings.require("firms_map_key") == "test-firms-key"
 
     def test_require_raises_a_typed_error_when_absent(self, settings: Settings) -> None:
