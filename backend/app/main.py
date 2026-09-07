@@ -1,0 +1,95 @@
+"""FastAPI application factory and ASGI entry point."""
+
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.core.config import Settings, get_settings
+from app.core.logging import configure_logging, get_logger
+from app.error_handlers import register_error_handlers
+from app.middleware import RequestContextMiddleware
+from app.routes import health
+from app.services.health_service import APP_VERSION
+
+logger = get_logger(__name__)
+
+#: Prefix for every versioned API route. The version is in the path rather than a
+#: header so a partner city can pin a contract by URL alone.
+API_PREFIX = "/v1"
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Start-up and shut-down hooks.
+
+    ML artifacts are loaded here, once, rather than per request. Nothing is
+    loaded yet at this stage of the build.
+    """
+    settings = get_settings()
+    logger.info(
+        "app.startup",
+        environment=settings.environment,
+        version=APP_VERSION,
+    )
+    yield
+    logger.info("app.shutdown")
+
+
+def create_app(settings: Settings | None = None) -> FastAPI:
+    """Build the application.
+
+    Args:
+        settings: Override settings, used by tests to avoid reading the real
+            environment.
+
+    Returns:
+        A configured FastAPI application.
+    """
+    resolved = settings or get_settings()
+
+    configure_logging(
+        level=resolved.log_level,
+        # Human-readable console output locally; one JSON object per line
+        # everywhere a log aggregator will read it.
+        json_output=resolved.environment != "development",
+    )
+
+    app = FastAPI(
+        title="AirWatch",
+        description=(
+            "Federated hyperlocal air quality intelligence: hidden hotspot detection, "
+            "wind back-trajectory source attribution, corridor forecasting, and "
+            "cross-city model sharing without raw data exchange."
+        ),
+        version=APP_VERSION,
+        lifespan=lifespan,
+    )
+
+    app.add_middleware(RequestContextMiddleware)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=resolved.cors_allowed_origins,
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "PATCH"],
+        allow_headers=["*"],
+    )
+
+    register_error_handlers(app)
+    app.include_router(health.router, prefix=API_PREFIX)
+
+    if settings is not None:
+        # Routes resolve settings through Depends(get_settings), which returns the
+        # process-wide cached singleton. When a caller supplies settings
+        # explicitly — tests, or a federated node started with its own config —
+        # that override has to reach the dependency too, or it would be silently
+        # ignored and the app would run on the ambient environment instead.
+        app.dependency_overrides[get_settings] = lambda: resolved
+
+    return app
+
+
+app = create_app()
