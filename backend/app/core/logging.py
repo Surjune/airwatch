@@ -65,7 +65,6 @@ def configure_logging(level: str = "INFO", *, json_output: bool = True) -> None:
         _add_request_id,
         structlog.processors.TimeStamper(fmt="iso", utc=True),
         structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
     ]
 
     renderer: structlog.typing.Processor = (
@@ -74,21 +73,44 @@ def configure_logging(level: str = "INFO", *, json_output: bool = True) -> None:
         else structlog.dev.ConsoleRenderer(colors=True)
     )
 
+    # A stdlib-backed factory is required, not merely preferred: the
+    # add_logger_name processor reads `.name` off the underlying logger, and a
+    # PrintLogger has no such attribute.
     structlog.configure(
-        processors=[*shared_processors, renderer],
-        wrapper_class=structlog.make_filtering_bound_logger(numeric_level),
-        logger_factory=structlog.PrintLoggerFactory(file=sys.stdout),
+        processors=[
+            *shared_processors,
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
+        wrapper_class=structlog.stdlib.BoundLogger,
+        logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
 
-    # Route stdlib loggers (uvicorn, sqlalchemy, httpx) through the same handler
-    # so a single log stream stays parseable.
-    logging.basicConfig(
-        format="%(message)s",
-        stream=sys.stdout,
-        level=numeric_level,
-        force=True,
+    # Rendering happens in a stdlib formatter rather than in the structlog chain
+    # so that log lines from uvicorn, SQLAlchemy and httpx -- which know nothing
+    # about structlog -- come out in the same shape as ours, and so a single
+    # stream stays parseable end to end.
+    #
+    # format_exc_info belongs here and nowhere else. Placed in the structlog
+    # chain it renders the traceback into the JSON, and then the stdlib formatter
+    # prints the same traceback again as loose text, which breaks the guarantee
+    # of one JSON object per line.
+    formatter = structlog.stdlib.ProcessorFormatter(
+        foreign_pre_chain=shared_processors,
+        processors=[
+            structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+            structlog.processors.format_exc_info,
+            renderer,
+        ],
     )
+
+    handler = logging.StreamHandler(stream=sys.stdout)
+    handler.setFormatter(formatter)
+
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()
+    root_logger.addHandler(handler)
+    root_logger.setLevel(numeric_level)
 
 
 def get_logger(name: str) -> structlog.stdlib.BoundLogger:
