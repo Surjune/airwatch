@@ -1,0 +1,41 @@
+name: airwatch
+
+services:
+  db:
+    # timescaledb-ha bundles TimescaleDB and PostGIS on PostgreSQL 16, so the
+    # sensor time-series and the spatial queries live in one engine.
+    image: timescale/timescaledb-ha:pg16
+    container_name: airwatch-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-airwatch}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airwatch}
+      POSTGRES_DB: ${POSTGRES_DB:-airwatch}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - airwatch-db-data:/home/postgres/pgdata/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-airwatch} -d ${POSTGRES_DB:-airwatch}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  cache:
+    # Caches external API responses under a spatial+temporal key so a re-run
+    # cannot drift because an upstream changed, and backs per-IP rate limiting.
+    image: redis:7-alpine
+    container_name: airwatch-cache
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  airwatch-db-data:
