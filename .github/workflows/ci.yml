@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend — lint, types, tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check app
+
+      - name: Format check
+        run: ruff format --check app
+
+      - name: Types
+        run: mypy app
+
+      - name: Tests
+        # Tests never make real network calls, so no upstream credentials are
+        # configured here. A test that needs one is a test that is wrong.
+        run: pytest
+
+  frontend:
+    name: Frontend — lint, types, tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install
+        run: npm install --no-fund --no-audit
+
+      - name: Lint
+        run: npm run lint:web
+
+      - name: Types
+        run: npm run typecheck:web
+
+      - name: Tests
+        run: npm run test:web
+
+      - name: Build
+        run: npm --workspace frontend run build
