@@ -1,0 +1,57 @@
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+service-account*.json
+gee-credentials*.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# --- Node ---
+node_modules/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+
+# --- Frontend build ---
+frontend/dist/
+
+# --- ML artifacts (tracked via release assets, not git) ---
+ml/artifacts/*
+!ml/artifacts/.gitkeep
+*.joblib
+*.pkl
+*.onnx
+*.pt
+
+# --- Raw downloaded data (never committed) ---
+data/raw/
+data/cache/
+*.grib
+*.nc
+*.hdf
+
+# --- Federated round state ---
+federated/state/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
