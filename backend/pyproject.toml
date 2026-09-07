@@ -1,0 +1,114 @@
+[project]
+name = "airwatch-backend"
+version = "0.1.0"
+description = "Federated hyperlocal air quality intelligence — API and services"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "sqlalchemy>=2.0.36",
+    "geoalchemy2>=0.15",
+    "psycopg[binary]>=3.2",
+    "alembic>=1.14",
+    "h3>=4.1",
+    "httpx>=0.28",
+    "tenacity>=9.0",
+    "redis>=5.2",
+    "structlog>=24.4",
+    "numpy>=2.1",
+    "pandas>=2.2",
+    "scikit-learn>=1.5",
+    "lightgbm>=4.5",
+    "pillow>=11.0",
+    "shapely>=2.0",
+    "python-multipart>=0.0.17",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "respx>=0.21",
+    "mypy>=1.13",
+    "ruff>=0.8",
+    "pandas-stubs>=2.2",
+    "types-redis>=4.6",
+]
+federated = [
+    "flwr>=1.13",
+]
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+# ---------------------------------------------------------------------------
+# Lint
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["."]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",    # pycodestyle
+    "F",         # pyflakes
+    "I",         # isort
+    "N",         # pep8-naming
+    "UP",        # pyupgrade
+    "B",         # bugbear
+    "A",         # builtins shadowing
+    "C4",        # comprehensions
+    "SIM",       # simplify
+    "PTH",       # use pathlib
+    "RUF",
+    "ANN",       # every function annotated
+    "T20",       # flake8-print: never print, use core.logging
+    "BLE",       # blind except
+    "TRY",       # exception antipatterns
+]
+ignore = [
+    "ANN401",    # allow typing.Any only where ruff cannot see intent; mypy still forbids it
+    "TRY003",    # our typed exceptions carry messages by design
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests may use magic values and long fixture literals.
+"app/tests/**" = ["ANN201", "ANN001"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+# ---------------------------------------------------------------------------
+# Types
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+disallow_any_explicit = false
+plugins = ["pydantic.mypy"]
+exclude = ["^build/", "^dist/"]
+
+[[tool.mypy.overrides]]
+# These ship without stubs.
+module = ["h3.*", "lightgbm.*", "geoalchemy2.*", "shapely.*", "flwr.*", "sklearn.*"]
+ignore_missing_imports = true
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["app/tests"]
+asyncio_mode = "auto"
+addopts = "-q --strict-markers"
+filterwarnings = ["error::DeprecationWarning:app.*"]
