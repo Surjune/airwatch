@@ -83,6 +83,31 @@ through timing and routing, and build the evidence trail that makes accountabili
 
 Under active development. See `docs/` for architecture notes.
 
+## Known limitations
+
+Deferred deliberately, and tracked here rather than as TODOs in the code.
+
+- **No authentication in v1.** The API is anonymous, protected only by per-IP rate limiting and a
+  locked CORS allowlist.
+- **Upstream CO units are not trustworthy at face value.** Several live Delhi stations declare CO
+  in `ppb` while reporting values around 1.2 -- implausible as ppb (ambient CO runs in the hundreds)
+  and exactly right as ppm. The conversion is implemented correctly for the declared unit; a
+  per-pollutant plausibility guard that flags rather than ingests out-of-range values is still to be
+  added. Until then a CO sub-index from OpenAQ should be treated as unreliable.
+- **Stations carry duplicate sensors across generations.** A live station commonly exposes both a
+  current sensor and a decommissioned one for the same pollutant, and the API returns the final
+  value of each. Readings are filtered by observation recency per reading, not per station.
+- **data.gov.in is intermittently unavailable.** The CPCB direct client is a redundancy path; the
+  portal's API gateway returned 502 across all endpoints during development. OpenAQ carries the
+  same CPCB station data and is the primary reference-tier source.
+- **Sentinel-5P is ~7 km resolution with a daily revisit,** so it constrains fusion covariates
+  rather than detecting hotspots directly.
+- **Back-trajectory uses a single-layer wind field,** not full HYSPLIT dispersion.
+- **Citizen photo PM2.5 is a proxy** with wide error bars, and is never used as the sole evidence
+  for a cell.
+- **FIRMS misses fires between satellite overpasses,** and most stubble burning has shifted to
+  16:00-18:00 specifically to fall outside them.
+
 ## Licence
 
 MIT
