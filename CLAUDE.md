@@ -10,7 +10,7 @@ must be raised before implementing.
 
 | Decision | Choice | Rationale |
 | --- | --- | --- |
-| Python runtime | 3.12 (`requires-python = ">=3.11"`) | Current stable; matches CI. |
+| Python runtime | 3.12 (`requires-python = ">=3.12"`) | Current stable; matches CI. The floor is 3.12, not 3.11, so PEP 695 `type` aliases are available -- the recursive JSON type in `external/base.py` needs one. |
 | Database | PostgreSQL 16 + PostGIS 3.4 + TimescaleDB via Docker Compose | Spatial queries and sensor time-series in one engine; container is reproducible. |
 | Spatial unit | H3 hexagons, resolution 8 (~0.46 km²) | One index shared by fusion, hotspots, forecasts and federated features. Cross-city model sharing is only coherent if every node uses the same grid. |
 | Map library | Leaflet + OpenStreetMap tiles | No access token, so the app runs on a clean clone with zero third-party signup. |
