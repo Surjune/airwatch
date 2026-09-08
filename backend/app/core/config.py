@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from app.core.exceptions import MissingCredentialError
 
@@ -46,7 +46,13 @@ class Settings(BaseSettings):
     api_port: Annotated[int, Field(ge=1, le=65535)] = 8000
 
     #: Comma-separated in the environment, split into a list by the validator.
-    cors_allowed_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173"])
+    #: NoDecode is required, not decorative: without it pydantic-settings tries to
+    #: JSON-decode any complex-typed value coming from a dotenv file and raises
+    #: before the validator below ever runs, so a perfectly ordinary
+    #: `CORS_ALLOWED_ORIGINS=http://localhost:5173` would stop the app booting.
+    cors_allowed_origins: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["http://localhost:5173"]
+    )
 
     # -- Infrastructure ------------------------------------------------------
     database_url: str = "postgresql+psycopg://airwatch:airwatch@localhost:5433/airwatch"

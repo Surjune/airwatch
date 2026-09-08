@@ -6,6 +6,8 @@ credential raises, and never falls back to something that looks like data.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from app.core.config import CREDENTIAL_SOURCES, Settings
@@ -67,3 +69,42 @@ class TestOriginParsing:
     def test_ignores_empty_entries(self) -> None:
         parsed = Settings(cors_allowed_origins="http://a.test,,  ,")
         assert parsed.cors_allowed_origins == ["http://a.test"]
+
+
+class TestDotEnvParsing:
+    """Regression cover for values arriving from a real .env file.
+
+    Constructing Settings(...) in Python bypasses the dotenv source entirely, so
+    the original tests passed while a real .env file crashed the application at
+    startup. These load through the file, which is the path that actually runs.
+    """
+
+    def test_reads_a_single_origin_from_a_dotenv_file(self, tmp_path: Path) -> None:
+        env_file = tmp_path / ".env"
+        env_file.write_text("CORS_ALLOWED_ORIGINS=http://localhost:5173", encoding="utf-8")
+
+        parsed = Settings(_env_file=env_file)
+
+        assert parsed.cors_allowed_origins == ["http://localhost:5173"]
+
+    def test_reads_several_comma_separated_origins(self, tmp_path: Path) -> None:
+        env_file = tmp_path / ".env"
+        env_file.write_text(
+            "CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173",
+            encoding="utf-8",
+        )
+
+        parsed = Settings(_env_file=env_file)
+
+        assert parsed.cors_allowed_origins == [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ]
+
+    def test_reads_credentials_from_a_dotenv_file(self, tmp_path: Path) -> None:
+        env_file = tmp_path / ".env"
+        env_file.write_text("FIRMS_MAP_KEY=abc123", encoding="utf-8")
+
+        parsed = Settings(_env_file=env_file)
+
+        assert parsed.require("firms_map_key") == "abc123"
