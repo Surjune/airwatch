@@ -150,5 +150,45 @@ class TestUnitConversion:
         assert converted < 100.0
 
     def test_rejects_an_unknown_unit(self) -> None:
+        # "ppb" is no longer unknown -- it is handled, and for a particulate it
+        # raises a more specific error. This needs a unit nothing recognises.
         with pytest.raises(ValidationError, match="Cannot convert"):
-            aqi.to_aqi_unit(Pollutant.PM25, 1.0, "ppb")
+            aqi.to_aqi_unit(Pollutant.PM25, 1.0, "grains/gallon")
+
+
+class TestMixingRatioConversion:
+    """OpenAQ's newer Indian stations report gases in ppb, not ug/m3."""
+
+    def test_no2_ppb_to_micrograms(self) -> None:
+        # 32.5 ppb * 46.0055 / 24.45 = 61.15 ug/m3, a plausible urban NO2.
+        assert aqi.to_aqi_unit(Pollutant.NO2, 32.5, "ppb") == pytest.approx(61.15, rel=1e-3)
+
+    def test_so2_ppb_to_micrograms(self) -> None:
+        assert aqi.to_aqi_unit(Pollutant.SO2, 13.3, "ppb") == pytest.approx(34.85, rel=1e-3)
+
+    def test_o3_ppb_to_micrograms(self) -> None:
+        assert aqi.to_aqi_unit(Pollutant.O3, 50.0, "ppb") == pytest.approx(98.15, rel=1e-3)
+
+    def test_co_ppm_lands_in_milligrams(self) -> None:
+        # CO is the one pollutant whose table is in mg/m3, so the conversion has
+        # to carry through both steps.
+        assert aqi.to_aqi_unit(Pollutant.CO, 1.24, "ppm") == pytest.approx(1.4205, rel=1e-3)
+
+    def test_ppm_is_a_thousand_ppb(self) -> None:
+        assert aqi.to_aqi_unit(Pollutant.NO2, 1.0, "ppm") == pytest.approx(
+            aqi.to_aqi_unit(Pollutant.NO2, 1000.0, "ppb")
+        )
+
+    def test_treating_ppb_as_micrograms_understates_no2(self) -> None:
+        # The bug this prevents: 32.5 taken as ug/m3 is a "Good" NO2, while the
+        # true 61 ug/m3 is most of the way through the Satisfactory band.
+        unconverted = aqi.sub_index(Pollutant.NO2, 32.5)
+        converted = aqi.sub_index(Pollutant.NO2, aqi.to_aqi_unit(Pollutant.NO2, 32.5, "ppb"))
+        assert converted > unconverted
+
+    @pytest.mark.parametrize("particulate", [Pollutant.PM25, Pollutant.PM10])
+    def test_particulates_have_no_mixing_ratio(self, particulate: Pollutant) -> None:
+        # PM is a mixture of solids with no molar mass; a ppb figure for it is
+        # meaningless, so this must raise rather than invent a number.
+        with pytest.raises(ValidationError, match="particulate"):
+            aqi.to_aqi_unit(particulate, 50.0, "ppb")

@@ -157,6 +157,27 @@ AQI_MAX: Final[float] = 500.0
 #: would silently erase a genuine CO episode.
 MICROGRAMS_PER_MILLIGRAM: Final[float] = 1000.0
 
+#: Molar volume of an ideal gas in litres per mole at the CPCB reference
+#: condition (25 degrees C, 1013.25 hPa). Gaseous pollutants reported as a
+#: mixing ratio must be converted to a mass concentration before the CPCB
+#: breakpoint tables apply.
+MOLAR_VOLUME_L_PER_MOL: Final[float] = 24.45
+
+#: Molar masses in grams per mole, for the mixing-ratio conversion
+#: ug/m3 = ppb * molar_mass / molar_volume. Particulates are absent by design:
+#: PM2.5 and PM10 are mixtures of solids with no single molar mass, so a ppb
+#: figure for them is meaningless rather than merely inconvenient.
+MOLAR_MASS_G_PER_MOL: Final[dict[str, float]] = {
+    "no2": 46.0055,
+    "so2": 64.066,
+    "o3": 47.998,
+    "co": 28.010,
+    "nh3": 17.031,
+}
+
+#: Parts per billion in one part per million.
+PPB_PER_PPM: Final[float] = 1000.0
+
 #: WHO 2021 global air quality guideline, PM2.5 24-hour mean, in ug/m^3. Shown
 #: alongside the CPCB category because the Indian standard (60) is 4x higher and
 #: the gap matters for honest public communication.
@@ -335,6 +356,23 @@ FL_NEGATIVE_TRANSFER_TOLERANCE: Final[float] = 0.02
 # ---------------------------------------------------------------------------
 # External clients
 # ---------------------------------------------------------------------------
+
+#: OpenAQ v3 API root. Serves CPCB and state-board stations for India, which is
+#: why it is the primary reference-tier source rather than a supplement.
+OPENAQ_BASE_URL: Final[str] = "https://api.openaq.org/v3"
+
+#: Largest radius OpenAQ accepts on a coordinates query, in metres.
+OPENAQ_MAX_RADIUS_M: Final[int] = 25_000
+
+#: Largest page size OpenAQ accepts.
+OPENAQ_MAX_PAGE_LIMIT: Final[int] = 1000
+
+#: A station whose most recent reading is older than this is treated as dormant
+#: and excluded from ingestion. Delhi has stations last seen in 2018 sitting
+#: alongside live ones; including them would silently dilute the fused surface
+#: with decade-old air.
+STATION_STALE_AFTER_DAYS: Final[int] = 7
+
 
 #: Per-request timeout for upstream APIs, in seconds.
 HTTP_TIMEOUT_SECONDS: Final[float] = 30.0

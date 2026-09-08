@@ -30,6 +30,9 @@ from app.core.constants import (
     AQI_CATEGORY_BOUNDS,
     AQI_MAX,
     MICROGRAMS_PER_MILLIGRAM,
+    MOLAR_MASS_G_PER_MOL,
+    MOLAR_VOLUME_L_PER_MOL,
+    PPB_PER_PPM,
     AQIBreakpoint,
 )
 from app.core.enums import Pollutant
@@ -121,6 +124,19 @@ def to_aqi_unit(pollutant: Pollutant, concentration: float, source_unit: str) ->
 
     if source_unit == target_unit:
         return concentration
+
+    # Mixing ratios first: OpenAQ's newer Indian stations report gaseous
+    # pollutants in ppb rather than a mass concentration, and the CPCB tables are
+    # entirely mass-based.
+    if source_unit in {"ppb", "ppm"}:
+        # parts per million -> parts per billion
+        ppb = concentration * PPB_PER_PPM if source_unit == "ppm" else concentration
+        micrograms = _mixing_ratio_to_micrograms(pollutant, ppb)
+        if target_unit == "ug/m3":
+            return micrograms
+        # micrograms per cubic metre -> milligrams per cubic metre
+        return micrograms / MICROGRAMS_PER_MILLIGRAM
+
     if source_unit == "ug/m3" and target_unit == "mg/m3":
         # micrograms per cubic metre -> milligrams per cubic metre
         return concentration / MICROGRAMS_PER_MILLIGRAM
@@ -131,6 +147,26 @@ def to_aqi_unit(pollutant: Pollutant, concentration: float, source_unit: str) ->
     raise ValidationError(
         f"Cannot convert {pollutant.value} from {source_unit!r} to {target_unit!r}.",
     )
+
+
+def _mixing_ratio_to_micrograms(pollutant: Pollutant, ppb: float) -> float:
+    """Convert parts per billion to micrograms per cubic metre.
+
+    Uses ``ug/m3 = ppb * molar_mass / molar_volume`` at the CPCB reference
+    condition of 25 degrees C and 1013.25 hPa.
+
+    Raises:
+        ValidationError: The pollutant is a particulate. PM2.5 and PM10 are
+            mixtures of solids with no single molar mass, so there is no
+            conversion to perform and a ppb figure for them is meaningless.
+    """
+    molar_mass = MOLAR_MASS_G_PER_MOL.get(pollutant.value)
+    if molar_mass is None:
+        raise ValidationError(
+            f"{pollutant.value} is a particulate and has no molar mass, so a "
+            "mixing ratio cannot be converted to a mass concentration.",
+        )
+    return ppb * molar_mass / MOLAR_VOLUME_L_PER_MOL
 
 
 def sub_index(pollutant: Pollutant, concentration: float) -> float:
