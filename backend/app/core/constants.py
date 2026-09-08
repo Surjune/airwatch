@@ -151,6 +151,12 @@ AQI_CATEGORY_BOUNDS: Final[tuple[tuple[float, str], ...]] = (
 #: breakpoint are clamped here and flagged.
 AQI_MAX: Final[float] = 500.0
 
+#: Micrograms in a milligram. Needed because OpenAQ reports CO in ug/m^3 while
+#: the CPCB AQI breakpoint table for CO is in mg/m^3. Applying the table to an
+#: unconverted value understates the CO sub-index by a factor of 1000, which
+#: would silently erase a genuine CO episode.
+MICROGRAMS_PER_MILLIGRAM: Final[float] = 1000.0
+
 #: WHO 2021 global air quality guideline, PM2.5 24-hour mean, in ug/m^3. Shown
 #: alongside the CPCB category because the Indian standard (60) is 4x higher and
 #: the gap matters for honest public communication.

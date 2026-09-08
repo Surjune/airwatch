@@ -126,3 +126,29 @@ class TestOverallAQI:
         # to remove.
         with pytest.raises(ValidationError, match="no pollutant concentrations"):
             aqi.overall_aqi({})
+
+
+class TestUnitConversion:
+    """The CO trap: OpenAQ sends ug/m3, the CPCB CO table is in mg/m3."""
+
+    def test_converts_co_micrograms_to_milligrams(self) -> None:
+        assert aqi.to_aqi_unit(Pollutant.CO, 1200.0, "ug/m3") == pytest.approx(1.2)
+
+    def test_leaves_a_value_already_in_the_target_unit_alone(self) -> None:
+        assert aqi.to_aqi_unit(Pollutant.CO, 1.2, "mg/m3") == pytest.approx(1.2)
+        assert aqi.to_aqi_unit(Pollutant.PM25, 45.0, "ug/m3") == pytest.approx(45.0)
+
+    def test_converts_milligrams_up_for_a_microgram_pollutant(self) -> None:
+        assert aqi.to_aqi_unit(Pollutant.PM25, 0.045, "mg/m3") == pytest.approx(45.0)
+
+    def test_skipping_the_conversion_would_fabricate_a_severe_reading(self) -> None:
+        # 1200 ug/m3 of CO is an ordinary 1.2 mg/m3. Fed to the table raw it
+        # saturates the index, inventing an emergency out of a normal day.
+        raw = aqi.sub_index(Pollutant.CO, 1200.0)
+        converted = aqi.sub_index(Pollutant.CO, aqi.to_aqi_unit(Pollutant.CO, 1200.0, "ug/m3"))
+        assert raw == AQI_MAX
+        assert converted < 100.0
+
+    def test_rejects_an_unknown_unit(self) -> None:
+        with pytest.raises(ValidationError, match="Cannot convert"):
+            aqi.to_aqi_unit(Pollutant.PM25, 1.0, "ppb")

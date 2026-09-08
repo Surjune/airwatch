@@ -270,6 +270,34 @@ def wind_to_direction_deg(wind_u: float, wind_v: float) -> float:
     return (wind_from_direction_deg(wind_u, wind_v) + _HALF_CIRCLE_DEG) % _FULL_CIRCLE_DEG
 
 
+def wind_components_ms(speed_ms: float, from_direction_deg: float) -> tuple[float, float]:
+    """Convert a wind speed and direction into ``u``/``v`` flow components.
+
+    Meteorological services report wind as a speed plus the direction it blows
+    *from*; AirWatch stores the eastward and northward components of the flow,
+    which point where the air is *going*. Hence the negative signs: a northerly
+    (0 degrees) moves air southward, giving a negative ``v``.
+
+    Args:
+        speed_ms: Wind speed in metres per second.
+        from_direction_deg: Direction the wind blows from, degrees clockwise
+            from north.
+
+    Returns:
+        ``(wind_u, wind_v)`` in m/s: eastward and northward components.
+
+    Raises:
+        InvalidGeometryError: The speed is negative.
+    """
+    if speed_ms < 0:
+        raise InvalidGeometryError(f"Wind speed must not be negative ({speed_ms}).")
+
+    radians = math.radians(from_direction_deg)
+    wind_u = -speed_ms * math.sin(radians)
+    wind_v = -speed_ms * math.cos(radians)
+    return wind_u, wind_v
+
+
 def angular_difference_deg(bearing_a: float, bearing_b: float) -> float:
     """Smallest absolute angle between two bearings, in degrees.
 

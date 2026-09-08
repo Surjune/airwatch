@@ -189,3 +189,36 @@ class TestAngularDifference:
     )
     def test_wraps_correctly(self, a: float, b: float, expected: float) -> None:
         assert geo.angular_difference_deg(a, b) == pytest.approx(expected)
+
+
+class TestWindComponents:
+    """speed + met direction -> u/v, the conversion Open-Meteo output needs."""
+
+    @pytest.mark.parametrize(
+        ("from_direction", "expected_u", "expected_v"),
+        [
+            (0.0, 0.0, -5.0),  # northerly: air moves south
+            (90.0, -5.0, 0.0),  # easterly:  air moves west
+            (180.0, 0.0, 5.0),  # southerly: air moves north
+            (270.0, 5.0, 0.0),  # westerly:  air moves east
+        ],
+    )
+    def test_cardinals(self, from_direction: float, expected_u: float, expected_v: float) -> None:
+        wind_u, wind_v = geo.wind_components_ms(5.0, from_direction)
+        assert wind_u == pytest.approx(expected_u, abs=1e-9)
+        assert wind_v == pytest.approx(expected_v, abs=1e-9)
+
+    @pytest.mark.parametrize("from_direction", [0.0, 45.0, 137.0, 200.0, 310.0])
+    def test_round_trips_back_to_the_original_direction(self, from_direction: float) -> None:
+        # The inverse of wind_from_direction_deg, so a value stored as u/v and
+        # read back must give the direction it started as.
+        wind_u, wind_v = geo.wind_components_ms(7.5, from_direction)
+        assert geo.wind_from_direction_deg(wind_u, wind_v) == pytest.approx(from_direction)
+        assert geo.wind_speed_ms(wind_u, wind_v) == pytest.approx(7.5)
+
+    def test_calm_air_yields_zero_components(self) -> None:
+        assert geo.wind_components_ms(0.0, 180.0) == pytest.approx((0.0, 0.0))
+
+    def test_rejects_negative_speed(self) -> None:
+        with pytest.raises(InvalidGeometryError, match="negative"):
+            geo.wind_components_ms(-1.0, 90.0)

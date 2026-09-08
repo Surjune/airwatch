@@ -29,6 +29,7 @@ from app.core.constants import (
     AQI_BREAKPOINTS_SO2,
     AQI_CATEGORY_BOUNDS,
     AQI_MAX,
+    MICROGRAMS_PER_MILLIGRAM,
     AQIBreakpoint,
 )
 from app.core.enums import Pollutant
@@ -88,6 +89,48 @@ class AQIResult:
     category: str
     sub_indices: Mapping[Pollutant, float]
     clamped: bool
+
+
+def to_aqi_unit(pollutant: Pollutant, concentration: float, source_unit: str) -> float:
+    """Convert a concentration into the unit this pollutant's AQI table expects.
+
+    The single place the CO unit trap is handled. Every pollutant in the CPCB
+    table is in ug/m^3 except CO, which is in mg/m^3 — but OpenAQ reports CO in
+    ug/m^3 like everything else. Feeding 1200 ug/m^3 of CO straight into the
+    table yields a "Severe" sub-index for what is really 1.2 mg/m^3, a
+    perfectly ordinary reading.
+
+    Args:
+        pollutant: The pollutant the value belongs to.
+        concentration: The measured value.
+        source_unit: Unit as delivered, either ``"ug/m3"`` or ``"mg/m3"``.
+            OpenAQ spells it ``"µg/m³"``; normalise before calling.
+
+    Returns:
+        The concentration in the unit :func:`sub_index` expects.
+
+    Raises:
+        UnsupportedPollutantError: The pollutant has no breakpoint table.
+        ValidationError: The source unit is not one this function converts.
+    """
+    target_unit = CONCENTRATION_UNIT.get(pollutant)
+    if target_unit is None:
+        raise UnsupportedPollutantError(
+            f"No CPCB breakpoint table for pollutant {pollutant.value!r}."
+        )
+
+    if source_unit == target_unit:
+        return concentration
+    if source_unit == "ug/m3" and target_unit == "mg/m3":
+        # micrograms per cubic metre -> milligrams per cubic metre
+        return concentration / MICROGRAMS_PER_MILLIGRAM
+    if source_unit == "mg/m3" and target_unit == "ug/m3":
+        # milligrams per cubic metre -> micrograms per cubic metre
+        return concentration * MICROGRAMS_PER_MILLIGRAM
+
+    raise ValidationError(
+        f"Cannot convert {pollutant.value} from {source_unit!r} to {target_unit!r}.",
+    )
 
 
 def sub_index(pollutant: Pollutant, concentration: float) -> float:
