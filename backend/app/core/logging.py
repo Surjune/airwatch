@@ -112,6 +112,23 @@ def configure_logging(level: str = "INFO", *, json_output: bool = True) -> None:
     root_logger.addHandler(handler)
     root_logger.setLevel(numeric_level)
 
+    _quieten_noisy_loggers(numeric_level)
+
+
+def _quieten_noisy_loggers(app_level: int) -> None:
+    """Raise the level of libraries that log request URLs.
+
+    This is a credential-leak control, not tidiness. httpx logs every request at
+    INFO including the full URL, and NASA FIRMS requires its API key to be a path
+    segment -- so an otherwise ordinary INFO log writes the key in plaintext,
+    straight past the sanitising the client does for its own logs and error
+    envelopes. AirWatch logs its own upstream calls with the path already masked,
+    so nothing is lost by silencing these.
+    """
+    for name in ("httpx", "httpcore"):
+        # Never below WARNING, even when the application is running at DEBUG.
+        logging.getLogger(name).setLevel(max(app_level, logging.WARNING))
+
 
 def get_logger(name: str) -> structlog.stdlib.BoundLogger:
     """Return a bound logger for a module.

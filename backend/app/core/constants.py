@@ -418,6 +418,12 @@ FIRMS_MIN_FRP_MW: Final[float] = 1.0
 #: Largest radius OpenAQ accepts on a coordinates query, in metres.
 OPENAQ_MAX_RADIUS_M: Final[int] = 25_000
 
+#: Minimum gap between OpenAQ requests, in seconds. The free tier allows roughly
+#: 60 requests per minute, and a Delhi run makes one call per active station --
+#: 60 of them -- so an unpaced run trips the quota partway through and loses the
+#: remaining stations. Pacing is cheaper than retrying against a 429.
+OPENAQ_MIN_REQUEST_INTERVAL_SECONDS: Final[float] = 1.1
+
 #: Largest page size OpenAQ accepts.
 OPENAQ_MAX_PAGE_LIMIT: Final[int] = 1000
 

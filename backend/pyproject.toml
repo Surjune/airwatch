@@ -83,6 +83,10 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # Tests may use magic values and long fixture literals.
 "app/tests/**" = ["ANN201", "ANN001"]
+# The CLI exists to write a formatted report to a terminal for a human to read.
+# The no-print rule protects the structured log stream, which a CLI table is not
+# part of; routing this through the logger would make it less legible, not more.
+"app/cli.py" = ["T20"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

@@ -7,6 +7,8 @@ as "no pollution detected" — a wrong answer that looks like good news.
 
 from __future__ import annotations
 
+import time
+
 import httpx
 import pytest
 import respx
@@ -217,3 +219,79 @@ class TestTransportLifecycle:
 
         assert not injected.is_closed
         await injected.aclose()
+
+
+class TestRateLimiting:
+    """Pacing keeps a run under a provider's quota instead of discovering it.
+
+    These time the pacing step directly. Timing two mocked round-trips instead
+    measures httpx and respx setup -- roughly 0.8s on a cold client -- which
+    swamps the interval under test and makes the assertion meaningless.
+    """
+
+    async def test_waits_between_consecutive_requests(self) -> None:
+        interval = 0.05
+        client = ProbeClient(min_request_interval_seconds=interval)
+
+        started = time.monotonic()
+        await client._respect_rate_limit()
+        await client._respect_rate_limit()
+        elapsed = time.monotonic() - started
+
+        assert elapsed >= interval
+        await client.close()
+
+    async def test_does_not_delay_the_first_request(self) -> None:
+        client = ProbeClient(min_request_interval_seconds=0.5)
+
+        started = time.monotonic()
+        await client._respect_rate_limit()
+        elapsed = time.monotonic() - started
+
+        # Nothing has been sent yet, so there is no quota to respect.
+        assert elapsed < 0.05
+        await client.close()
+
+    async def test_no_pacing_by_default(self) -> None:
+        client = ProbeClient()
+
+        started = time.monotonic()
+        for _ in range(5):
+            await client._respect_rate_limit()
+        elapsed = time.monotonic() - started
+
+        # Providers without a documented quota must not be slowed down.
+        assert elapsed < 0.05
+        await client.close()
+
+    @respx.mock
+    async def test_a_paced_client_still_completes_its_requests(self) -> None:
+        respx.get(ENDPOINT).mock(return_value=httpx.Response(200, json={"ok": True}))
+        route_client = ProbeClient(min_request_interval_seconds=0.01)
+
+        async with route_client as client:
+            first = await client.get_json("/readings")
+            second = await client.get_json("/readings")
+
+        assert first == second == {"ok": True}
+
+
+class TestPathSanitisation:
+    """Credentials carried in a URL path must never reach a log or a caller."""
+
+    @respx.mock
+    async def test_upstream_error_body_is_sanitised(self) -> None:
+        class SecretPathClient(UpstreamClient):
+            provider_name = "Secret"
+            base_url = BASE_URL
+
+            def sanitise_path(self, path: str) -> str:
+                return path.replace("s3cret", "***")
+
+        respx.get(ENDPOINT).mock(return_value=httpx.Response(400, text="rejected /s3cret/x"))
+
+        async with SecretPathClient(backoff_base_seconds=0.0) as client:
+            with pytest.raises(UpstreamResponseError) as excinfo:
+                await client.get_json("/readings")
+
+        assert "s3cret" not in str(excinfo.value.details)

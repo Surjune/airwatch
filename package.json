@@ -28,7 +28,10 @@
     "typecheck:web": "npm --workspace frontend run typecheck",
     "check": "npm run lint && npm run typecheck && npm run test:all",
     "types:generate": "openapi-typescript http://localhost:8000/openapi.json -o frontend/src/lib/api-types.ts",
-    "format:check": "node scripts/py.mjs -m ruff format --check app"
+    "format:check": "node scripts/py.mjs -m ruff format --check app",
+    "ingest:once": "node scripts/py.mjs -m app.cli ingest",
+    "ingest:delhi": "node scripts/py.mjs -m app.cli ingest --city delhi",
+    "ingest:coimbatore": "node scripts/py.mjs -m app.cli ingest --city coimbatore"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",

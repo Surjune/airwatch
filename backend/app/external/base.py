@@ -14,6 +14,7 @@ public-health context is a wrong answer dressed up as a reassuring one.
 from __future__ import annotations
 
 import asyncio
+import time
 from types import TracebackType
 from typing import Self
 
@@ -72,6 +73,7 @@ class UpstreamClient:
         timeout_seconds: float = HTTP_TIMEOUT_SECONDS,
         max_attempts: int = HTTP_MAX_ATTEMPTS,
         backoff_base_seconds: float = HTTP_BACKOFF_BASE_SECONDS,
+        min_request_interval_seconds: float = 0.0,
         client: httpx.AsyncClient | None = None,
     ) -> None:
         """Construct a client.
@@ -82,12 +84,17 @@ class UpstreamClient:
             max_attempts: Total attempts including the first. 1 disables retries.
             backoff_base_seconds: First backoff interval, doubling each retry.
                 Injectable so tests can exercise the retry path without waiting.
+            min_request_interval_seconds: Smallest gap between consecutive
+                requests. Paces a client below a provider's quota, which is
+                cheaper than discovering the limit by being refused.
             client: An injected transport, used by tests. When supplied the
                 caller owns its lifecycle and :meth:`close` leaves it open.
         """
         self._timeout = timeout_seconds
         self._max_attempts = max(1, max_attempts)
         self._backoff_base = backoff_base_seconds
+        self._min_request_interval = min_request_interval_seconds
+        self._last_request_at: float | None = None
         self._owns_client = client is None
         self._client = client or httpx.AsyncClient(
             base_url=base_url if base_url is not None else self.base_url,
@@ -207,6 +214,7 @@ class UpstreamClient:
         last_error: Exception | None = None
 
         for attempt in range(1, self._max_attempts + 1):
+            await self._respect_rate_limit()
             try:
                 response = await self._client.get(
                     path,
@@ -253,6 +261,18 @@ class UpstreamClient:
                 details={"path": self.sanitise_path(path)},
             )
         raise last_error
+
+    async def _respect_rate_limit(self) -> None:
+        """Wait, if needed, to keep requests below the provider's quota."""
+        if self._min_request_interval <= 0:
+            return
+        now = time.monotonic()
+        if self._last_request_at is not None:
+            elapsed = now - self._last_request_at
+            remaining = self._min_request_interval - elapsed
+            if remaining > 0:
+                await asyncio.sleep(remaining)
+        self._last_request_at = time.monotonic()
 
     def _classify(self, response: httpx.Response, path: str, attempt: int) -> Exception | None:
         """Map a response status to a typed error, or None when it succeeded."""

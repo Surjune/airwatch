@@ -28,6 +28,7 @@ from app.core.constants import (
     OPENAQ_BASE_URL,
     OPENAQ_MAX_PAGE_LIMIT,
     OPENAQ_MAX_RADIUS_M,
+    OPENAQ_MIN_REQUEST_INTERVAL_SECONDS,
     STATION_STALE_AFTER_DAYS,
 )
 from app.core.enums import Pollutant
@@ -188,6 +189,9 @@ class OpenAQClient(UpstreamClient):
                 producing an unauthenticated request.
             **kwargs: Forwarded to :class:`UpstreamClient`.
         """
+        # A city-wide run makes one call per active station, so pacing is the
+        # default rather than something a caller has to remember to ask for.
+        kwargs.setdefault("min_request_interval_seconds", OPENAQ_MIN_REQUEST_INTERVAL_SECONDS)
         super().__init__(**kwargs)  # type: ignore[arg-type]
         self._api_key = api_key
 
