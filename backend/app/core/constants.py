@@ -389,6 +389,38 @@ FORECAST_MAX_HORIZON_HOURS: Final[int] = 72
 #: hour, so the model sees the diurnal and weekly cycles directly.
 FORECAST_LAG_HOURS: Final[tuple[int, ...]] = (1, 2, 3, 6, 12, 24, 48, 168)
 
+#: Lags used when the record is too short to carry a weekly term. The 168-hour
+#: lag is the most informative single feature for urban PM2.5 -- traffic repeats
+#: weekly -- but requiring it discards the first seven days of a fourteen-day
+#: record, halving the training set to buy one feature. Below roughly a month of
+#: history this set is the better trade.
+FORECAST_LAG_HOURS_SHORT: Final[tuple[int, ...]] = (1, 2, 3, 6, 12, 24, 48)
+
+#: Fraction of the record held out for testing, taken from the end rather than
+#: sampled at random. A random split would put hours from the same afternoon on
+#: both sides, and autocorrelation would let the model read the answer off its
+#: neighbours -- producing an excellent score that says nothing about
+#: forecasting anything.
+FORECAST_TEST_FRACTION: Final[float] = 0.25
+
+#: Fewest observations a station needs before its diurnal climatology is used.
+#: Below this the hourly means are dominated by which few days happened to be
+#: observed rather than by the daily cycle they are meant to describe.
+FORECAST_MIN_CLIMATOLOGY_OBSERVATIONS: Final[int] = 48
+
+#: Expected absolute error of a climatological forecast, in ug/m3, at the
+#: shortest horizon. Measured on a temporal holdout rather than assumed: 15.6 at
+#: 24 hours, 16.5 at 48, 15.8 at 72. Published alongside every forecast, because
+#: a 24-hour outlook stated without it invites planning against a number that is
+#: routinely a whole AQI band out.
+FORECAST_BASE_UNCERTAINTY_UGM3: Final[float] = 15.6
+
+#: Additional expected error per 24 hours of horizon. Small, because the
+#: measured error barely grows with lead time -- the diurnal cycle a
+#: climatological forecast relies on is just as predictable three days out as
+#: one, which is precisely why it beat the learned models.
+FORECAST_UNCERTAINTY_PER_DAY_UGM3: Final[float] = 0.5
+
 #: Spacing of sample points along a corridor polyline, in metres, when
 #: aggregating cells for the corridor view.
 CORRIDOR_SAMPLE_SPACING_M: Final[float] = 2000.0

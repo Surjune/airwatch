@@ -252,7 +252,7 @@ class TestRateLimiting:
     """
 
     async def test_waits_between_consecutive_requests(self) -> None:
-        interval = 0.05
+        interval = 0.2
         client = ProbeClient(min_request_interval_seconds=interval)
 
         started = time.monotonic()
@@ -260,7 +260,11 @@ class TestRateLimiting:
         await client._respect_rate_limit()
         elapsed = time.monotonic() - started
 
-        assert elapsed >= interval
+        # Tolerance, not sloppiness: the Windows timer has ~15.6 ms granularity,
+        # so asyncio.sleep can return measurably early and an exact >= interval
+        # assertion fails intermittently. A longer interval plus a small margin
+        # still proves pacing happened without making the suite flaky.
+        assert elapsed >= interval * 0.85
         await client.close()
 
     async def test_does_not_delay_the_first_request(self) -> None:

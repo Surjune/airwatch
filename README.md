@@ -81,6 +81,8 @@ through timing and routing, and build the evidence trail that makes accountabili
 
 ## Validated results
 
+### Reconstructing unmonitored ground
+
 Numbers below come from `npm run ml:validate-loso` against 14,324 hourly PM2.5
 readings from 61 real CPCB/DPCC stations in Delhi, backfilled over 14 days.
 
@@ -131,6 +133,47 @@ clean.
 inputs — the low-cost sensor tier and satellite AOD — which is the argument for
 the three-tier design rather than a bigger network of reference monitors.
 
+### Forecasting, 24-72 hours
+
+Validated on a temporal holdout -- trained on the earliest days, tested on the
+latest -- because a random split would place hours from the same afternoon on
+both sides and let autocorrelation stand in for skill.
+
+| Method | 24h MAE | 48h MAE | 72h MAE |
+| --- | --- | --- | --- |
+| Persistence | 22.05 | 23.51 | 21.63 |
+| **Climatology** | **15.59** | **16.47** | **15.77** |
+| LightGBM (absolute) | 17.50 | 18.87 | 18.51 |
+| LightGBM (residual to climatology) | 17.39 | 18.59 | 18.33 |
+
+**Climatology wins at every horizon, so climatology is what ships.** Knowing
+what a station is *usually* like at 3pm beats knowing what it is doing right now
+by a wide margin, which is a real statement about the pollutant: Delhi PM2.5 is
+dominated by its daily cycle.
+
+This is the second phase where a learned model lost to a simple baseline, and
+both point at the same cause rather than at the model. Around 2,800 training
+rows drawn from fourteen days cannot support a twenty-feature gradient-boosted
+model against a strong prior. The next real improvement is months of history and
+denser inputs, not a different architecture.
+
+**What the climatological forecast cannot do**, stated plainly because the
+output looks more confident than it is: it has no day-to-day skill. It predicts
+the same value for 15:30 on Friday, Saturday and Sunday, because that is what a
+diurnal climatology is. It captures the daily cycle and the spatial gradient; it
+cannot say that Saturday will be worse than Friday. Supplying that was the job
+of the weather-driven model, and with this much data it could not.
+
+A corridor run across Delhi, from Dwarka east to Anand Vihar, does show the
+gradient clearly -- 18 µg/m³ at the western end rising to 51 at the eastern,
+roughly a threefold change across one city. The western 6 km return no forecast
+at all, because no station lies within range; that stretch renders as unknown
+rather than as clean.
+
+Uncertainty is published with every point and is frequently larger than the
+signal (18 ± 28 µg/m³ at the clean end). The forecast is currently more useful
+for *where along a route* the air turns than for the absolute level.
+
 ## Status
 
 Under active development. See `docs/` for architecture notes.
@@ -144,6 +187,10 @@ Deferred deliberately, and tracked here rather than as TODOs in the code.
   reference-grade, so there is nothing to calibrate against yet. The conversion
   and storage path keeps the raw value and the calibrating model version
   separately, so calibration can be applied later without re-ingesting.
+- **The forecast is climatological and has no day-to-day skill.** It resolves
+  the daily cycle and the spatial gradient but predicts the same value for a
+  given hour on consecutive days. Learned models were measured against it and
+  lost; see the validation table above.
 - **The fusion model is inverse-distance weighting, not machine learning.** That
   is an empirical decision recorded above, not an unfinished one.
 - **No authentication in v1.** The API is anonymous, protected only by per-IP rate limiting and a
