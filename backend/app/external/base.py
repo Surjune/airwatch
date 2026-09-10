@@ -48,6 +48,9 @@ _RATE_LIMITED_STATUS = 429
 #: Lowest status indicating the request itself was rejected.
 _CLIENT_ERROR_STATUS = 400
 
+#: Longest upstream error body kept in an error's details.
+_MAX_UPSTREAM_MESSAGE_CHARS = 300
+
 
 class UpstreamClient:
     """Base class for a typed client wrapping one external data provider.
@@ -121,6 +124,17 @@ class UpstreamClient:
             headers.update(extra)
         return headers
 
+    def sanitise_path(self, path: str) -> str:
+        """Return a form of the path that is safe to log or hand back in an error.
+
+        The default is the path unchanged. Clients whose provider demands the
+        credential inside the URL itself -- NASA FIRMS puts the MAP_KEY in the
+        path -- override this to mask it. Without that, a single upstream failure
+        would write the key into the log stream and into the error envelope
+        returned to every API caller.
+        """
+        return path
+
     async def get_json(
         self,
         path: str,
@@ -129,10 +143,6 @@ class UpstreamClient:
         headers: dict[str, str] | None = None,
     ) -> JsonValue:
         """GET a path and return the decoded JSON body.
-
-        Retries transient failures — timeouts, connection errors, 5xx and 429 —
-        with exponential backoff. A 4xx other than 429 is not retried, because
-        repeating a malformed or unauthorised request cannot succeed.
 
         Args:
             path: Path relative to the base URL.
@@ -143,12 +153,56 @@ class UpstreamClient:
             The decoded JSON body.
 
         Raises:
+            UpstreamResponseError: The body was not the JSON the caller requires.
             UpstreamTimeoutError: Every attempt timed out.
-            UpstreamUnavailableError: The upstream could not be reached or kept
-                returning a server error.
+            UpstreamUnavailableError: The upstream could not be reached.
             UpstreamRateLimitedError: The provider's quota is exhausted.
-            UpstreamResponseError: The request was rejected, or the body was not
-                the JSON the caller requires.
+        """
+        response = await self._get(path, params=params, headers=headers)
+        return self._decode(response, path)
+
+    async def get_text(
+        self,
+        path: str,
+        *,
+        params: dict[str, str | int | float] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> str:
+        """GET a path and return the raw body as text.
+
+        Not every upstream speaks JSON: NASA FIRMS serves its active-fire product
+        as CSV, so the fire client needs the body unparsed.
+
+        Args:
+            path: Path relative to the base URL.
+            params: Query parameters.
+            headers: Extra headers merged over the defaults.
+
+        Returns:
+            The response body as text.
+
+        Raises:
+            UpstreamTimeoutError: Every attempt timed out.
+            UpstreamUnavailableError: The upstream could not be reached.
+            UpstreamRateLimitedError: The provider's quota is exhausted.
+            UpstreamResponseError: The request was rejected.
+        """
+        response = await self._get(path, params=params, headers=headers)
+        return response.text
+
+    async def _get(
+        self,
+        path: str,
+        *,
+        params: dict[str, str | int | float] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> httpx.Response:
+        """Perform a GET with retries, returning the successful response.
+
+        Shared by every accessor so the retry policy exists in exactly one place.
+        Retries transient failures — timeouts, connection errors, 5xx and 429 —
+        with exponential backoff. A 4xx other than 429 is not retried, because
+        repeating a malformed or unauthorised request cannot succeed.
         """
         last_error: Exception | None = None
 
@@ -163,18 +217,18 @@ class UpstreamClient:
                 last_error = UpstreamTimeoutError(
                     self.provider_name,
                     f"{self.provider_name} did not respond within {self._timeout}s.",
-                    details={"path": path, "attempt": attempt},
+                    details={"path": self.sanitise_path(path), "attempt": attempt},
                 )
             except httpx.TransportError as error:
                 last_error = UpstreamUnavailableError(
                     self.provider_name,
                     f"Could not reach {self.provider_name}: {error}.",
-                    details={"path": path, "attempt": attempt},
+                    details={"path": self.sanitise_path(path), "attempt": attempt},
                 )
             else:
                 error_for_status = self._classify(response, path, attempt)
                 if error_for_status is None:
-                    return self._decode(response, path)
+                    return response
                 last_error = error_for_status
                 if not self._is_retryable(response.status_code):
                     raise last_error
@@ -182,7 +236,7 @@ class UpstreamClient:
             logger.warning(
                 "upstream.attempt_failed",
                 provider=self.provider_name,
-                path=path,
+                path=self.sanitise_path(path),
                 attempt=attempt,
                 max_attempts=self._max_attempts,
             )
@@ -196,14 +250,29 @@ class UpstreamClient:
             raise UpstreamUnavailableError(
                 self.provider_name,
                 f"{self.provider_name} could not be reached.",
-                details={"path": path},
+                details={"path": self.sanitise_path(path)},
             )
         raise last_error
 
     def _classify(self, response: httpx.Response, path: str, attempt: int) -> Exception | None:
         """Map a response status to a typed error, or None when it succeeded."""
         status = response.status_code
-        details = {"path": path, "status_code": status, "attempt": attempt}
+        details: dict[str, object] = {
+            "path": self.sanitise_path(path),
+            "status_code": status,
+            "attempt": attempt,
+        }
+
+        # Providers often explain the rejection in the body -- FIRMS answers a bad
+        # day range with "Expects [1..5]" -- and discarding it turns a one-line
+        # diagnosis into an investigation. Sanitised, because a provider may echo
+        # the request URL back, and truncated so a stack-trace page cannot flood
+        # the log.
+        upstream_message = response.text.strip()
+        if upstream_message:
+            details["upstream_message"] = self.sanitise_path(
+                upstream_message[:_MAX_UPSTREAM_MESSAGE_CHARS]
+            )
 
         if status == _RATE_LIMITED_STATUS:
             return UpstreamRateLimitedError(
@@ -240,6 +309,9 @@ class UpstreamClient:
             raise UpstreamResponseError(
                 self.provider_name,
                 f"{self.provider_name} returned a body that was not valid JSON.",
-                details={"path": path, "content_type": response.headers.get("Content-Type")},
+                details={
+                    "path": self.sanitise_path(path),
+                    "content_type": response.headers.get("Content-Type"),
+                },
             ) from error
         return decoded

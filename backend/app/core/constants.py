@@ -361,6 +361,34 @@ FL_NEGATIVE_TRANSFER_TOLERANCE: Final[float] = 0.02
 #: why it is the primary reference-tier source rather than a supplement.
 OPENAQ_BASE_URL: Final[str] = "https://api.openaq.org/v3"
 
+#: NASA FIRMS API root. The active-fire product is served as CSV, not JSON.
+FIRMS_BASE_URL: Final[str] = "https://firms.modaps.eosdis.nasa.gov/api"
+
+#: FIRMS active-fire source. VIIRS on Suomi-NPP resolves fires at 375 m, against
+#: MODIS at 1 km, which matters because a single stubble field is well under a
+#: MODIS pixel.
+FIRMS_DEFAULT_SOURCE: Final[str] = "VIIRS_SNPP_NRT"
+
+#: Largest day range the FIRMS area endpoint accepts in one request. Verified
+#: against the live API, which rejects 6 or more with "Invalid day range.
+#: Expects [1..5]" -- some documentation still says 10.
+FIRMS_MAX_DAY_RANGE: Final[int] = 5
+
+#: VIIRS confidence classes mapped to a numeric score. VIIRS reports letters
+#: (low/nominal/high) while MODIS reports 0-100, so both are normalised to a
+#: fraction for attribution scoring.
+FIRMS_CONFIDENCE_SCORES: Final[dict[str, float]] = {
+    "l": 0.25,
+    "n": 0.65,
+    "h": 0.95,
+}
+
+#: Fire radiative power, in megawatts, below which a detection is treated as too
+#: weak to be a plausible plume source. Small agricultural fires do sit near this
+#: floor, so it is deliberately low: missing a stubble fire is worse than
+#: carrying a few weak detections into the attribution cone.
+FIRMS_MIN_FRP_MW: Final[float] = 1.0
+
 #: Largest radius OpenAQ accepts on a coordinates query, in metres.
 OPENAQ_MAX_RADIUS_M: Final[int] = 25_000
 
