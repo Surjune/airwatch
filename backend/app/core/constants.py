@@ -361,6 +361,32 @@ FL_NEGATIVE_TRANSFER_TOLERANCE: Final[float] = 0.02
 #: why it is the primary reference-tier source rather than a supplement.
 OPENAQ_BASE_URL: Final[str] = "https://api.openaq.org/v3"
 
+#: Open-Meteo API root. Needs no credential, which is why it is the
+#: meteorological backbone rather than an optional extra.
+OPENMETEO_BASE_URL: Final[str] = "https://api.open-meteo.com/v1"
+
+#: Hourly variables requested from Open-Meteo. boundary_layer_height is the one
+#: that matters most and is easy to overlook: a shallow nocturnal boundary layer
+#: traps emissions in a fraction of the volume, so the same emission rate
+#: produces a far higher concentration. Without it, winter-night spikes look
+#: like new sources rather than the same sources in a smaller box.
+OPENMETEO_HOURLY_VARIABLES: Final[tuple[str, ...]] = (
+    "temperature_2m",
+    "relative_humidity_2m",
+    "wind_speed_10m",
+    "wind_direction_10m",
+    "boundary_layer_height",
+    "precipitation",
+)
+
+#: Open-Meteo defaults wind speed to km/h. AirWatch stores m/s, and the request
+#: asks for m/s explicitly rather than converting after the fact -- a silent 3.6x
+#: error in the wind field would misplace every back-trajectory.
+OPENMETEO_WIND_SPEED_UNIT: Final[str] = "ms"
+
+#: Largest forecast horizon Open-Meteo serves, in days.
+OPENMETEO_MAX_FORECAST_DAYS: Final[int] = 16
+
 #: NASA FIRMS API root. The active-fire product is served as CSV, not JSON.
 FIRMS_BASE_URL: Final[str] = "https://firms.modaps.eosdis.nasa.gov/api"
 
