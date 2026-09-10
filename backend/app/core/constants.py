@@ -339,6 +339,30 @@ ATTRIBUTION_CONE_WIDENING_DEG_PER_HOUR: Final[float] = 5.0
 #: usually dispersed or moved beyond the traceable window.
 ATTRIBUTION_FIRE_LOOKBACK_HOURS: Final[int] = 12
 
+#: Radius, in metres, within which a source needs no transport to explain a
+#: hotspot. Delhi hotspots are frequently detected at wind speeds under 2 m/s,
+#: where a plume moves only a few kilometres an hour and the excess is simply
+#: the source the monitor is standing next to. Requiring every candidate to lie
+#: upwind makes exactly these -- a bus terminal, a landfill across the road --
+#: permanently invisible, which is the opposite of the intended behaviour.
+ATTRIBUTION_LOCAL_SOURCE_RADIUS_M: Final[float] = 2000.0
+
+#: Distance, in metres, over which a candidate's plausibility halves. A source
+#: sitting in the trajectory's path but 20 km upwind is a far weaker explanation
+#: than one 2 km upwind, because dispersion has had far longer to dilute it.
+ATTRIBUTION_DISTANCE_HALF_LIFE_M: Final[float] = 5000.0
+
+#: Emission prior for a satellite fire detection of average radiative power,
+#: used to put fires on the same scale as registry sources. A fire is an
+#: observed, actively-emitting event rather than a facility that may or may not
+#: be running, so it starts higher.
+ATTRIBUTION_FIRE_BASE_PRIOR: Final[float] = 1.5
+
+#: Fire radiative power, in megawatts, at which a detection reaches twice the
+#: base prior. Keeps a large landfill blaze ranked above a small field fire
+#: without letting radiative power dominate the geometry.
+ATTRIBUTION_FIRE_REFERENCE_FRP_MW: Final[float] = 20.0
+
 #: Candidates scoring below this confidence are not surfaced at all. An
 #: enforcement action against the wrong operator is worse than no name, so the
 #: floor is deliberately high.

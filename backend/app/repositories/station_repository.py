@@ -13,10 +13,10 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from app.core.enums import StationTier
+from app.core.enums import SourceType, StationTier
 from app.core.geo import LonLat
 from app.core.h3_grid import point_to_cell
-from app.repositories.models import Station
+from app.repositories.models import PollutionSource, Station
 
 
 def _point_wkt(point: LonLat) -> str:
@@ -99,3 +99,50 @@ def list_stations(session: Session, *, tier: StationTier | None = None) -> list[
     if tier is not None:
         statement = statement.where(Station.tier == tier)
     return list(session.execute(statement).scalars())
+
+
+def upsert_pollution_source(
+    session: Session,
+    *,
+    name: str,
+    source_type: SourceType,
+    coordinates: LonLat,
+    emission_prior: float,
+    extra: dict[str, object] | None = None,
+) -> int:
+    """Insert or refresh a registered pollution source.
+
+    Identity is the name, so re-seeding converges rather than duplicating.
+
+    Returns:
+        The database id of the source.
+    """
+    existing = session.execute(
+        select(PollutionSource).where(PollutionSource.name == name)
+    ).scalar_one_or_none()
+
+    if existing is not None:
+        existing.source_type = source_type
+        existing.geom = _point_wkt(coordinates)
+        existing.h3_cell = point_to_cell(coordinates)
+        existing.emission_prior = emission_prior
+        existing.extra = extra
+        session.flush()
+        return int(existing.id)
+
+    created = PollutionSource(
+        name=name,
+        source_type=source_type,
+        geom=_point_wkt(coordinates),
+        h3_cell=point_to_cell(coordinates),
+        emission_prior=emission_prior,
+        extra=extra,
+    )
+    session.add(created)
+    session.flush()
+    return int(created.id)
+
+
+def list_pollution_sources(session: Session) -> list[PollutionSource]:
+    """Return every registered pollution source."""
+    return list(session.execute(select(PollutionSource)).scalars())

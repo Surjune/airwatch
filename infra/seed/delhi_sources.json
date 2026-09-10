@@ -1,0 +1,63 @@
+{
+  "_about": "ILLUSTRATIVE SEED DATA, NOT AN AUTHORITATIVE EMISSIONS INVENTORY. These are well-known, publicly documented major sources in and around Delhi, with approximate coordinates taken to neighbourhood accuracy. They exist so attribution has candidates to rank while a real registry is unavailable: CPCB and the state boards hold the authoritative consented-unit inventories, and a deployment must load those instead. Attribution output built on this seed names a plausible category and location, never a specific operator.",
+  "_coordinate_order": "[longitude, latitude], WGS84, matching GeoJSON and PostGIS",
+  "_emission_prior": "Relative plausibility that this source is emitting heavily when a plume is traced to it. Landfills rank highest because they burn chronically and continuously; industrial estates vary with what is running; a transport hub is a large but diffuse source.",
+  "sources": [
+    {
+      "name": "Ghazipur landfill",
+      "source_type": "landfill",
+      "coordinates": [77.3260, 28.6203],
+      "emission_prior": 0.9,
+      "note": "Delhi's largest legacy landfill, with recurrent surface fires."
+    },
+    {
+      "name": "Bhalswa landfill",
+      "source_type": "landfill",
+      "coordinates": [77.1600, 28.7500],
+      "emission_prior": 0.9,
+      "note": "Legacy landfill in north Delhi, repeated documented fires."
+    },
+    {
+      "name": "Okhla landfill",
+      "source_type": "landfill",
+      "coordinates": [77.2905, 28.5045],
+      "emission_prior": 0.85,
+      "note": "Legacy landfill adjoining the Okhla industrial area."
+    },
+    {
+      "name": "Wazirpur industrial area",
+      "source_type": "industry",
+      "coordinates": [77.1650, 28.7000],
+      "emission_prior": 0.7,
+      "note": "Steel pickling and rolling cluster."
+    },
+    {
+      "name": "Narela industrial area",
+      "source_type": "industry",
+      "coordinates": [77.0900, 28.8500],
+      "emission_prior": 0.65,
+      "note": "Large mixed manufacturing estate on the northern edge."
+    },
+    {
+      "name": "Bawana industrial area",
+      "source_type": "industry",
+      "coordinates": [77.0400, 28.7900],
+      "emission_prior": 0.65,
+      "note": "Relocated-industry estate in north-west Delhi."
+    },
+    {
+      "name": "Mundka industrial belt",
+      "source_type": "waste_burning",
+      "coordinates": [77.0300, 28.6820],
+      "emission_prior": 0.75,
+      "note": "Documented informal plastic and e-waste burning."
+    },
+    {
+      "name": "Anand Vihar ISBT and rail terminal",
+      "source_type": "road_segment",
+      "coordinates": [77.3161, 28.6469],
+      "emission_prior": 0.6,
+      "note": "Interstate bus terminal, rail terminal and arterial junction."
+    }
+  ]
+}
