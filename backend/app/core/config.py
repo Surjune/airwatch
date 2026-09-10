@@ -67,7 +67,13 @@ class Settings(BaseSettings):
 
     # -- Optional, Phase 5 ---------------------------------------------------
     gee_service_account_email: str = ""
+    #: Filesystem path to the service-account JSON key. The credential is the
+    #: file itself, not a value copied out of it, so this is a path and the key
+    #: never appears in the environment.
     gee_private_key_path: str = ""
+    #: Earth Engine has required a registered Cloud project since November 2024,
+    #: and ee.Initialize() will not authenticate without it.
+    gee_project_id: str = ""
 
     @field_validator("cors_allowed_origins", mode="before")
     @classmethod
