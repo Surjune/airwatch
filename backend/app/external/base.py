@@ -46,6 +46,12 @@ _SERVER_ERROR_STATUS = 500
 #: Status returned when an upstream quota is exhausted.
 _RATE_LIMITED_STATUS = 429
 
+#: Request Timeout. A 4xx by number but transient by meaning: the upstream is
+#: telling us it gave up waiting, not that the request was malformed. Retrying
+#: it can succeed, and OpenAQ returns it under load partway through a long
+#: backfill.
+_REQUEST_TIMEOUT_STATUS = 408
+
 #: Lowest status indicating the request itself was rejected.
 _CLIENT_ERROR_STATUS = 400
 
@@ -294,6 +300,12 @@ class UpstreamClient:
                 upstream_message[:_MAX_UPSTREAM_MESSAGE_CHARS]
             )
 
+        if status == _REQUEST_TIMEOUT_STATUS:
+            return UpstreamTimeoutError(
+                self.provider_name,
+                f"{self.provider_name} timed out serving the request.",
+                details=details,
+            )
         if status == _RATE_LIMITED_STATUS:
             return UpstreamRateLimitedError(
                 self.provider_name,
@@ -316,8 +328,15 @@ class UpstreamClient:
 
     @staticmethod
     def _is_retryable(status_code: int) -> bool:
-        """Whether repeating a request that returned this status could succeed."""
-        return status_code == _RATE_LIMITED_STATUS or status_code >= _SERVER_ERROR_STATUS
+        """Whether repeating a request that returned this status could succeed.
+
+        Most 4xx responses mean the request itself was wrong, so repeating it
+        only wastes quota. The exceptions are 429 and 408: both say "not now"
+        rather than "not ever".
+        """
+        if status_code in (_RATE_LIMITED_STATUS, _REQUEST_TIMEOUT_STATUS):
+            return True
+        return status_code >= _SERVER_ERROR_STATUS
 
     def _decode(self, response: httpx.Response, path: str) -> JsonValue:
         """Decode a JSON body, raising a typed error when it is not JSON."""

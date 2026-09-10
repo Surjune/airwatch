@@ -229,6 +229,51 @@ IDW_POWER: Final[float] = 2.0
 #: enough that a reading is no longer evidence about the cell.
 FUSION_MAX_SENSOR_DISTANCE_M: Final[float] = 5000.0
 
+#: Neighbours used for the local mean and spread features. Three is enough to
+#: describe the immediate neighbourhood without reaching across a city whose
+#: districts have genuinely different air.
+FUSION_NEAREST_K: Final[int] = 3
+
+#: Fewest neighbouring stations required before a cell can be estimated at all.
+#: Below this the estimate is an extrapolation from one or two points, and
+#: reporting it with the same confidence as a well-supported cell would be the
+#: exact overclaiming this project exists to remove.
+FUSION_MIN_NEIGHBOURS: Final[int] = 3
+
+#: Radii, in metres, at which neighbouring stations are counted. Station density
+#: is itself a feature: a cell surrounded by monitors is far better constrained
+#: than one on the edge of the network, and the model should be able to tell.
+#:
+#: Both radii must sit strictly inside FUSION_MAX_SENSOR_DISTANCE_M. An earlier
+#: pairing of 5 km and 10 km against a 5 km cutoff made the two counts
+#: identical by construction -- a feature that looked informative and carried no
+#: information at all.
+FUSION_DENSITY_RADII_M: Final[tuple[float, ...]] = (2000.0, 5000.0)
+
+#: Hours in a day and days in a week, for the cyclical time encoding. Encoded as
+#: sine and cosine pairs so that hour 23 and hour 0 are adjacent, which a raw
+#: integer would place maximally far apart.
+HOURS_PER_DAY: Final[int] = 24
+DAYS_PER_WEEK: Final[int] = 7
+
+#: Uncertainty of a fused estimate, in ug/m3, before any local penalty. Fitted
+#: to the leave-one-station-out run: cells whose three nearest stations agree
+#: closely still carry a mean absolute error near 10 ug/m3, because Delhi PM2.5
+#: is genuinely hyperlocal and neighbours explain under a quarter of the
+#: variance at an unmonitored point.
+FUSION_BASE_UNCERTAINTY_UGM3: Final[float] = 9.5
+
+#: Additional uncertainty per ug/m3 of disagreement among the nearest stations.
+#: Measured, not assumed: observed error rose from 9.9 to 24.5 ug/m3 as
+#: neighbour spread went from under 5 to over 30. Disagreement between monitors
+#: is the single best available warning that an estimate is unreliable.
+FUSION_SPREAD_UNCERTAINTY_COEFFICIENT: Final[float] = 0.4
+
+#: Additional uncertainty per kilometre to the nearest station. Small because
+#: Delhi's network is dense enough that distance varied little across the
+#: validation set; it matters far more in a sparsely monitored city.
+FUSION_DISTANCE_UNCERTAINTY_PER_KM: Final[float] = 0.35
+
 #: A cell with no sensor inside FUSION_MAX_SENSOR_DISTANCE_M falls back to
 #: satellite and meteorology only. Its uncertainty is multiplied by this factor
 #: so the UI can never present an unsupported estimate as a confident one.
@@ -417,6 +462,18 @@ FIRMS_MIN_FRP_MW: Final[float] = 1.0
 
 #: Largest radius OpenAQ accepts on a coordinates query, in metres.
 OPENAQ_MAX_RADIUS_M: Final[int] = 25_000
+
+#: Minimum share of an hour that must actually be observed before its aggregate
+#: is trusted. OpenAQ builds an hourly value from whatever 15-minute samples
+#: exist, so an hour can be reported from a single reading. Training on those
+#: teaches the model that sparsely-sampled hours behave differently, when the
+#: only real difference is how much was measured.
+MIN_HOURLY_COVERAGE_PCT: Final[float] = 50.0
+
+#: Days of history pulled per sensor when backfilling. Two weeks spans two of
+#: every weekday, which is the shortest window that lets a model separate the
+#: weekly traffic cycle from the daily one.
+BACKFILL_DAYS: Final[int] = 14
 
 #: Minimum gap between OpenAQ requests, in seconds. The free tier allows roughly
 #: 60 requests per minute, and a Delhi run makes one call per active station --

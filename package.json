@@ -31,7 +31,9 @@
     "format:check": "node scripts/py.mjs -m ruff format --check app",
     "ingest:once": "node scripts/py.mjs -m app.cli ingest",
     "ingest:delhi": "node scripts/py.mjs -m app.cli ingest --city delhi",
-    "ingest:coimbatore": "node scripts/py.mjs -m app.cli ingest --city coimbatore"
+    "ingest:coimbatore": "node scripts/py.mjs -m app.cli ingest --city coimbatore",
+    "backfill": "node scripts/py.mjs -m app.cli backfill",
+    "ml:validate-loso": "node scripts/py.mjs ../ml/validate_loso.py"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",

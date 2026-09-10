@@ -136,6 +136,28 @@ class TestRetries:
         assert route.call_count == 2
 
     @respx.mock
+    async def test_retries_a_request_timeout(self) -> None:
+        # 408 is a 4xx by number but transient by meaning: the upstream gave up
+        # waiting, it did not reject the request. OpenAQ returns it under load
+        # partway through a long backfill.
+        route = respx.get(ENDPOINT).mock(
+            side_effect=[httpx.Response(408), httpx.Response(200, json={"ok": True})]
+        )
+
+        async with build_client(max_attempts=2) as client:
+            assert await client.get_json("/readings") == {"ok": True}
+
+        assert route.call_count == 2
+
+    @respx.mock
+    async def test_a_request_timeout_surfaces_as_a_timeout_error(self) -> None:
+        respx.get(ENDPOINT).mock(return_value=httpx.Response(408))
+
+        async with build_client(max_attempts=1) as client:
+            with pytest.raises(UpstreamTimeoutError):
+                await client.get_json("/readings")
+
+    @respx.mock
     async def test_max_attempts_of_one_disables_retrying(self) -> None:
         route = respx.get(ENDPOINT).mock(return_value=httpx.Response(500))
 

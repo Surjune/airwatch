@@ -79,6 +79,58 @@ through timing and routing, and build the evidence trail that makes accountabili
 
 ---
 
+## Validated results
+
+Numbers below come from `npm run ml:validate-loso` against 14,324 hourly PM2.5
+readings from 61 real CPCB/DPCC stations in Delhi, backfilled over 14 days.
+
+**Leave-one-station-out**: hide one real station completely — from the features
+*and* from training — estimate its location from the rest of the network, and
+compare against what it actually recorded.
+
+| Method | MAE | RMSE | R² |
+| --- | --- | --- | --- |
+| Inverse-distance weighting | **11.48** | **17.30** | **0.232** |
+| LightGBM (absolute target) | 12.84 | 18.48 | 0.124 |
+| LightGBM (residual to IDW) | 12.95 | 18.55 | 0.117 |
+
+Two findings, both reported as they came out:
+
+**1. The learned model loses to plain interpolation, so IDW is what ships.**
+Gradient boosting was ~12% worse on MAE despite receiving the IDW estimate as an
+input feature. With 36 scorable stations it learns each site's idiosyncrasies
+instead of a spatial relationship that transfers to ground the network does not
+cover. Shipping it anyway would mean publishing worse numbers with more
+confidence. Predicting the residual to IDW instead of the concentration did not
+rescue it.
+
+**2. R² of 0.232 is the headline, and it is a result about the problem, not
+about the method.** Even with 61 monitors inside 25 km — one of the densest
+networks in India — neighbouring stations explain under a quarter of the
+variance at an unmonitored point. This is the resolution mismatch in the
+problem statement above, measured rather than asserted. The hardest station to
+reconstruct is Anand Vihar (MAE 40 µg/m³), a bus terminal beside an industrial
+belt: exactly the kind of hyper-local source that a city-average AQI cannot see.
+
+**Error is predictable, which is what makes uncertainty honest.** Disagreement
+between nearby monitors tracks error closely:
+
+| Spread among 3 nearest stations | Mean absolute error |
+| --- | --- |
+| 0–5 µg/m³ | 9.89 |
+| 5–15 µg/m³ | 11.39 |
+| 15–30 µg/m³ | 13.66 |
+| 30+ µg/m³ | 24.47 |
+
+The fused surface therefore publishes a per-cell uncertainty fitted to this
+relationship, and returns *nothing* rather than a number for cells too poorly
+supported to estimate. A cell nothing supports is drawn as unknown, never as
+clean.
+
+**What would actually improve this** is not a better model but better-resolved
+inputs — the low-cost sensor tier and satellite AOD — which is the argument for
+the three-tier design rather than a bigger network of reference monitors.
+
 ## Status
 
 Under active development. See `docs/` for architecture notes.
@@ -87,6 +139,13 @@ Under active development. See `docs/` for architecture notes.
 
 Deferred deliberately, and tracked here rather than as TODOs in the code.
 
+- **Sensor calibration is not yet trained.** Calibration needs paired
+  (low-cost sensor, reference) observations and every station ingested so far is
+  reference-grade, so there is nothing to calibrate against yet. The conversion
+  and storage path keeps the raw value and the calibrating model version
+  separately, so calibration can be applied later without re-ingesting.
+- **The fusion model is inverse-distance weighting, not machine learning.** That
+  is an empirical decision recorded above, not an unfinished one.
 - **No authentication in v1.** The API is anonymous, protected only by per-IP rate limiting and a
   locked CORS allowlist.
 - **Upstream CO units are not trustworthy at face value.** Several live Delhi stations declare CO

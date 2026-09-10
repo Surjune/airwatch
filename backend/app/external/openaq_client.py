@@ -25,6 +25,7 @@ from pydantic import BaseModel, Field
 from pydantic import ValidationError as PydanticValidationError
 
 from app.core.constants import (
+    MIN_HOURLY_COVERAGE_PCT,
     OPENAQ_BASE_URL,
     OPENAQ_MAX_PAGE_LIMIT,
     OPENAQ_MAX_RADIUS_M,
@@ -174,6 +175,24 @@ class OpenAQReading(BaseModel):
     coordinates: tuple[float, float]
 
 
+class OpenAQHourlyValue(BaseModel):
+    """One hourly aggregate for a sensor.
+
+    Attributes:
+        value: The hour's mean concentration.
+        period_start: Start of the hour, in UTC. Indian stations report on
+            IST-aligned bins, so these land on :30 past the UTC hour rather than
+            on the hour.
+        coverage_pct: Share of the hour actually observed. OpenAQ builds the
+            aggregate from whatever 15-minute samples exist, so this can be low
+            and the value correspondingly unreliable.
+    """
+
+    value: float
+    period_start: datetime
+    coverage_pct: float | None = None
+
+
 class OpenAQClient(UpstreamClient):
     """Typed client for the OpenAQ v3 API."""
 
@@ -318,6 +337,102 @@ class OpenAQClient(UpstreamClient):
                 stale_after_days=stale_after_days,
             )
         return readings
+
+    async def sensor_hourly(
+        self,
+        sensor_id: int,
+        *,
+        date_from: datetime,
+        date_to: datetime,
+        min_coverage_pct: float = MIN_HOURLY_COVERAGE_PCT,
+    ) -> list[OpenAQHourlyValue]:
+        """Fetch hourly aggregates for one sensor over a date range.
+
+        Hourly is the resolution fusion works at, and OpenAQ aggregates server
+        side, so this avoids pulling and re-binning 15-minute raw samples.
+
+        Args:
+            sensor_id: The sensor to read.
+            date_from: Start of the window, inclusive.
+            date_to: End of the window.
+            min_coverage_pct: Hours observed for less than this share of their
+                duration are dropped as too thin to trust.
+
+        Returns:
+            Hourly values in ascending time order.
+
+        Raises:
+            UpstreamResponseError: The payload did not match the expected shape.
+        """
+        payload = await self.get_json(
+            f"/sensors/{sensor_id}/hours",
+            params={
+                "datetime_from": date_from.date().isoformat(),
+                "datetime_to": date_to.date().isoformat(),
+                "limit": OPENAQ_MAX_PAGE_LIMIT,
+            },
+            headers=self._auth_headers(),
+        )
+
+        values: list[OpenAQHourlyValue] = []
+        thin_hours = 0
+        for item in self._results(payload):
+            parsed = self._parse_hourly(item)
+            if parsed is None:
+                continue
+            if parsed.coverage_pct is not None and parsed.coverage_pct < min_coverage_pct:
+                thin_hours += 1
+                continue
+            values.append(parsed)
+
+        if thin_hours:
+            logger.info(
+                "openaq.thin_hours_dropped",
+                sensor_id=sensor_id,
+                dropped=thin_hours,
+                kept=len(values),
+            )
+        values.sort(key=lambda entry: entry.period_start)
+        return values
+
+    def _parse_hourly(self, item: object) -> OpenAQHourlyValue | None:
+        """Parse one hourly aggregate, or None when it carries no value."""
+        if not isinstance(item, dict):
+            raise UpstreamResponseError(
+                self.provider_name,
+                f"OpenAQ hourly record was {type(item).__name__}, expected an object.",
+            )
+
+        value = item.get("value")
+        if value is None:
+            # An hour with no samples at all. Not an error; simply nothing to
+            # record for that hour.
+            return None
+
+        period = item.get("period")
+        if not isinstance(period, dict):
+            raise UpstreamResponseError(
+                self.provider_name,
+                "OpenAQ hourly record had no 'period' object.",
+            )
+        starts_at = period.get("datetimeFrom")
+        if not isinstance(starts_at, dict) or "utc" not in starts_at:
+            raise UpstreamResponseError(
+                self.provider_name,
+                "OpenAQ hourly record had no 'period.datetimeFrom.utc'.",
+            )
+
+        coverage = item.get("coverage")
+        coverage_pct = coverage.get("percentComplete") if isinstance(coverage, dict) else None
+
+        return self._parse(
+            OpenAQHourlyValue,
+            {
+                "value": value,
+                "period_start": starts_at["utc"],
+                "coverage_pct": coverage_pct,
+            },
+        )
 
     def active_locations(
         self,

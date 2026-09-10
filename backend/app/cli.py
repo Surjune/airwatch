@@ -12,11 +12,13 @@ import asyncio
 import sys
 
 from app.core.config import get_settings
+from app.core.constants import BACKFILL_DAYS
+from app.core.enums import Pollutant
 from app.core.geo import LonLat
 from app.core.logging import configure_logging, get_logger
 from app.repositories import observation_repository, station_repository
 from app.repositories.session import session_scope
-from app.services.ingestion_service import IngestionReport, IngestionService
+from app.services.ingestion_service import IngestionReport, IngestionService, SourceResult
 
 logger = get_logger(__name__)
 
@@ -67,6 +69,13 @@ async def _run_ingestion(city: str, radius_m: int, skip_fires: bool) -> Ingestio
     )
 
 
+async def _run_backfill(city: str, pollutant: Pollutant, days: int) -> SourceResult:
+    """Backfill hourly history for one pilot city."""
+    centre, _ = PILOT_CITIES[city]
+    service = IngestionService(get_settings())
+    return await service.backfill_history(centre, pollutant=pollutant, days=days)
+
+
 def main(argv: list[str] | None = None) -> int:
     """Entry point. Returns a process exit code."""
     parser = argparse.ArgumentParser(prog="airwatch", description="AirWatch operational tasks")
@@ -91,9 +100,33 @@ def main(argv: list[str] | None = None) -> int:
         help="Skip FIRMS, for when no MAP_KEY is configured",
     )
 
+    backfill = subparsers.add_parser(
+        "backfill", help="Pull hourly history so fusion has a time series to learn from"
+    )
+    backfill.add_argument("--city", choices=sorted(PILOT_CITIES), default="delhi")
+    backfill.add_argument(
+        "--pollutant",
+        choices=[member.value for member in Pollutant],
+        default=Pollutant.PM25.value,
+    )
+    backfill.add_argument("--days", type=int, default=BACKFILL_DAYS)
+
     args = parser.parse_args(argv)
     settings = get_settings()
     configure_logging(level=settings.log_level, json_output=False)
+
+    if args.command == "backfill":
+        result = asyncio.run(_run_backfill(args.city, Pollutant(args.pollutant), args.days))
+        status = "ok" if result.succeeded else "FAILED"
+        print("")
+        print(f"{result.source}: {status}, {result.records} hourly readings stored")
+        if not result.succeeded:
+            print(f"  {result.error_code}: {result.error_message}")
+        with session_scope() as session:
+            print(
+                f"  measurements now stored: {observation_repository.count_measurements(session)}"
+            )
+        return 0 if result.succeeded else _EXIT_PARTIAL_FAILURE
 
     if args.command == "ingest":
         report = asyncio.run(_run_ingestion(args.city, args.radius_m, args.skip_fires))

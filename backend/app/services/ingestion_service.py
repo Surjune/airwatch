@@ -18,11 +18,12 @@ Two rules govern every path through this module:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from app.core import aqi
 from app.core.config import Settings
-from app.core.enums import StationTier
+from app.core.constants import BACKFILL_DAYS
+from app.core.enums import Pollutant, StationTier
 from app.core.exceptions import AirWatchError
 from app.core.geo import LonLat
 from app.core.h3_grid import point_to_cell
@@ -112,6 +113,121 @@ class IngestionService:
             failed_sources=report.failed_sources,
         )
         return report
+
+    async def backfill_history(
+        self,
+        centre: LonLat,
+        *,
+        pollutant: Pollutant = Pollutant.PM25,
+        days: int = BACKFILL_DAYS,
+        radius_m: int = 25_000,
+    ) -> SourceResult:
+        """Pull hourly history for one pollutant across every active station.
+
+        A single snapshot per station cannot support a fusion model: with one
+        time point the only thing to learn from is 60 spatial samples. History
+        turns that into thousands, and lets leave-one-station-out validation
+        measure something meaningful.
+
+        Args:
+            centre: ``(lon, lat)`` of the city.
+            pollutant: Which pollutant to backfill. One at a time, because each
+                station-pollutant pair costs a request.
+            days: Days of history to pull.
+            radius_m: Station search radius.
+
+        Returns:
+            A result carrying the number of hourly readings stored.
+        """
+        source = f"OpenAQ history ({pollutant.value})"
+        try:
+            api_key = self._settings.require("openaq_api_key")
+            date_to = datetime.now(UTC)
+            date_from = date_to - timedelta(days=days)
+            stored = 0
+
+            async with OpenAQClient(api_key) as client:
+                locations = client.active_locations(
+                    await client.list_locations(centre, radius_m=radius_m)
+                )
+                logger.info(
+                    "backfill.started",
+                    stations=len(locations),
+                    pollutant=pollutant.value,
+                    days=days,
+                )
+
+                for location in locations:
+                    stored += await self._backfill_location(
+                        client, location, pollutant, date_from, date_to
+                    )
+
+            return SourceResult(source=source, succeeded=True, records=stored)
+        except AirWatchError as error:
+            logger.warning(
+                "ingestion.source_failed",
+                source=source,
+                error_code=error.code,
+                error_message=error.message,
+            )
+            return SourceResult(
+                source=source,
+                succeeded=False,
+                error_code=error.code,
+                error_message=error.message,
+            )
+
+    async def _backfill_location(
+        self,
+        client: OpenAQClient,
+        location: OpenAQLocation,
+        pollutant: Pollutant,
+        date_from: datetime,
+        date_to: datetime,
+    ) -> int:
+        """Backfill one station's history for one pollutant."""
+        sensor_map = location.pollutant_by_sensor_id()
+        sensor_ids = [
+            sensor_id for sensor_id, (mapped, _) in sensor_map.items() if mapped is pollutant
+        ]
+        if not sensor_ids:
+            return 0
+
+        with session_scope() as session:
+            station_id = station_repository.upsert_station(
+                session,
+                source=_OPENAQ_SOURCE,
+                source_station_id=str(location.id),
+                name=location.name,
+                tier=StationTier.REFERENCE,
+                coordinates=location.coordinates.to_lon_lat(),
+                operator=location.provider.name if location.provider else None,
+                last_seen_at=location.last_reading_at,
+            )
+
+        rows: list[MeasurementRow] = []
+        for sensor_id in sensor_ids:
+            _, unit = sensor_map[sensor_id]
+            hourly = await client.sensor_hourly(sensor_id, date_from=date_from, date_to=date_to)
+            for entry in hourly:
+                try:
+                    value = aqi.to_aqi_unit(pollutant, entry.value, unit)
+                except AirWatchError:
+                    continue
+                rows.append(
+                    MeasurementRow(
+                        station_id=station_id,
+                        observed_at=entry.period_start,
+                        pollutant=pollutant,
+                        value_raw=value,
+                        unit=aqi.CONCENTRATION_UNIT[pollutant],
+                    )
+                )
+
+        if not rows:
+            return 0
+        with session_scope() as session:
+            return observation_repository.upsert_measurements(session, rows)
 
     async def _ingest_air_quality(self, centre: LonLat, radius_m: int) -> SourceResult:
         """Ingest reference-tier readings from OpenAQ."""
