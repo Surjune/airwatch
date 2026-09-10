@@ -1,0 +1,310 @@
+"""SQLAlchemy ORM models.
+
+The repository layer is the only layer permitted to touch the database, so the
+table definitions live here rather than in a top-level package. Nothing above
+`repositories/` may import these.
+
+Two decisions run through the whole schema:
+
+* **Every observation is keyed to an H3 cell as well as a point.** The point is
+  the truth; the cell is what fusion, hotspot detection, forecasting and the
+  federated feature space all join on. Storing both means a spatial query can
+  use the PostGIS index while an analysis query can group by cell without a
+  join.
+* **A calibrated value never overwrites its raw value.** Calibration is a model
+  output that changes when the model is retrained, so the raw reading and the
+  version of the model that corrected it are both kept. Overwriting would make a
+  published number impossible to reproduce.
+"""
+
+from __future__ import annotations
+
+from datetime import datetime
+from enum import StrEnum
+
+from geoalchemy2 import Geometry
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+    func,
+)
+from sqlalchemy import (
+    Enum as SqlEnum,
+)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+from app.core.constants import SRID_WGS84
+from app.core.enums import Pollutant, SourceType, StationTier
+
+#: Length of an H3 cell index in its canonical string form.
+H3_INDEX_LENGTH = 15
+
+
+def _enum_values(enum_class: type[StrEnum]) -> list[str]:
+    """Persist an enum by its value rather than its member name.
+
+    SQLAlchemy's native enum defaults to the member name, which would store
+    "PM25" where the project's canonical identifier -- shared by the database,
+    the API and the interoperability envelope -- is "pm25". A partner city
+    reading our exchange format would then see a different spelling from the one
+    the schema documents.
+    """
+    return [member.value for member in enum_class]
+
+
+class Base(DeclarativeBase):
+    """Declarative base for every AirWatch table."""
+
+
+def _point_column(nullable: bool = False) -> Mapped[str]:
+    """A WGS84 point column, always in (longitude, latitude) order.
+
+    ``spatial_index=False`` is deliberate. GeoAlchemy2 otherwise creates the GiST
+    index itself via a DDL listener, while Alembic autogenerate independently
+    emits a CREATE INDEX for the same index -- and the migration fails on the
+    duplicate. Each table declares its own GiST index in ``__table_args__``
+    instead, so Alembic is the single owner of index creation.
+    """
+    return mapped_column(
+        Geometry(geometry_type="POINT", srid=SRID_WGS84, spatial_index=False),
+        nullable=nullable,
+    )
+
+
+class Station(Base):
+    """A monitoring station of any tier.
+
+    Reference stations, low-cost sensors and satellite pseudo-stations all live
+    in one table because fusion treats them as one population with different
+    trust weights, not as separate kinds of thing.
+    """
+
+    __tablename__ = "stations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    #: Upstream provider name, for example "OpenAQ" or "FIRMS".
+    source: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    #: Identifier this station carries in the upstream system. Paired with
+    #: `source` it is unique, which is what makes ingestion idempotent.
+    source_station_id: Mapped[str] = mapped_column(String(128), nullable=False)
+
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+
+    tier: Mapped[StationTier] = mapped_column(
+        SqlEnum(
+            StationTier,
+            name="station_tier",
+            native_enum=True,
+            values_callable=_enum_values,
+        ),
+        nullable=False,
+    )
+
+    geom: Mapped[str] = _point_column()
+
+    #: H3 cell containing the station, at the canonical analysis resolution.
+    h3_cell: Mapped[str] = mapped_column(String(H3_INDEX_LENGTH), nullable=False, index=True)
+
+    #: Operator, where the upstream reports one — CPCB, a state board, a private
+    #: network. Retained because provenance drives the trust weight.
+    operator: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
+    #: Most recent observation seen for this station, used to skip dormant ones.
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    #: Anything provider-specific worth keeping without a dedicated column.
+    extra: Mapped[dict[str, object] | None] = mapped_column(JSONB, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    measurements: Mapped[list[Measurement]] = relationship(
+        back_populates="station", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        UniqueConstraint("source", "source_station_id", name="uq_station_source_identity"),
+        Index("ix_stations_geom", "geom", postgresql_using="gist"),
+    )
+
+
+class Measurement(Base):
+    """One pollutant reading from one station at one time.
+
+    A TimescaleDB hypertable partitioned on ``observed_at``. Timescale requires
+    the partitioning column to appear in the primary key, which is why the key is
+    composite rather than a surrogate id.
+    """
+
+    __tablename__ = "measurements"
+
+    station_id: Mapped[int] = mapped_column(
+        ForeignKey("stations.id", ondelete="CASCADE"), primary_key=True
+    )
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    pollutant: Mapped[Pollutant] = mapped_column(
+        SqlEnum(Pollutant, name="pollutant", native_enum=True, values_callable=_enum_values),
+        primary_key=True,
+    )
+
+    #: The reading exactly as the upstream delivered it, already normalised into
+    #: the unit the CPCB AQI table expects for this pollutant.
+    value_raw: Mapped[float] = mapped_column(Float, nullable=False)
+
+    #: The calibrated value, once a calibration model has been applied. Null
+    #: until then. Never written over `value_raw`: recalibration must be
+    #: reproducible, and a published number has to stay explainable.
+    value_calibrated: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    #: Which calibration model produced `value_calibrated`.
+    calibration_model_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    #: Unit the values are stored in, kept explicitly because CO is milligrams
+    #: while every other pollutant is micrograms.
+    unit: Mapped[str] = mapped_column(String(16), nullable=False)
+
+    #: False when the reading failed a plausibility check. Kept rather than
+    #: deleted, so a bad sensor is visible as a pattern instead of vanishing.
+    is_plausible: Mapped[bool] = mapped_column(nullable=False, default=True)
+
+    station: Mapped[Station] = relationship(back_populates="measurements")
+
+    __table_args__ = (
+        CheckConstraint("value_raw >= 0", name="ck_measurement_non_negative"),
+        Index("ix_measurements_observed_at", "observed_at"),
+        Index("ix_measurements_pollutant_time", "pollutant", "observed_at"),
+    )
+
+
+class WeatherObservation(Base):
+    """Hourly meteorology for one H3 cell.
+
+    Keyed by cell rather than by point: the wind field is interpolated onto the
+    analysis grid so that a trajectory step and a fusion feature read the same
+    value for the same place.
+    """
+
+    __tablename__ = "weather_observations"
+
+    h3_cell: Mapped[str] = mapped_column(String(H3_INDEX_LENGTH), primary_key=True)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+
+    #: Eastward and northward components of the flow, in m/s. Stored as
+    #: components rather than speed and bearing so they can be averaged and
+    #: interpolated without the wraparound that ruins an average of angles.
+    wind_u: Mapped[float] = mapped_column(Float, nullable=False)
+    wind_v: Mapped[float] = mapped_column(Float, nullable=False)
+
+    temperature_c: Mapped[float] = mapped_column(Float, nullable=False)
+    relative_humidity_pct: Mapped[float] = mapped_column(Float, nullable=False)
+
+    #: Boundary layer depth in metres. Null when the provider had no value; the
+    #: absence widens downstream uncertainty rather than being filled with a
+    #: guess.
+    pbl_height_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    precipitation_mm: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+
+    #: True for a forecast hour, false for one that has already happened. Both
+    #: live here because a back-trajectory needs the past and a corridor forecast
+    #: needs the future.
+    is_forecast: Mapped[bool] = mapped_column(nullable=False, default=False)
+
+    __table_args__ = (
+        CheckConstraint(
+            "relative_humidity_pct >= 0 AND relative_humidity_pct <= 100",
+            name="ck_weather_humidity_range",
+        ),
+        CheckConstraint("pbl_height_m IS NULL OR pbl_height_m >= 0", name="ck_weather_pbl_range"),
+        Index("ix_weather_observed_at", "observed_at"),
+    )
+
+
+class FireDetection(Base):
+    """One satellite active-fire pixel.
+
+    The evidence that turns an attributed plume into a named source with a
+    timestamp.
+    """
+
+    __tablename__ = "fire_detections"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    geom: Mapped[str] = _point_column()
+    h3_cell: Mapped[str] = mapped_column(String(H3_INDEX_LENGTH), nullable=False, index=True)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    #: Detection confidence as a fraction, normalised across VIIRS letter classes
+    #: and MODIS percentages.
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+
+    #: Fire radiative power in megawatts — the weight used when ranking this
+    #: fire against other candidate sources for a hotspot.
+    frp_mw: Mapped[float] = mapped_column(Float, nullable=False)
+
+    brightness_k: Mapped[float | None] = mapped_column(Float, nullable=True)
+    is_daytime: Mapped[bool] = mapped_column(nullable=False, default=True)
+    satellite: Mapped[str] = mapped_column(String(32), nullable=False, default="")
+
+    __table_args__ = (
+        CheckConstraint("confidence >= 0 AND confidence <= 1", name="ck_fire_confidence_range"),
+        CheckConstraint("frp_mw >= 0", name="ck_fire_frp_non_negative"),
+        # The same pixel is re-reported across overlapping requests, so
+        # ingestion has to be idempotent on the physical detection itself.
+        UniqueConstraint(
+            "observed_at", "h3_cell", "frp_mw", "satellite", name="uq_fire_detection_identity"
+        ),
+        Index("ix_fire_observed_at", "observed_at"),
+        Index("ix_fire_detections_geom", "geom", postgresql_using="gist"),
+    )
+
+
+class PollutionSource(Base):
+    """A registered emitter, used as an attribution candidate.
+
+    Distinct from a fire detection: a fire is an observed event, whereas an entry
+    here is a known facility that may or may not be emitting at any given moment.
+    """
+
+    __tablename__ = "pollution_sources"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    source_type: Mapped[SourceType] = mapped_column(
+        SqlEnum(SourceType, name="source_type", native_enum=True, values_callable=_enum_values),
+        nullable=False,
+    )
+
+    geom: Mapped[str] = _point_column()
+    h3_cell: Mapped[str] = mapped_column(String(H3_INDEX_LENGTH), nullable=False, index=True)
+
+    #: Relative prior on how much this source emits when active, used to rank
+    #: candidates inside an attribution cone. A landfill fire and a single
+    #: construction site are not equally likely explanations for the same plume.
+    emission_prior: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+
+    extra: Mapped[dict[str, object] | None] = mapped_column(JSONB, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        CheckConstraint("emission_prior >= 0", name="ck_source_prior_non_negative"),
+        Index("ix_pollution_sources_geom", "geom", postgresql_using="gist"),
+    )
