@@ -6,9 +6,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app.core.enums import AlertStatus
-from app.core.exceptions import ValidationError
-from app.services.alert_service import (
+from app.core.alerting import (
     AlertRecord,
     acknowledge,
     choose_authority,
@@ -16,6 +14,8 @@ from app.services.alert_service import (
     resolve,
     should_suppress,
 )
+from app.core.enums import AlertStatus
+from app.core.exceptions import ValidationError
 
 SENT_AT = datetime(2026, 9, 8, 6, 0, tzinfo=UTC)
 

@@ -40,8 +40,12 @@ routes  ->  services  ->  repositories  ->  database
 - `repositories/` are the only place a `Session`/SQL/PostGIS function appears.
 - `external/` are thin, typed clients (OpenAQ, CPCB, FIRMS, Open-Meteo, Sentinel-5P) with
   timeouts, retries and typed errors. Business code never imports `httpx` directly.
-- `ml/` loads model artifacts once at startup (singleton) and wraps inference. Training code lives
-  in `/ml` at the repo root and is never imported at request time.
+- `ml/` holds the analysis itself -- fusion, hotspot detection, attribution, forecasting -- as pure
+  functions over plain data, plus inference wrappers that load artifacts once at startup. Training
+  code lives in `/ml` at the repo root and is never imported at request time.
+  **A pure computation belongs here, not in `services/`.** Detection and attribution touch no
+  database, so putting them in the service layer forced a route needing both to make one service
+  import another, which the layering forbids for good reason.
 - `core/` is leaf-level: config, logging, exceptions, constants and every shared calculation. It
   imports nothing from the layers above.
 

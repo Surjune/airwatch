@@ -14,7 +14,7 @@ import pytest
 
 from app.core.enums import SourceType
 from app.core.geo import LonLat, destination_point, haversine_distance_m
-from app.services.attribution_service import (
+from app.ml.attribution import (
     CandidateSource,
     WindHour,
     attribute,

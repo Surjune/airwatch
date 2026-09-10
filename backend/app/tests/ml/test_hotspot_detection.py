@@ -14,7 +14,7 @@ import pytest
 from app.core.geo import LonLat, destination_point
 from app.core.h3_grid import H3Cell, point_to_cell
 from app.ml.fusion_features import StationReading
-from app.services.hotspot_service import (
+from app.ml.hotspot_detection import (
     CellAnomaly,
     detect_hotspots,
     filter_by_contiguity,

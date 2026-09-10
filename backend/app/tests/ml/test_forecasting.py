@@ -9,7 +9,7 @@ import pytest
 from app.core.constants import FORECAST_MAX_HORIZON_HOURS
 from app.core.exceptions import ValidationError
 from app.core.geo import LonLat, destination_point, haversine_distance_m
-from app.services.forecast_service import (
+from app.ml.forecasting import (
     forecast_corridor,
     forecast_from_history,
     forecast_uncertainty,
