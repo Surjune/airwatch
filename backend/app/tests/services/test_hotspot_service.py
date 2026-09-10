@@ -66,7 +66,7 @@ class TestCitywideEpisode:
     def test_uniformly_severe_air_produces_no_anomaly(self) -> None:
         # Every station at 250 ug/m3: catastrophic air, but no location is worse
         # than its neighbourhood, so there is nothing to dispatch anyone to.
-        readings = network({i: 250.0 for i in range(1, 9)})
+        readings = network(dict.fromkeys(range(1, 9), 250.0))
         anomalies = score_hour(readings, cells_for(readings), START)
 
         assert anomalies
@@ -74,8 +74,8 @@ class TestCitywideEpisode:
         assert detect_hotspots(anomalies) == []
 
     def test_severity_alone_never_triggers_detection(self) -> None:
-        clean = network({i: 15.0 for i in range(1, 9)})
-        filthy = network({i: 400.0 for i in range(1, 9)})
+        clean = network(dict.fromkeys(range(1, 9), 15.0))
+        filthy = network(dict.fromkeys(range(1, 9), 400.0))
 
         clean_scores = [a.z_score for a in score_hour(clean, cells_for(clean), START)]
         filthy_scores = [a.z_score for a in score_hour(filthy, cells_for(filthy), START)]
@@ -87,7 +87,7 @@ class TestCitywideEpisode:
 
 class TestLocalExcess:
     def test_one_station_far_above_its_neighbours_is_flagged(self) -> None:
-        values = {i: 40.0 for i in range(1, 8)}
+        values = dict.fromkeys(range(1, 8), 40.0)
         values[8] = 400.0
         readings = network(values)
 
@@ -99,7 +99,7 @@ class TestLocalExcess:
     def test_a_cleaner_station_is_not_a_hotspot(self) -> None:
         # Negative residuals are interesting but they are not a pollution source,
         # and alerting on them would waste an inspector's time.
-        values = {i: 200.0 for i in range(1, 8)}
+        values = dict.fromkeys(range(1, 8), 200.0)
         values[8] = 20.0
         readings = network(values)
 
@@ -107,7 +107,7 @@ class TestLocalExcess:
         assert detect_hotspots(anomalies) == []
 
     def test_excess_is_reported_against_the_neighbourhood_not_zero(self) -> None:
-        values = {i: 100.0 for i in range(1, 8)}
+        values = dict.fromkeys(range(1, 8), 100.0)
         values[8] = 300.0
         readings = network(values)
 
@@ -124,7 +124,7 @@ class TestSelfExclusion:
         # If the target were included in its own neighbour set, its own extreme
         # value would drag the prediction toward itself and no hotspot would
         # ever be found.
-        values = {i: 40.0 for i in range(1, 8)}
+        values = dict.fromkeys(range(1, 8), 40.0)
         values[8] = 400.0
         readings = network(values)
 
