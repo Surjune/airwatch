@@ -41,7 +41,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from app.core.constants import SRID_WGS84
-from app.core.enums import Pollutant, SourceType, StationTier
+from app.core.enums import AlertStatus, HotspotStatus, Pollutant, SourceType, StationTier
 
 #: Length of an H3 cell index in its canonical string form.
 H3_INDEX_LENGTH = 15
@@ -307,4 +307,176 @@ class PollutionSource(Base):
     __table_args__ = (
         CheckConstraint("emission_prior >= 0", name="ck_source_prior_non_negative"),
         Index("ix_pollution_sources_geom", "geom", postgresql_using="gist"),
+    )
+
+
+class Authority(Base):
+    """A body responsible for acting on pollution inside a jurisdiction.
+
+    Routing is geographic rather than configured per station, because a hotspot
+    can appear anywhere on the grid -- including places with no monitor at all,
+    which is the whole point of estimating a surface.
+    """
+
+    __tablename__ = "authorities"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(256), nullable=False, unique=True)
+
+    #: Polygon this authority is responsible for, in WGS84.
+    jurisdiction: Mapped[str] = mapped_column(
+        Geometry(geometry_type="POLYGON", srid=SRID_WGS84, spatial_index=False),
+        nullable=False,
+    )
+
+    contact_email: Mapped[str | None] = mapped_column(String(320), nullable=True)
+
+    #: Ordering used when jurisdictions overlap: the lowest tier that contains
+    #: the hotspot is notified first, so a municipal body is reached before a
+    #: state board rather than both being alerted for the same event.
+    escalation_tier: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+    __table_args__ = (
+        Index("ix_authorities_jurisdiction", "jurisdiction", postgresql_using="gist"),
+    )
+
+
+class Hotspot(Base):
+    """A confirmed episode of a location being dirtier than its neighbourhood."""
+
+    __tablename__ = "hotspots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    geom: Mapped[str] = _point_column()
+    h3_cell: Mapped[str] = mapped_column(String(H3_INDEX_LENGTH), nullable=False, index=True)
+
+    #: The station that observed it, when detection ran on a monitored cell.
+    #: Null once detection runs on the fused surface, where a hotspot can appear
+    #: on ground no station covers.
+    station_id: Mapped[int | None] = mapped_column(
+        ForeignKey("stations.id", ondelete="SET NULL"), nullable=True
+    )
+
+    pollutant: Mapped[Pollutant] = mapped_column(
+        SqlEnum(Pollutant, name="pollutant", native_enum=True, values_callable=_enum_values),
+        nullable=False,
+    )
+
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    #: Consecutive intervals the excess persisted.
+    intervals: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    #: Excess over the neighbourhood prediction, in units of expected error.
+    peak_z: Mapped[float] = mapped_column(Float, nullable=False)
+
+    #: Excess in concentration units, which is what a human reads.
+    peak_residual: Mapped[float] = mapped_column(Float, nullable=False)
+    peak_observed: Mapped[float] = mapped_column(Float, nullable=False)
+
+    status: Mapped[HotspotStatus] = mapped_column(
+        SqlEnum(
+            HotspotStatus, name="hotspot_status", native_enum=True, values_callable=_enum_values
+        ),
+        nullable=False,
+        default=HotspotStatus.CONFIRMED,
+    )
+
+    attributions: Mapped[list[HotspotAttribution]] = relationship(
+        back_populates="hotspot", cascade="all, delete-orphan"
+    )
+    alerts: Mapped[list[Alert]] = relationship(
+        back_populates="hotspot", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        # One episode per location per start time, so re-running detection over
+        # an overlapping window converges rather than duplicating.
+        UniqueConstraint("h3_cell", "first_seen_at", "pollutant", name="uq_hotspot_episode"),
+        Index("ix_hotspots_last_seen", "last_seen_at"),
+        Index("ix_hotspots_geom", "geom", postgresql_using="gist"),
+    )
+
+
+class HotspotAttribution(Base):
+    """A ranked candidate explanation for a hotspot.
+
+    Every row carries its confidence, and the UI must show it. A ranked
+    candidate is never a finding of fact.
+    """
+
+    __tablename__ = "hotspot_attributions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    hotspot_id: Mapped[int] = mapped_column(
+        ForeignKey("hotspots.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    #: Registry source, when the candidate is a known facility. Null for a
+    #: satellite fire detection, which is an observed event rather than a
+    #: registered site.
+    source_id: Mapped[int | None] = mapped_column(
+        ForeignKey("pollution_sources.id", ondelete="SET NULL"), nullable=True
+    )
+
+    candidate_name: Mapped[str] = mapped_column(String(256), nullable=False)
+    source_type: Mapped[SourceType] = mapped_column(
+        SqlEnum(SourceType, name="source_type", native_enum=True, values_callable=_enum_values),
+        nullable=False,
+    )
+
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    distance_m: Mapped[float] = mapped_column(Float, nullable=False)
+    hours_upwind: Mapped[float] = mapped_column(Float, nullable=False)
+    explanation: Mapped[str] = mapped_column(String(512), nullable=False)
+
+    hotspot: Mapped[Hotspot] = relationship(back_populates="attributions")
+
+    __table_args__ = (
+        CheckConstraint("confidence >= 0 AND confidence <= 1", name="ck_attribution_confidence"),
+        UniqueConstraint("hotspot_id", "candidate_name", name="uq_attribution_candidate"),
+    )
+
+
+class Alert(Base):
+    """An alert routed to an authority, and what happened to it.
+
+    The acknowledgement and resolution timestamps are the accountability trail.
+    An alert that was sent and never acknowledged is as much a finding as the
+    hotspot that produced it.
+    """
+
+    __tablename__ = "alerts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    hotspot_id: Mapped[int] = mapped_column(
+        ForeignKey("hotspots.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    authority_id: Mapped[int] = mapped_column(
+        ForeignKey("authorities.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+
+    status: Mapped[AlertStatus] = mapped_column(
+        SqlEnum(AlertStatus, name="alert_status", native_enum=True, values_callable=_enum_values),
+        nullable=False,
+        default=AlertStatus.SENT,
+    )
+
+    sent_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    resolution_note: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+
+    hotspot: Mapped[Hotspot] = relationship(back_populates="alerts")
+
+    __table_args__ = (
+        # One open alert per hotspot per authority: a multi-hour event must not
+        # produce an alert every detection interval, or the console becomes
+        # unusable and the alerts stop being read at all.
+        UniqueConstraint("hotspot_id", "authority_id", name="uq_alert_hotspot_authority"),
+        Index("ix_alerts_status", "status"),
     )
