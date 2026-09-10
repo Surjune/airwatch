@@ -10,8 +10,14 @@
 /** A position as the API delivers it: `[longitude, latitude]`. */
 export type LonLat = readonly [number, number];
 
-/** A position as Leaflet expects it: `[latitude, longitude]`. */
-export type LatLng = readonly [number, number];
+/**
+ * A position as Leaflet expects it: `[latitude, longitude]`.
+ *
+ * Mutable on purpose. Leaflet's own `LatLngTuple` is a mutable tuple and will
+ * not accept a readonly one, and adapting to what the consumer requires is
+ * exactly what this boundary is for.
+ */
+export type LatLng = [number, number];
 
 /** Convert an API position to a Leaflet position. */
 export function toLeaflet([lon, lat]: LonLat): LatLng {

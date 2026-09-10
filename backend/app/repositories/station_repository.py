@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import Row, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -146,3 +146,15 @@ def upsert_pollution_source(
 def list_pollution_sources(session: Session) -> list[PollutionSource]:
     """Return every registered pollution source."""
     return list(session.execute(select(PollutionSource)).scalars())
+
+
+def list_sources_with_coordinates(
+    session: Session,
+) -> list[Row[tuple[PollutionSource, float, float]]]:
+    """Registered sources with their coordinates as numbers rather than WKB."""
+    statement = select(
+        PollutionSource,
+        PollutionSource.geom.ST_X(),
+        PollutionSource.geom.ST_Y(),
+    )
+    return list(session.execute(statement).all())

@@ -1,65 +1,98 @@
-import { useHealth } from '@/hooks/useHealth';
+import { StatusMessage } from '@/components/ui/StatusMessage';
+import { HotspotPanel } from '@/features/hotspots/HotspotPanel';
+import { MapView } from '@/features/map/MapView';
+import { useHotspots, useStations } from '@/hooks/useAnalysis';
+
+const DETECTION_WINDOW_HOURS = 336;
 
 /**
  * Application shell.
  *
- * At this stage it proves the frontend and API are wired together and reports
- * which upstream data sources are configured. An unconfigured upstream is shown
- * explicitly rather than hidden: a blank map because a key is missing must never
- * be mistaken for clean air.
+ * Three states are kept visibly distinct everywhere: loading, failed, and
+ * loaded-but-empty. An API failure that renders as a blank map would read as
+ * clean air, which is precisely the misreading this system exists to prevent.
  */
 export function App(): React.JSX.Element {
-  const { report, error, isLoading } = useHealth();
+  const stations = useStations();
+  const hotspots = useHotspots(DETECTION_WINDOW_HOURS);
+
+  const failure = stations.error ?? hotspots.error;
+  const isLoading = stations.isLoading || hotspots.isLoading;
 
   return (
-    <main className="mx-auto max-w-3xl p-8 font-sans">
-      <header className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight">AirWatch</h1>
-        <p className="mt-1 text-sm text-neutral-600">
-          Federated hyperlocal air quality intelligence
+    <div className="flex h-screen flex-col bg-neutral-100">
+      <header className="border-b border-neutral-200 bg-white px-6 py-3">
+        <h1 className="text-lg font-semibold tracking-tight">AirWatch</h1>
+        <p className="text-xs text-neutral-600">
+          Hyperlocal air quality · hotspots are places dirtier than their neighbourhood predicts,
+          not places where the air is simply bad
         </p>
       </header>
 
-      {isLoading && <p className="text-neutral-500">Checking API…</p>}
-
-      {error && (
-        <div className="rounded border border-red-300 bg-red-50 p-4">
-          <p className="font-medium text-red-800">API unreachable</p>
-          <p className="mt-1 text-sm text-red-700">{error.message}</p>
-          {error.requestId && (
-            <p className="mt-2 font-mono text-xs text-red-600">request {error.requestId}</p>
+      <div className="flex min-h-0 flex-1">
+        <main className="min-w-0 flex-1">
+          {failure ? (
+            <div className="p-6">
+              <StatusMessage
+                kind="error"
+                title={
+                  failure.isConfigurationFailure
+                    ? 'The deployment is misconfigured'
+                    : 'Could not load air quality data'
+                }
+                detail={
+                  failure.isConfigurationFailure
+                    ? `${failure.message} An empty map here would mean missing configuration, not clean air.`
+                    : failure.message
+                }
+                {...(failure.requestId ? { requestId: failure.requestId } : {})}
+              />
+            </div>
+          ) : isLoading ? (
+            <div className="p-6">
+              <StatusMessage kind="loading" title="Loading stations and detected hotspots…" />
+            </div>
+          ) : (
+            <MapView
+              readings={stations.data?.readings ?? []}
+              hotspots={hotspots.data?.hotspots ?? []}
+            />
           )}
-        </div>
-      )}
+        </main>
 
-      {report && (
-        <section>
-          <p className="text-sm text-neutral-700">
-            API {report.version} · {report.environment} · H3 resolution {report.h3_resolution}
-          </p>
+        <aside className="w-[26rem] shrink-0 overflow-y-auto border-l border-neutral-200 bg-white">
+          <div className="border-b border-neutral-200 px-4 py-3">
+            <h2 className="text-sm font-semibold">Detected hotspots</h2>
+            <p className="text-xs text-neutral-600">
+              {hotspots.data
+                ? `${String(hotspots.data.hotspot_count)} over the last ${String(
+                    Math.round(hotspots.data.window_hours / 24),
+                  )} days · ${String(stations.data?.station_count ?? 0)} stations reporting`
+                : '—'}
+            </p>
+          </div>
 
-          <h2 className="mt-6 mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">
-            Upstream data sources
-          </h2>
-          <ul className="divide-y divide-neutral-200 rounded border border-neutral-200">
-            {report.upstreams.map((upstream) => (
-              <li
-                key={upstream.required_env_var}
-                className="flex items-center justify-between p-3 text-sm"
-              >
-                <span>{upstream.provider}</span>
-                {upstream.configured ? (
-                  <span className="text-green-700">configured</span>
-                ) : (
-                  <span className="font-mono text-xs text-amber-700">
-                    set {upstream.required_env_var}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-    </main>
+          {failure ? (
+            <div className="p-4">
+              <StatusMessage kind="error" title="Hotspot detection unavailable" />
+            </div>
+          ) : isLoading ? (
+            <div className="p-4">
+              <StatusMessage kind="loading" title="Detecting…" />
+            </div>
+          ) : (hotspots.data?.hotspots.length ?? 0) === 0 ? (
+            <div className="p-4">
+              <StatusMessage
+                kind="empty"
+                title="No hotspots detected in this window"
+                detail="Every station sat within the expected range of its neighbours. That is a real result, not an absence of data."
+              />
+            </div>
+          ) : (
+            <HotspotPanel hotspots={hotspots.data?.hotspots ?? []} />
+          )}
+        </aside>
+      </div>
+    </div>
   );
 }

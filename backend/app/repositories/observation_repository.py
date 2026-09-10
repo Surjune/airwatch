@@ -15,14 +15,14 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import Row, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.core.enums import Pollutant
 from app.core.geo import LonLat
 from app.core.h3_grid import H3Cell, point_to_cell
-from app.repositories.models import FireDetection, Measurement, WeatherObservation
+from app.repositories.models import FireDetection, Measurement, Station, WeatherObservation
 
 
 @dataclass(frozen=True, slots=True)
@@ -198,3 +198,87 @@ def count_fire_detections(session: Session) -> int:
 def latest_measurement_at(session: Session) -> datetime | None:
     """Timestamp of the most recent reading, or None when the table is empty."""
     return session.execute(select(func.max(Measurement.observed_at))).scalar_one_or_none()
+
+
+def latest_reading_per_station(
+    session: Session, pollutant: Pollutant
+) -> list[Row[tuple[int, str, float, float, str, datetime, float, str]]]:
+    """Return each station's most recent reading for a pollutant.
+
+    Uses DISTINCT ON, which on PostgreSQL returns the first row of each group in
+    the ordering given -- the natural way to ask "latest per station" in one
+    pass rather than one query per station.
+    """
+    statement = (
+        select(
+            Station.id,
+            Station.name,
+            Station.geom.ST_X(),
+            Station.geom.ST_Y(),
+            Station.h3_cell,
+            Measurement.observed_at,
+            Measurement.value_raw,
+            Measurement.unit,
+        )
+        .join(Measurement, Measurement.station_id == Station.id)
+        .where(Measurement.pollutant == pollutant, Measurement.is_plausible.is_(True))
+        .distinct(Station.id)
+        .order_by(Station.id, Measurement.observed_at.desc())
+    )
+    return list(session.execute(statement).all())
+
+
+def readings_in_window(
+    session: Session,
+    pollutant: Pollutant,
+    since: datetime,
+) -> list[Row[tuple[int, str, float, float, str, datetime, float]]]:
+    """Every plausible reading for a pollutant since a point in time."""
+    statement = (
+        select(
+            Station.id,
+            Station.name,
+            Station.geom.ST_X(),
+            Station.geom.ST_Y(),
+            Station.h3_cell,
+            Measurement.observed_at,
+            Measurement.value_raw,
+        )
+        .join(Measurement, Measurement.station_id == Station.id)
+        .where(
+            Measurement.pollutant == pollutant,
+            Measurement.is_plausible.is_(True),
+            Measurement.observed_at >= since,
+        )
+        .order_by(Measurement.observed_at)
+    )
+    return list(session.execute(statement).all())
+
+
+def weather_in_window(session: Session, since: datetime) -> list[WeatherObservation]:
+    """Every weather record since a point in time."""
+    statement = (
+        select(WeatherObservation)
+        .where(WeatherObservation.observed_at >= since)
+        .order_by(WeatherObservation.observed_at)
+    )
+    return list(session.execute(statement).scalars())
+
+
+def fire_detections_in_window(
+    session: Session, since: datetime
+) -> list[Row[tuple[int, float, float, datetime, float, float]]]:
+    """Fire detections since a point in time, with coordinates as numbers."""
+    statement = (
+        select(
+            FireDetection.id,
+            FireDetection.geom.ST_X(),
+            FireDetection.geom.ST_Y(),
+            FireDetection.observed_at,
+            FireDetection.frp_mw,
+            FireDetection.confidence,
+        )
+        .where(FireDetection.observed_at >= since)
+        .order_by(FireDetection.frp_mw.desc())
+    )
+    return list(session.execute(statement).all())

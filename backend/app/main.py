@@ -12,7 +12,7 @@ from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging, get_logger
 from app.error_handlers import register_error_handlers
 from app.middleware import RequestContextMiddleware
-from app.routes import health
+from app.routes import analysis, health
 from app.services.health_service import APP_VERSION
 
 logger = get_logger(__name__)
@@ -80,6 +80,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     register_error_handlers(app)
     app.include_router(health.router, prefix=API_PREFIX)
+    app.include_router(analysis.router, prefix=API_PREFIX)
 
     if settings is not None:
         # Routes resolve settings through Depends(get_settings), which returns the
