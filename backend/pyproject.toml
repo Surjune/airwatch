@@ -96,6 +96,9 @@ known-first-party = ["app"]
 # ---------------------------------------------------------------------------
 [tool.mypy]
 python_version = "3.12"
+# The federated package sits beside backend/ rather than inside it, because it
+# is a peer deployable -- a city node -- not part of the API service.
+mypy_path = ".."
 strict = true
 warn_unreachable = true
 disallow_any_explicit = false
@@ -112,6 +115,9 @@ ignore_missing_imports = true
 # ---------------------------------------------------------------------------
 [tool.pytest.ini_options]
 testpaths = ["app/tests"]
+# The federated package is a peer of backend/, not part of it: a city node is a
+# separate deployable from the API service. Tests still cover it from here.
+pythonpath = [".", ".."]
 asyncio_mode = "auto"
 addopts = "-q --strict-markers"
 filterwarnings = ["error::DeprecationWarning:app.*"]

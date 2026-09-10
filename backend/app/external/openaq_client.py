@@ -130,7 +130,19 @@ class OpenAQLocation(BaseModel):
         return self.datetime_last.utc if self.datetime_last else None
 
     def is_active(self, *, as_of: datetime, stale_after_days: int) -> bool:
-        """Whether the station reported recently enough to be worth ingesting."""
+        """Whether the station reported recently enough to be worth ingesting.
+
+        Station-level recency, which is not the same as pollutant-level recency
+        and must not be read as it. ``datetimeLast`` is the maximum across every
+        sensor at the site, including the thermometer and anemometer. Coimbatore's
+        SIDCO Kurichi station reports as active on that basis while its PM2.5
+        sensor has produced nothing for five weeks -- so the site passes this
+        check and yields no particulate data at all.
+
+        Confirming a pollutant is live requires asking for its sensor history,
+        which :meth:`sensor_hourly` does. This filter is the cheap first pass
+        that removes long-dead sites before that far more expensive check.
+        """
         last = self.last_reading_at
         if last is None:
             return False

@@ -174,6 +174,66 @@ Uncertainty is published with every point and is frequently larger than the
 signal (18 ± 28 µg/m³ at the clean end). The forecast is currently more useful
 for *where along a route* the air turns than for the absolute level.
 
+### Federation: does sharing weights help the data-poor city?
+
+The premise of the federated design is that a city with three monitors benefits
+from a model shaped partly by a city with sixty, without either handing over raw
+data. That is a claim, and `npm run fl:validate` measures it: each node compares
+the federated global model against its own local one, on its own held-out data.
+
+First, the monitoring gap that motivates the whole arrangement, as it actually
+stands in the pilot cities:
+
+| City | Active stations | Hourly PM2.5 readings |
+| --- | --- | --- |
+| Delhi | 61 | 14,385 |
+| Kanpur | 3 | 660 |
+| Coimbatore | 0 usable | 0 |
+
+Coimbatore has a population near 2.5 million and **one** monitoring station in
+range. That station reports as active, because OpenAQ's station-level timestamp
+is the maximum across all its sensors — but its PM2.5 sensor last produced a
+value five weeks earlier. The site is alive because its thermometer is. A city
+of millions has no current particulate monitoring at all, while every count of
+"active stations" includes it.
+
+**The result: federation harmed the sparse node.**
+
+| Node | Stations | Train | Test | Local MAE | Global MAE | Change |
+| --- | --- | --- | --- | --- | --- | --- |
+| Delhi | 61 | 1,719 | 493 | 16.82 | 16.84 | −0.1% |
+| Kanpur | 3 | 55 | 23 | **9.21** | **9.85** | **−6.8%** |
+
+The negative-transfer check fired and recommended Kanpur keep its local model.
+
+The mechanism is legible. Kanpur's local model is *better* than Delhi's (9.21
+against 16.82) because its air is cleaner and less variable, so its forecasting
+task is easier. FedAvg weights by sample count, so the global model is roughly
+97% Delhi, and averaging drags Kanpur toward a harder regime it does not
+inhabit. This is textbook non-IID harm.
+
+FedProx was built for exactly this and was swept to test it. It mitigates
+without rescuing: at mu=2.0 Kanpur's harm falls from 6.9% to 4.0%, but Delhi
+begins degrading too. There is no setting at which both nodes benefit.
+
+**Caveats that matter.** Kanpur's test set is 23 rows, so the estimate is noisy.
+There are two participating nodes, not the intended three, and fourteen days of
+history. The task is forecasting, where climatology already beat every learned
+model — so federation is being asked to improve something that is weak to begin
+with.
+
+What this does *not* show is that federated learning is a bad idea for air
+quality. It shows that on this pairing, this task and this much data, averaging
+two dissimilar cities into one model helps neither, and that the check built to
+detect that works. Personalisation — a shared representation with a local head —
+is the standard answer to non-IID harm and is the honest next thing to try.
+
+**A federation constraint worth recording**: the shared feature schema is 17
+features, not the forecast model's full set. Meteorology is ingested only for
+Delhi, and a feature one node can compute and another cannot does not average.
+Agreeing the smaller common schema is the correct trade, and is a good example
+of federation being a governance problem before it is a modelling one.
+
 ## Status
 
 Under active development. See `docs/` for architecture notes.
@@ -187,6 +247,16 @@ Deferred deliberately, and tracked here rather than as TODOs in the code.
   reference-grade, so there is nothing to calibrate against yet. The conversion
   and storage path keeps the raw value and the calibrating model version
   separately, so calibration can be applied later without re-ingesting.
+- **Federated averaging harmed the sparse node** on the two cities available;
+  see the table above. The aggregation, FedProx and negative-transfer check are
+  implemented and tested, but the measured recommendation is that Kanpur keeps
+  its local model.
+- **Station-level activity is not pollutant-level activity.** A site whose
+  PM2.5 sensor is dead still reports as active if any other sensor is live.
+  Confirming a pollutant is reporting requires querying its sensor history.
+- **Flower is not yet wired in.** The FedAvg and FedProx aggregation is
+  implemented and validated in-process; the server and client transport that
+  would run nodes as separate deployables is not built.
 - **The forecast is climatological and has no day-to-day skill.** It resolves
   the daily cycle and the spatial gradient but predicts the same value for a
   given hour on consecutive days. Learned models were measured against it and

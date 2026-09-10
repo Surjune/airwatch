@@ -157,9 +157,25 @@ class IngestionService:
                     days=days,
                 )
 
+                barren = 0
                 for location in locations:
-                    stored += await self._backfill_location(
+                    written = await self._backfill_location(
                         client, location, pollutant, date_from, date_to
+                    )
+                    stored += written
+                    if written == 0:
+                        barren += 1
+
+                if barren:
+                    # Worth surfacing rather than silently returning a smaller
+                    # number: a station can look active on its station-level
+                    # timestamp while the sensor for this pollutant has been
+                    # dead for weeks, and that gap is invisible otherwise.
+                    logger.info(
+                        "backfill.stations_without_data",
+                        pollutant=pollutant.value,
+                        stations_with_no_readings=barren,
+                        stations_total=len(locations),
                     )
 
             return SourceResult(source=source, succeeded=True, records=stored)
