@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from app.core.enums import Pollutant
 from app.core.geo import LonLat
 from app.core.h3_grid import H3Cell, point_to_cell
+from app.core.observations import ObservedReading
 from app.repositories.models import FireDetection, Measurement, Station, WeatherObservation
 
 
@@ -253,6 +254,33 @@ def readings_in_window(
         .order_by(Measurement.observed_at)
     )
     return list(session.execute(statement).all())
+
+
+def observed_readings_in_window(
+    session: Session,
+    pollutant: Pollutant,
+    since: datetime,
+) -> list[ObservedReading]:
+    """Readings since a point in time, shaped for analysis.
+
+    The same query as :func:`readings_in_window`, returned as a domain type
+    rather than raw rows. Analysis needs the shaped form and several callers
+    need the same shaping, so it is done once here instead of being repeated in
+    every service that runs detection.
+    """
+    return [
+        ObservedReading(
+            station_id=int(station_id),
+            station_name=str(name),
+            coordinates=(float(lon), float(lat)),
+            h3_cell=str(cell),
+            observed_at=observed_at,
+            value=float(value),
+        )
+        for station_id, name, lon, lat, cell, observed_at, value in readings_in_window(
+            session, pollutant, since
+        )
+    ]
 
 
 def weather_in_window(session: Session, since: datetime) -> list[WeatherObservation]:

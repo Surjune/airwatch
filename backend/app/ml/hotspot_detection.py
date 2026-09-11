@@ -43,6 +43,7 @@ from app.core.geo import LonLat
 from app.core.h3_grid import H3Cell
 from app.core.h3_grid import neighbours as h3_neighbours
 from app.core.logging import get_logger
+from app.core.observations import ObservedReading
 from app.ml.fusion_features import StationReading, estimate_cell
 
 logger = get_logger(__name__)
@@ -186,6 +187,47 @@ def detect_hotspots(
 
     hotspots.sort(key=lambda hotspot: hotspot.peak_z, reverse=True)
     return hotspots
+
+
+def detect_over_window(
+    readings: Iterable[ObservedReading],
+    *,
+    z_threshold: float = HOTSPOT_ZSCORE_THRESHOLD,
+    min_intervals: int = HOTSPOT_MIN_PERSISTENCE_INTERVALS,
+) -> list[Hotspot]:
+    """Score a whole window of readings and return the episodes it contains.
+
+    Scoring is per hour, because a station is only comparable with the
+    neighbours that reported at the same time. Grouping first and scoring
+    within each group is what keeps a reading from being compared against a
+    neighbour's value from six hours earlier.
+
+    Args:
+        readings: Every stored reading in the window, in any order.
+        z_threshold: Standardised excess above which an hour is flagged.
+        min_intervals: Flagged hours an episode needs before it is reported.
+
+    Returns:
+        Confirmed hotspots, worst first.
+    """
+    by_hour: dict[datetime, list[StationReading]] = defaultdict(list)
+    cells: dict[int, H3Cell] = {}
+
+    for reading in readings:
+        cells[reading.station_id] = reading.h3_cell
+        by_hour[reading.observed_at].append(
+            StationReading(
+                station_id=reading.station_id,
+                coordinates=reading.coordinates,
+                value=reading.value,
+            )
+        )
+
+    anomalies: list[CellAnomaly] = []
+    for observed_at, hour_readings in by_hour.items():
+        anomalies.extend(score_hour(hour_readings, cells, observed_at))
+
+    return detect_hotspots(anomalies, z_threshold=z_threshold, min_intervals=min_intervals)
 
 
 def _split_into_episodes(flagged: list[CellAnomaly]) -> list[list[CellAnomaly]]:

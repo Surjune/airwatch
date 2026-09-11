@@ -28,8 +28,7 @@ from app.ml.attribution import (
     fire_to_candidate,
 )
 from app.ml.forecasting import ForecastPoint, forecast_corridor
-from app.ml.fusion_features import StationReading
-from app.ml.hotspot_detection import Hotspot, detect_hotspots, score_hour
+from app.ml.hotspot_detection import Hotspot, detect_over_window
 from app.repositories import observation_repository, station_repository
 
 logger = get_logger(__name__)
@@ -113,28 +112,10 @@ def detect_and_attribute(
     reference = now or datetime.now(UTC)
     since = reference - timedelta(hours=window_hours)
 
-    readings_by_hour: dict[datetime, list[StationReading]] = defaultdict(list)
-    cells: dict[int, H3Cell] = {}
-    names: dict[int, str] = {}
+    readings = observation_repository.observed_readings_in_window(session, pollutant, since)
+    names = {reading.station_id: reading.station_name for reading in readings}
 
-    for row in observation_repository.readings_in_window(session, pollutant, since):
-        station_id, name, lon, lat, cell, observed_at, value = row
-        station_id = int(station_id)
-        cells[station_id] = str(cell)
-        names[station_id] = str(name)
-        readings_by_hour[observed_at].append(
-            StationReading(
-                station_id=station_id,
-                coordinates=(float(lon), float(lat)),
-                value=float(value),
-            )
-        )
-
-    anomalies = []
-    for observed_at, readings in readings_by_hour.items():
-        anomalies.extend(score_hour(readings, cells, observed_at))
-
-    hotspots = detect_hotspots(anomalies)
+    hotspots = detect_over_window(readings)
     if not hotspots:
         return []
 
