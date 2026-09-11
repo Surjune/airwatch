@@ -120,4 +120,11 @@ testpaths = ["app/tests"]
 pythonpath = [".", ".."]
 asyncio_mode = "auto"
 addopts = "-q --strict-markers"
+markers = [
+    # Repository SQL cannot be tested without PostgreSQL: DISTINCT ON, PostGIS
+    # accessors and ON CONFLICT upserts have no equivalent in a stand-in engine.
+    # These skip automatically when no database is reachable, so a clean clone
+    # still runs the suite green.
+    "integration: requires a live PostgreSQL with PostGIS",
+]
 filterwarnings = ["error::DeprecationWarning:app.*"]
