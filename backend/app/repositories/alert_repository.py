@@ -257,9 +257,7 @@ def save_alert_state(session: Session, record: AlertRecord, *, note: str | None 
     session.flush()
 
 
-def list_alert_details(
-    session: Session, *, status: AlertStatus | None = None
-) -> list[AlertDetail]:
+def list_alert_details(session: Session, *, status: AlertStatus | None = None) -> list[AlertDetail]:
     """Every alert with its hotspot and authority, most urgent first.
 
     Ordered by standardised excess rather than by time or concentration. The

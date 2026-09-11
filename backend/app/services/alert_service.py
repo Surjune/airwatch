@@ -86,9 +86,7 @@ def dispatch(
     unrouted = 0
 
     for hotspot in hotspots:
-        hotspot_id = alert_repository.upsert_hotspot(
-            session, _hotspot_row(hotspot, pollutant)
-        )
+        hotspot_id = alert_repository.upsert_hotspot(session, _hotspot_row(hotspot, pollutant))
 
         authority_id = choose_authority(
             alert_repository.authorities_containing(session, hotspot.coordinates)

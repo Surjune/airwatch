@@ -26,7 +26,7 @@
     "typecheck": "npm run typecheck:api && npm run typecheck:web",
     "typecheck:api": "node scripts/py.mjs -m mypy app",
     "typecheck:web": "npm --workspace frontend run typecheck",
-    "check": "npm run lint && npm run typecheck && npm run test:all",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm run test:all",
     "types:generate": "openapi-typescript http://localhost:8000/openapi.json -o frontend/src/lib/api-types.ts",
     "format:check": "node scripts/py.mjs -m ruff format --check app",
     "ingest:once": "node scripts/py.mjs -m app.cli ingest",

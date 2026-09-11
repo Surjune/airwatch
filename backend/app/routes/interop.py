@@ -55,9 +55,7 @@ def observations(
     ] = interop_service.DEFAULT_OBSERVATION_WINDOW_HOURS,
 ) -> ObservationCollection:
     """Recent observations in an OGC SensorThings-shaped GeoJSON envelope."""
-    return interop_service.observations(
-        session, settings, pollutant, window_hours=window_hours
-    )
+    return interop_service.observations(session, settings, pollutant, window_hours=window_hours)
 
 
 @router.get(

@@ -110,9 +110,9 @@ class TestObservations:
         assert properties["@iot.id"].startswith(properties["node_id"])
 
     def test_declares_the_unit_rather_than_assuming_it(self, api: TestClient) -> None:
-        unit = api.get("/v1/interop/observations", params={"window_hours": 720}).json()[
-            "features"
-        ][0]["properties"]["unitOfMeasurement"]
+        unit = api.get("/v1/interop/observations", params={"window_hours": 720}).json()["features"][
+            0
+        ]["properties"]["unitOfMeasurement"]
 
         assert unit["symbol"] == "ug/m3"
         assert unit["definition"].startswith("http")
@@ -130,8 +130,7 @@ class TestObservations:
 
     def test_rejects_a_window_beyond_what_is_offered(self, api: TestClient) -> None:
         assert (
-            api.get("/v1/interop/observations", params={"window_hours": 10_000}).status_code
-            == 422
+            api.get("/v1/interop/observations", params={"window_hours": 10_000}).status_code == 422
         )
 
 
@@ -156,9 +155,7 @@ class TestHotspots:
         assert "inverse-distance" in properties["detection_method"]
 
     def test_identifiers_are_unique_across_the_federation(self, api: TestClient) -> None:
-        features = api.get("/v1/interop/hotspots", params={"window_hours": 720}).json()[
-            "features"
-        ]
+        features = api.get("/v1/interop/hotspots", params={"window_hours": 720}).json()["features"]
 
         identifiers = [feature["properties"]["@iot.id"] for feature in features]
         assert len(identifiers) == len(set(identifiers))

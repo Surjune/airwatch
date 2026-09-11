@@ -301,7 +301,5 @@ def federated_feature_names(
     same schema the training run used, and two definitions would drift.
     """
     return tuple(
-        name
-        for name in feature_names(lags)
-        if not name.startswith(FEDERATED_EXCLUDED_PREFIXES)
+        name for name in feature_names(lags) if not name.startswith(FEDERATED_EXCLUDED_PREFIXES)
     )

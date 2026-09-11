@@ -101,9 +101,7 @@ def _seed_authority(session: Session, name: str = "Delhi Pollution Control Commi
 
 
 class TestDispatch:
-    def test_routes_a_hotspot_to_the_authority_that_contains_it(
-        self, session: Session
-    ) -> None:
+    def test_routes_a_hotspot_to_the_authority_that_contains_it(self, session: Session) -> None:
         _seed_network(session)
         authority_id = _seed_authority(session)
         session.flush()
@@ -218,9 +216,7 @@ class TestDispatch:
 
 
 class TestInbox:
-    def test_an_alert_carries_the_excess_not_just_the_concentration(
-        self, session: Session
-    ) -> None:
+    def test_an_alert_carries_the_excess_not_just_the_concentration(self, session: Session) -> None:
         # An inbox ordered by concentration sends an inspector wherever the
         # number is biggest, which on a bad day is everywhere.
         _seed_network(session)
@@ -256,9 +252,7 @@ class TestLifecycle:
     def test_acknowledgement_is_recorded(self, session: Session) -> None:
         alert_id = self._one_alert(session)
 
-        updated = alert_service.acknowledge_alert(
-            session, alert_id, now=NOW + timedelta(hours=1)
-        )
+        updated = alert_service.acknowledge_alert(session, alert_id, now=NOW + timedelta(hours=1))
 
         assert updated.status is AlertStatus.ACKNOWLEDGED
         assert updated.acknowledged_at == NOW + timedelta(hours=1)
