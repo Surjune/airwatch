@@ -33,6 +33,8 @@
     "ingest:delhi": "node scripts/py.mjs -m app.cli ingest --city delhi",
     "ingest:coimbatore": "node scripts/py.mjs -m app.cli ingest --city coimbatore",
     "backfill": "node scripts/py.mjs -m app.cli backfill",
+    "seed": "node scripts/py.mjs -m app.cli seed",
+    "alerts:dispatch": "node scripts/py.mjs -m app.cli dispatch",
     "ml:validate-loso": "node scripts/py.mjs ../ml/validate_loso.py",
     "ml:validate-forecast": "node scripts/py.mjs ../ml/validate_forecast.py",
     "fl:validate": "node scripts/py.mjs ../ml/validate_federated.py"

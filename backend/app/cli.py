@@ -18,6 +18,8 @@ from app.core.geo import LonLat
 from app.core.logging import configure_logging, get_logger
 from app.repositories import observation_repository, station_repository
 from app.repositories.session import session_scope
+from app.services import alert_service, seed_service
+from app.services.alert_service import DEFAULT_DISPATCH_WINDOW_HOURS
 from app.services.ingestion_service import IngestionReport, IngestionService, SourceResult
 
 logger = get_logger(__name__)
@@ -111,9 +113,48 @@ def main(argv: list[str] | None = None) -> int:
     )
     backfill.add_argument("--days", type=int, default=BACKFILL_DAYS)
 
+    subparsers.add_parser(
+        "seed",
+        help="Load the source and authority registries from infra/seed",
+    )
+
+    dispatch = subparsers.add_parser(
+        "dispatch", help="Detect hotspots and route alerts to the responsible authorities"
+    )
+    dispatch.add_argument(
+        "--pollutant",
+        choices=[member.value for member in Pollutant],
+        default=Pollutant.PM25.value,
+    )
+    dispatch.add_argument("--window-hours", type=int, default=DEFAULT_DISPATCH_WINDOW_HOURS)
+
     args = parser.parse_args(argv)
     settings = get_settings()
     configure_logging(level=settings.log_level, json_output=False)
+
+    if args.command == "seed":
+        with session_scope() as session:
+            seeded = seed_service.load_all(session)
+        print("")
+        print(f"pollution sources: {seeded.sources}")
+        print(f"authorities      : {seeded.authorities}")
+        return 0
+
+    if args.command == "dispatch":
+        with session_scope() as session:
+            outcome = alert_service.dispatch(
+                session,
+                Pollutant(args.pollutant),
+                window_hours=args.window_hours,
+            )
+        print("")
+        print(f"hotspots detected : {outcome.detected}")
+        print(f"alerts raised     : {len(outcome.raised)}")
+        print(f"suppressed        : {outcome.suppressed}")
+        # An unrouted hotspot is a gap in the authority registry, not a quiet
+        # day, so it is reported rather than left implicit in the difference.
+        print(f"unrouted          : {outcome.unrouted}")
+        return 0
 
     if args.command == "backfill":
         result = asyncio.run(_run_backfill(args.city, Pollutant(args.pollutant), args.days))

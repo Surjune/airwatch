@@ -10,11 +10,15 @@ stack trace ever reaches the outside. The envelope shape is fixed:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+from typing import Any
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.core.constants import VALIDATION_INPUT_ECHO_MAX_CHARS
 from app.core.exceptions import AirWatchError, ValidationError
 from app.core.logging import get_logger
 
@@ -44,6 +48,33 @@ async def handle_airwatch_error(request: Request, exc: AirWatchError) -> JSONRes
     )
 
 
+def _serialisable_errors(errors: Sequence[Any]) -> list[dict[str, Any]]:
+    """Reduce Pydantic's error list to something that survives JSON encoding.
+
+    ``exc.errors()`` is not JSON-serialisable in general. When a field validator
+    rejects a value by raising ``ValueError``, Pydantic puts the **exception
+    object itself** into the error's ``ctx``. Passing that through unchanged
+    makes ``JSONResponse`` raise inside this handler, and a handler that raises
+    turns a 422 the client could have acted on into an opaque 500.
+
+    Only the three fields a client needs to fix its request are kept. The
+    rejected input is echoed back truncated, because seeing what was refused is
+    what makes the message actionable, but a response is not the place to mirror
+    an entire request body.
+    """
+    rendered: list[dict[str, Any]] = []
+    for error in errors:
+        entry: dict[str, Any] = {
+            "type": str(error.get("type", "unknown")),
+            "loc": [str(part) for part in error.get("loc", ())],
+            "msg": str(error.get("msg", "")),
+        }
+        if "input" in error:
+            entry["input"] = str(error["input"])[:VALIDATION_INPUT_ECHO_MAX_CHARS]
+        rendered.append(entry)
+    return rendered
+
+
 async def handle_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
     """Render a Pydantic request-validation failure in the same envelope.
 
@@ -52,7 +83,7 @@ async def handle_validation_error(request: Request, exc: RequestValidationError)
     """
     error = ValidationError(
         "Request validation failed.",
-        details={"fields": exc.errors()},
+        details={"fields": _serialisable_errors(exc.errors())},
     )
     logger.warning(
         "request.invalid",

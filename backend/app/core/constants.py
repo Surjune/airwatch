@@ -614,5 +614,10 @@ RATE_LIMIT_REQUESTS_PER_MINUTE: Final[int] = 120
 #: Maximum cells returned by a single grid query, bounding response size.
 MAX_GRID_CELLS_PER_REQUEST: Final[int] = 5000
 
+#: Longest rejected value echoed back in a validation error envelope. Repeating
+#: the input helps a client see what was refused, but a request body can be
+#: arbitrarily large and a response is not the place to mirror it back in full.
+VALIDATION_INPUT_ECHO_MAX_CHARS: Final[int] = 200
+
 #: Header carrying the correlation ID bound to every log line for a request.
 REQUEST_ID_HEADER: Final[str] = "X-Request-ID"
