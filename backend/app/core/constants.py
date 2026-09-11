@@ -621,3 +621,42 @@ VALIDATION_INPUT_ECHO_MAX_CHARS: Final[int] = 200
 
 #: Header carrying the correlation ID bound to every log line for a request.
 REQUEST_ID_HEADER: Final[str] = "X-Request-ID"
+
+
+# ---------------------------------------------------------------------------
+# Published model performance
+# ---------------------------------------------------------------------------
+# Measured figures, published to partner nodes exactly as they came out.
+# A federation where nodes advertise only flattering numbers is worse than no
+# federation, because a data-poor city would adopt a model that harms it and
+# have no way to discover that. Sources are the validation runs in /ml.
+
+#: Mean absolute error, ug/m3, of the shipped inverse-distance surface under
+#: leave-one-station-out validation over 14,324 readings from 61 Delhi stations.
+#: Source: `npm run ml:validate-loso`.
+PUBLISHED_FUSION_MAE_UGM3: Final[float] = 11.48
+
+#: Coefficient of determination for the same run. Low by design of the problem,
+#: not of the method: even inside one of India's densest networks, neighbouring
+#: stations explain under a quarter of the variance at an unmonitored point.
+PUBLISHED_FUSION_R2: Final[float] = 0.232
+
+#: What gradient boosting scored on the identical split, having also received
+#: the interpolated estimate as an input feature. It lost, so it did not ship.
+PUBLISHED_FUSION_LEARNED_MAE_UGM3: Final[float] = 12.84
+
+#: Mean absolute error, ug/m3, of the shipped diurnal climatology at 24 hours,
+#: on a temporal holdout. Source: `npm run ml:validate-forecast`.
+PUBLISHED_FORECAST_MAE_UGM3: Final[float] = 15.59
+
+#: What gradient boosting scored at the same horizon on the same holdout.
+PUBLISHED_FORECAST_LEARNED_MAE_UGM3: Final[float] = 17.50
+
+#: What persistence -- assuming the current value holds -- scored.
+PUBLISHED_FORECAST_PERSISTENCE_MAE_UGM3: Final[float] = 22.05
+
+#: Change in the sparse node's error when it adopted the federated global model
+#: instead of its own. Negative: federation made Kanpur worse, so the
+#: negative-transfer check recommended it keep the local model.
+#: Source: `npm run fl:validate`.
+PUBLISHED_FEDERATED_SPARSE_NODE_CHANGE: Final[float] = -0.068

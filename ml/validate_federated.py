@@ -61,6 +61,7 @@ from app.core.enums import Pollutant  # noqa: E402
 from app.core.geo import haversine_distance_m  # noqa: E402
 from app.core.logging import configure_logging  # noqa: E402
 from app.ml.forecast_features import (  # noqa: E402
+    FEDERATED_EXCLUDED_PREFIXES,
     ForecastInputs,
     build_climatology,
     build_features,
@@ -86,24 +87,6 @@ _HORIZON_HOURS = 24
 #: Issue-hour stride, matching the forecast validation.
 _ISSUE_STRIDE = 3
 
-#: Features every node must be able to compute for itself. Weather is excluded
-#: deliberately: meteorology is currently ingested only for Delhi, and a
-#: federated schema has to be one every participant can produce. A feature
-#: present at one node and absent at another does not average -- the data-rich
-#: city would train on a column the sparse city can only send as missing, and
-#: the aggregate would encode a relationship the sparse node cannot use.
-#: Agreeing the smaller shared schema is the correct trade, and is exactly the
-#: kind of constraint that makes federation a governance problem before it is a
-#: modelling one.
-_EXCLUDED_FEATURE_PREFIXES = (
-    "target_wind",
-    "target_pbl",
-    "target_relative",
-    "target_temp",
-    "target_precip",
-    "issue_wind",
-    "issue_pbl",
-)
 
 _LOCAL_EPOCHS = 30
 _LEARNING_RATE = 0.05
@@ -123,8 +106,15 @@ class NodeData:
 
 
 def federated_columns(columns: tuple[str, ...]) -> tuple[str, ...]:
-    """Restrict the feature set to what every node can compute."""
-    return tuple(name for name in columns if not name.startswith(_EXCLUDED_FEATURE_PREFIXES))
+    """Restrict the feature set to what every node can compute.
+
+    The exclusion list is defined alongside the model in
+    ``app.ml.forecast_features`` so the schema this experiment trains on and the
+    schema a node publishes in its model card cannot drift apart.
+    """
+    return tuple(
+        name for name in columns if not name.startswith(FEDERATED_EXCLUDED_PREFIXES)
+    )
 
 
 def assign_city(position: tuple[float, float]) -> str | None:

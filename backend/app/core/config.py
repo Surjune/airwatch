@@ -45,6 +45,15 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     api_port: Annotated[int, Field(ge=1, le=65535)] = 8000
 
+    #: How this deployment identifies itself to other nodes. A federated network
+    #: is a set of independently operated deployments, so an exchanged
+    #: observation or model has to say which node produced it -- otherwise a
+    #: partner city cannot tell whose data it is holding, and provenance is the
+    #: whole basis on which a state agrees to participate.
+    node_id: str = "airwatch-delhi"
+    node_name: str = "AirWatch Delhi-NCR"
+    node_operator: str = "Unattributed development deployment"
+
     #: Comma-separated in the environment, split into a list by the validator.
     #: NoDecode is required, not decorative: without it pydantic-settings tries to
     #: JSON-decode any complex-typed value coming from a dotenv file and raises

@@ -270,3 +270,38 @@ def climatology_forecast(
     """
     target_time = issued_at + timedelta(hours=horizon_hours)
     return inputs.climatology.get(target_time.hour)
+
+
+#: Feature prefixes excluded from the schema shared between federated nodes.
+#: Meteorology is currently ingested only for Delhi, and a federated schema has
+#: to be one every participant can produce. A feature present at one node and
+#: absent at another does not average: the data-rich city would train on a
+#: column the sparse city can only send as missing, and the aggregate would
+#: encode a relationship the sparse node cannot use. Agreeing the smaller shared
+#: schema is the correct trade, and is exactly the kind of constraint that makes
+#: federation a governance problem before it is a modelling one.
+FEDERATED_EXCLUDED_PREFIXES: Final[tuple[str, ...]] = (
+    "target_wind",
+    "target_pbl",
+    "target_relative",
+    "target_temp",
+    "target_precip",
+    "issue_wind",
+    "issue_pbl",
+)
+
+
+def federated_feature_names(
+    lags: Sequence[int] = FORECAST_LAG_HOURS_SHORT,
+) -> tuple[str, ...]:
+    """The feature schema every node in the federation can compute.
+
+    Lives here rather than in the validation script because it describes the
+    model, not the experiment: a node publishing a model card has to state the
+    same schema the training run used, and two definitions would drift.
+    """
+    return tuple(
+        name
+        for name in feature_names(lags)
+        if not name.startswith(FEDERATED_EXCLUDED_PREFIXES)
+    )
