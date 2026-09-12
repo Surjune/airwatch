@@ -146,9 +146,7 @@ def fit(pairs: Sequence[CalibrationPair]) -> HazeCalibration | None:
     slope, intercept = _fit_line(haze, reference)
 
     mae = (
-        _leave_one_out_mae(haze, reference)
-        if haze.size >= _MIN_PAIRS_FOR_HOLDOUT
-        else float("inf")
+        _leave_one_out_mae(haze, reference) if haze.size >= _MIN_PAIRS_FOR_HOLDOUT else float("inf")
     )
     if not np.isfinite(mae):
         return None

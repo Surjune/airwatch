@@ -131,6 +131,5 @@ class TestEstimating:
         assert calibration.is_extrapolating(0.99) is True
         assert calibration.is_extrapolating(0.0) is True
         assert (
-            calibration.is_extrapolating((calibration.haze_min + calibration.haze_max) / 2)
-            is False
+            calibration.is_extrapolating((calibration.haze_min + calibration.haze_max) / 2) is False
         )
