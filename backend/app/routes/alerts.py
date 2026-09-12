@@ -11,19 +11,21 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.orm import Session
 
+from app.core.config import Settings, get_settings
 from app.core.enums import AlertStatus, Pollutant
 from app.repositories.alert_repository import AlertDetail
 from app.repositories.session import get_db_session
 from app.schemas.alerts import (
     AlertResponse,
     AlertsResponse,
+    DeliveryResponse,
     DispatchResponse,
     ResolveRequest,
     SlaBreachesResponse,
     SlaBreachResponse,
 )
 from app.schemas.analysis import Position
-from app.services import alert_service
+from app.services import alert_delivery_service, alert_service
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -53,6 +55,8 @@ def _to_response(detail: AlertDetail) -> AlertResponse:
         peak_excess=detail.peak_excess,
         peak_z=detail.peak_z,
         sent_at=detail.sent_at,
+        delivered_at=detail.delivered_at,
+        delivery_error=detail.delivery_error,
         acknowledged_at=detail.acknowledged_at,
         resolved_at=detail.resolved_at,
         resolution_note=detail.resolution_note,
@@ -91,6 +95,30 @@ def dispatch(
         raised=len(outcome.raised),
         suppressed=outcome.suppressed,
         unrouted=outcome.unrouted,
+    )
+
+
+@router.post(
+    "/deliver",
+    response_model=DeliveryResponse,
+    summary="Send recorded alerts to the authorities' endpoint",
+)
+async def deliver(
+    session: Annotated[Session, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> DeliveryResponse:
+    """Drain the delivery queue.
+
+    Separate from dispatch because delivery depends on somebody else's endpoint
+    being up, and a slow one must not be able to stall detection.
+    """
+    outcome = await alert_delivery_service.deliver_pending(session, settings)
+    return DeliveryResponse(
+        attempted=outcome.attempted,
+        delivered=outcome.delivered,
+        failed=outcome.failed,
+        endpoint_configured=outcome.endpoint_configured,
+        pending=alert_delivery_service.pending_count(session),
     )
 
 

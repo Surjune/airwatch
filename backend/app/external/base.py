@@ -210,7 +210,35 @@ class UpstreamClient:
         params: dict[str, str | int | float] | None = None,
         headers: dict[str, str] | None = None,
     ) -> httpx.Response:
-        """Perform a GET with retries, returning the successful response.
+        """Perform a GET with retries, returning the successful response."""
+        return await self._request("GET", path, params=params, headers=headers)
+
+    async def post_json(
+        self,
+        path: str,
+        payload: JsonValue,
+        *,
+        headers: dict[str, str] | None = None,
+    ) -> httpx.Response:
+        """Perform a POST with retries, returning the successful response.
+
+        Retried on the same terms as a GET, which is safe only because the one
+        thing this posts -- an alert notification -- is idempotent at the
+        receiving end: the same alert delivered twice is a duplicate message,
+        while an alert never delivered is an authority that was never told.
+        """
+        return await self._request("POST", path, json=payload, headers=headers)
+
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, str | int | float] | None = None,
+        json: JsonValue | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> httpx.Response:
+        """Perform a request with retries, returning the successful response.
 
         Shared by every accessor so the retry policy exists in exactly one place.
         Retries transient failures — timeouts, connection errors, 5xx and 429 —
@@ -222,9 +250,11 @@ class UpstreamClient:
         for attempt in range(1, self._max_attempts + 1):
             await self._respect_rate_limit()
             try:
-                response = await self._client.get(
+                response = await self._client.request(
+                    method,
                     path,
                     params=params,
+                    json=json,
                     headers=self._headers(headers),
                 )
             except httpx.TimeoutException:

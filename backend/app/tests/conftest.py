@@ -121,8 +121,16 @@ def engine() -> Iterator[Engine]:
         pytest.skip(f"no PostgreSQL with PostGIS at {TEST_DATABASE_URL}: {error}")
 
     # Tables are built from the ORM metadata rather than by running Alembic.
-    # The migrations are the deployment path and are exercised by deploying;
-    # what these tests need is a schema matching the models they query.
+    # The migrations are the deployment path; what these tests need is a schema
+    # matching the models they query.
+    #
+    # Dropped first, every session. create_all does not alter an existing table,
+    # so a column added to a model would simply never appear in a test database
+    # created before it -- and the suite would fail against a schema no
+    # deployment will ever have. This database is owned outright by the suite,
+    # which is why dropping it is safe and why it is a separate database from
+    # the development one.
+    Base.metadata.drop_all(created)
     Base.metadata.create_all(created)
     yield created
     created.dispose()

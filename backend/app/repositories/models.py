@@ -464,9 +464,21 @@ class Alert(Base):
         default=AlertStatus.SENT,
     )
 
+    #: When the alert was *recorded*. Distinct from delivery: an alert exists
+    #: in the trail the moment it is raised, whether or not anyone was reachable.
     sent_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+    #: When the authority's endpoint accepted it, if it ever did. Null here with
+    #: a non-null sent_at is the honest state for an alert nobody was told about,
+    #: and collapsing the two would let an undelivered alert read as delivered.
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    #: Why delivery failed, when it did. Kept so a silent authority can be
+    #: distinguished from an unreachable one -- which are different findings.
+    delivery_error: Mapped[str | None] = mapped_column(String(512), nullable=True)
+
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     resolution_note: Mapped[str | None] = mapped_column(String(1024), nullable=True)

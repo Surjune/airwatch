@@ -249,6 +249,7 @@ every error returns the same envelope with a correlation ID.
 | `POST /v1/alerts/dispatch` | Detect over a window and route alerts to the responsible authorities |
 | `POST /v1/alerts/{id}/acknowledge` | Record that an authority has seen an alert |
 | `POST /v1/alerts/{id}/resolve` | Close an alert with a note describing the outcome |
+| `POST /v1/alerts/deliver` | Send recorded alerts to the configured endpoint |
 | `GET /v1/alerts/sla-breaches` | Alerts past their response deadline |
 | `GET /v1/interop/capabilities` | What this node offers a partner, discoverable at runtime |
 | `GET /v1/interop/observations` | Observations as GeoJSON with OGC SensorThings property names |
@@ -271,6 +272,11 @@ depends on, that alerts keep being read:
 - **An unrouted hotspot is reported, not dropped.** A hotspot inside no
   registered jurisdiction is a gap in the authority registry; hiding it would
   make an incomplete registry look like a quiet day.
+- **Recording an alert and delivering it are separate facts.** Delivery runs as
+  its own step, because a slow endpoint would otherwise stall detection and a
+  failed one would lose the alert. A failed delivery keeps the alert queued with
+  the reason attached, so an authority that was never told stays distinguishable
+  from one that was told and stayed silent.
 
 Resolution requires a note. A resolution with no explanation records that
 someone clicked a button, which is not the same as recording that something was
@@ -348,6 +354,7 @@ npm run ml:validate-loso   # leave-one-station-out on the fused surface
 npm run ml:validate-forecast
 npm run fl:validate        # does federation help the sparse node?
 npm run alerts:dispatch    # detect and route from the command line
+npm run alerts:deliver     # send recorded alerts to the configured endpoint
 ```
 
 Tests marked `integration` need a reachable PostgreSQL and skip with a reported
@@ -393,9 +400,11 @@ Deferred deliberately, and tracked here rather than as TODOs in the code.
 - **No model weights are published for exchange.** `GET /v1/interop/models` serves model cards with
   measured performance and withholds weights, because both learned models lost to their baselines.
   The envelope supports weights; there is nothing this node would honestly recommend adopting.
-- **Alerts are recorded, not delivered.** The routing, suppression, acknowledgement, resolution and
-  SLA trail are all implemented and persisted, but no email, SMS or webhook is actually sent. The
-  channel is the missing piece, not the accountability logic.
+- **Delivery is a webhook only.** An authority's endpoint receives a machine-readable event; there
+  is no email or SMS gateway. That is a deliberate choice -- a control room needs an event its own
+  software can file and close, and anything needing email can subscribe to the same webhook through
+  a gateway the authority controls -- but it does mean a deployment with no such endpoint records
+  alerts without delivering them, and says so rather than claiming success.
 - **No authentication in v1.** The API is anonymous, protected only by per-IP rate limiting and a
   locked CORS allowlist.
 - **Upstream CO units are not trustworthy at face value.** Several live Delhi stations declare CO

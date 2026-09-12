@@ -18,7 +18,7 @@ from app.core.geo import LonLat
 from app.core.logging import configure_logging, get_logger
 from app.repositories import observation_repository, station_repository
 from app.repositories.session import session_scope
-from app.services import alert_service, seed_service
+from app.services import alert_delivery_service, alert_service, seed_service
 from app.services.alert_service import DEFAULT_DISPATCH_WINDOW_HOURS
 from app.services.ingestion_service import IngestionReport, IngestionService, SourceResult
 
@@ -128,6 +128,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     dispatch.add_argument("--window-hours", type=int, default=DEFAULT_DISPATCH_WINDOW_HOURS)
 
+    subparsers.add_parser(
+        "deliver",
+        help="Send recorded alerts to the configured authority endpoint",
+    )
+
     args = parser.parse_args(argv)
     settings = get_settings()
     configure_logging(level=settings.log_level, json_output=False)
@@ -155,6 +160,23 @@ def main(argv: list[str] | None = None) -> int:
         # day, so it is reported rather than left implicit in the difference.
         print(f"unrouted          : {outcome.unrouted}")
         return 0
+
+    if args.command == "deliver":
+        with session_scope() as session:
+            delivery = asyncio.run(alert_delivery_service.deliver_pending(session, settings))
+            still_pending = alert_delivery_service.pending_count(session)
+        print("")
+        if not delivery.endpoint_configured:
+            # Nowhere to send is not the same as nothing to send, and a run that
+            # reported success here would be claiming an authority was told.
+            print("no ALERT_WEBHOOK_URL configured; nothing was sent")
+            print(f"alerts waiting  : {still_pending}")
+            return _EXIT_PARTIAL_FAILURE
+        print(f"attempted       : {delivery.attempted}")
+        print(f"delivered       : {delivery.delivered}")
+        print(f"failed          : {delivery.failed}")
+        print(f"still waiting   : {still_pending}")
+        return 0 if delivery.failed == 0 else _EXIT_PARTIAL_FAILURE
 
     if args.command == "backfill":
         result = asyncio.run(_run_backfill(args.city, Pollutant(args.pollutant), args.days))

@@ -54,6 +54,13 @@ class Settings(BaseSettings):
     node_name: str = "AirWatch Delhi-NCR"
     node_operator: str = "Unattributed development deployment"
 
+    #: Endpoint alerts are POSTed to. Empty means nowhere is configured, and a
+    #: deployment in that state records alerts without claiming to have sent
+    #: them -- which is the honest state, not a silent success.
+    #: Treated as a credential in logs: anyone holding the URL can post to the
+    #: receiving system.
+    alert_webhook_url: str = ""
+
     #: Comma-separated in the environment, split into a list by the validator.
     #: NoDecode is required, not decorative: without it pydantic-settings tries to
     #: JSON-decode any complex-typed value coming from a dotenv file and raises

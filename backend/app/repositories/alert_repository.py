@@ -56,6 +56,8 @@ class AlertDetail:
     alert_id: int
     status: AlertStatus
     sent_at: datetime
+    delivered_at: datetime | None
+    delivery_error: str | None
     acknowledged_at: datetime | None
     resolved_at: datetime | None
     resolution_note: str | None
@@ -269,6 +271,8 @@ def list_alert_details(session: Session, *, status: AlertStatus | None = None) -
             Alert.id,
             Alert.status,
             Alert.sent_at,
+            Alert.delivered_at,
+            Alert.delivery_error,
             Alert.acknowledged_at,
             Alert.resolved_at,
             Alert.resolution_note,
@@ -302,6 +306,8 @@ def _to_detail(row: Row[tuple[object, ...]]) -> AlertDetail:
         alert_id,
         status,
         sent_at,
+        delivered_at,
+        delivery_error,
         acknowledged_at,
         resolved_at,
         resolution_note,
@@ -322,6 +328,8 @@ def _to_detail(row: Row[tuple[object, ...]]) -> AlertDetail:
         alert_id=int(alert_id),
         status=AlertStatus(status),
         sent_at=sent_at,
+        delivered_at=delivered_at,
+        delivery_error=None if delivery_error is None else str(delivery_error),
         acknowledged_at=acknowledged_at,
         resolved_at=resolved_at,
         resolution_note=None if resolution_note is None else str(resolution_note),
@@ -337,3 +345,94 @@ def _to_detail(row: Row[tuple[object, ...]]) -> AlertDetail:
         peak_excess=float(peak_residual),
         peak_z=float(peak_z),
     )
+
+
+@dataclass(frozen=True, slots=True)
+class UndeliveredAlert:
+    """An alert recorded but not yet accepted by its authority's endpoint."""
+
+    alert_id: int
+    authority_id: int
+    authority_name: str
+    contact_email: str | None
+    hotspot_id: int
+    station_name: str | None
+    coordinates: LonLat
+    pollutant: Pollutant
+    first_seen_at: datetime
+    last_seen_at: datetime
+    peak_observed: float
+    peak_excess: float
+    peak_z: float
+
+
+def undelivered(session: Session, *, limit: int) -> list[UndeliveredAlert]:
+    """Alerts still waiting on delivery, worst first.
+
+    Ordered by standardised excess rather than age, so a queue that cannot be
+    drained in one pass delivers the most significant findings first.
+    """
+    statement = (
+        select(
+            Alert.id,
+            Authority.id,
+            Authority.name,
+            Authority.contact_email,
+            Hotspot.id,
+            Station.name,
+            Hotspot.geom.ST_X(),
+            Hotspot.geom.ST_Y(),
+            Hotspot.pollutant,
+            Hotspot.first_seen_at,
+            Hotspot.last_seen_at,
+            Hotspot.peak_observed,
+            Hotspot.peak_residual,
+            Hotspot.peak_z,
+        )
+        .join(Authority, Authority.id == Alert.authority_id)
+        .join(Hotspot, Hotspot.id == Alert.hotspot_id)
+        .outerjoin(Station, Station.id == Hotspot.station_id)
+        .where(Alert.delivered_at.is_(None))
+        .order_by(Hotspot.peak_z.desc())
+        .limit(limit)
+    )
+
+    return [
+        UndeliveredAlert(
+            alert_id=int(row[0]),
+            authority_id=int(row[1]),
+            authority_name=str(row[2]),
+            contact_email=None if row[3] is None else str(row[3]),
+            hotspot_id=int(row[4]),
+            station_name=None if row[5] is None else str(row[5]),
+            coordinates=(float(row[6]), float(row[7])),
+            pollutant=Pollutant(row[8]),
+            first_seen_at=row[9],
+            last_seen_at=row[10],
+            peak_observed=float(row[11]),
+            peak_excess=float(row[12]),
+            peak_z=float(row[13]),
+        )
+        for row in session.execute(statement).all()
+    ]
+
+
+def record_delivery(
+    session: Session,
+    alert_id: int,
+    *,
+    delivered_at: datetime | None,
+    error: str | None,
+) -> None:
+    """Store the outcome of a delivery attempt.
+
+    A failure records the reason and leaves ``delivered_at`` null, so the alert
+    stays in the queue. Marking it delivered on failure would lose it silently,
+    which is the one outcome the accountability trail cannot tolerate.
+    """
+    alert = session.get(Alert, alert_id)
+    if alert is None:  # pragma: no cover - callers read the queue first.
+        return
+    alert.delivered_at = delivered_at
+    alert.delivery_error = error
+    session.flush()

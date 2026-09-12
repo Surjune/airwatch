@@ -52,7 +52,20 @@ class AlertResponse(BaseModel):
     )
     peak_z: float = Field(description="Excess in units of the expected error at this location.")
 
-    sent_at: datetime
+    sent_at: datetime = Field(description="When the alert was recorded.")
+    delivered_at: datetime | None = Field(
+        default=None,
+        description=(
+            "When the authority's endpoint accepted it. Null with a non-null "
+            "sent_at means the alert exists in the trail but nobody has been "
+            "told -- a different finding from an authority that was told and "
+            "stayed silent."
+        ),
+    )
+    delivery_error: str | None = Field(
+        default=None,
+        description="Why delivery failed, when it did. The alert stays queued.",
+    )
     acknowledged_at: datetime | None = None
     resolved_at: datetime | None = None
     resolution_note: str | None = None
@@ -82,6 +95,24 @@ class DispatchResponse(BaseModel):
             "dropped: an incomplete authority registry must not read as a quiet day."
         )
     )
+
+
+class DeliveryResponse(BaseModel):
+    """What one delivery run achieved."""
+
+    attempted: int
+    delivered: int
+    failed: int = Field(
+        description="Attempts that failed. Those alerts stay queued rather than being lost."
+    )
+    endpoint_configured: bool = Field(
+        description=(
+            "False when no endpoint is configured, so nothing was attempted. "
+            "Distinct from zero pending: one means nothing to send, the other "
+            "means nowhere to send it."
+        )
+    )
+    pending: int = Field(description="Alerts still waiting after this run.")
 
 
 class ResolveRequest(BaseModel):
