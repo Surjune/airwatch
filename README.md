@@ -245,6 +245,7 @@ every error returns the same envelope with a correlation ID.
 | `GET /v1/stations` | Latest reading at every station, worst first |
 | `GET /v1/hotspots` | Locations dirtier than their neighbourhood predicts, with ranked candidate sources |
 | `GET /v1/forecast/corridor` | Concentration outlook along a route |
+| `GET /v1/exposure/advisory` | When to travel a route, by the exposure each departure costs |
 | `GET /v1/alerts` | The alert inbox, ordered by standardised excess |
 | `POST /v1/alerts/dispatch` | Detect over a window and route alerts to the responsible authorities |
 | `POST /v1/alerts/{id}/acknowledge` | Record that an authority has seen an alert |
@@ -286,6 +287,31 @@ done, and the difference is the whole value of the trail.
 Measured against the live database: **21 episodes detected, 21 routed, 0
 unrouted**, and a second run suppressed all 21. Anand Vihar routes to East Delhi,
 Nehru Nagar to South Delhi.
+
+### Turning a weak forecast into a decision it can actually support
+
+Climatology beat every learned model, which meant the forecast has no day-to-day
+skill: it cannot say whether Friday will be worse than Thursday. That is a real
+limitation and it is recorded above.
+
+What it *does* resolve is the shape of an average day — and that is exactly what
+a timing decision needs. "Is the evening usually better than the afternoon on
+this route" is a question about the daily cycle; "will tomorrow be bad" is not.
+So the exposure advisory is built on the one thing the estimator is genuinely
+good at rather than on the thing it was hoped to do.
+
+Each candidate departure hour is forecast along the whole route and integrated
+with **time spent in each segment as the weight** — weighting by sample count
+instead would let a long clean stretch outvote the short filthy one that
+determines the dose. On the Dwarka–Anand Vihar corridor the answer is concrete:
+travelling at 20:00 rather than 16:00 avoids about **25%** of the exposure.
+
+Two refusals are built in. When the spread across the day is smaller than the
+forecast's own error, **no hour is named** — advice gets acted on, and naming one
+there would be dressing noise as advice. And the quantity is exposure
+(µg/m³ × minutes), never micrograms inhaled: that needs a ventilation rate which
+depends on the person, and inventing one would add a fabricated factor to a
+number that is useful without it.
 
 ### The citizen tier, and what a photograph can establish
 

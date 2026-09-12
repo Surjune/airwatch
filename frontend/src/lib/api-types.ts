@@ -84,6 +84,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/exposure/advisory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * When to travel a route, by the exposure each departure would cost
+         * @description Rank departure hours for a route.
+         */
+        get: operations["exposure_advisory_v1_exposure_advisory_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/alerts": {
         parameters: {
             query?: never;
@@ -628,6 +648,29 @@ export interface components {
             pending: number;
         };
         /**
+         * DepartureOptionResponse
+         * @description What one departure hour would cost in exposure.
+         */
+        DepartureOptionResponse: {
+            /**
+             * Hour
+             * @description Departure hour, local time.
+             */
+            hour: number;
+            /**
+             * Exposure
+             * @description Concentration times time, in ug/m3 x minutes. Not micrograms inhaled: that needs a ventilation rate which depends on the person, and inventing one would add a fabricated factor.
+             */
+            exposure: number;
+            /**
+             * Mean Concentration
+             * @description Time-weighted mean along the route, in ug/m3.
+             */
+            mean_concentration: number;
+            /** Travel Minutes */
+            travel_minutes: number;
+        };
+        /**
          * DispatchResponse
          * @description What one dispatch run did.
          */
@@ -685,6 +728,44 @@ export interface components {
              * @default false
              */
             truncated: boolean;
+        };
+        /**
+         * ExposureAdvisoryResponse
+         * @description When to travel a route, if the day's shape supports an answer.
+         */
+        ExposureAdvisoryResponse: {
+            pollutant: components["schemas"]["Pollutant"];
+            /**
+             * Issued At
+             * Format: date-time
+             */
+            issued_at: string;
+            /**
+             * Basis
+             * @description Which estimator this rests on, and what it can and cannot say.
+             */
+            basis: string;
+            /**
+             * Best Hour
+             * @description Null when the day is too flat for a recommendation to mean anything.
+             */
+            best_hour?: number | null;
+            /** Worst Hour */
+            worst_hour?: number | null;
+            /**
+             * Reduction
+             * @description Fraction of exposure avoided by the best option over the worst.
+             */
+            reduction: number;
+            /**
+             * Is Actionable
+             * @description False when the spread across the day is smaller than the forecast's own error. Naming an hour then would dress noise as advice.
+             */
+            is_actionable: boolean;
+            /** Explanation */
+            explanation: string;
+            /** Options */
+            options: components["schemas"]["DepartureOptionResponse"][];
         };
         /**
          * FederationStatusResponse
@@ -1591,6 +1672,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CorridorForecastResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exposure_advisory_v1_exposure_advisory_get: {
+        parameters: {
+            query: {
+                /** @description Route vertices as lon,lat pairs separated by semicolons, for example '77.03,28.59;77.21,28.61;77.32,28.65'. */
+                points: string;
+                pollutant?: components["schemas"]["Pollutant"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExposureAdvisoryResponse"];
                 };
             };
             /** @description Validation Error */

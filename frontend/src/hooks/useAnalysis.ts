@@ -9,6 +9,7 @@ export type HotspotsResponse = components['schemas']['HotspotsResponse'];
 export type Hotspot = components['schemas']['HotspotResponse'];
 export type Attribution = components['schemas']['AttributionResponse'];
 export type CorridorForecast = components['schemas']['CorridorForecastResponse'];
+export type ExposureAdvisory = components['schemas']['ExposureAdvisoryResponse'];
 
 /** What a data hook exposes. */
 export interface Resource<T> {
@@ -83,4 +84,15 @@ export function useCorridorForecast(
     points,
     horizon_hours: horizonHours,
   });
+}
+
+/**
+ * When to travel a route, ranked by the exposure each departure would cost.
+ *
+ * Rests on the daily cycle, which is the one thing the climatological forecast
+ * actually resolves. The response may decline to name an hour, and that is a
+ * result rather than a failure.
+ */
+export function useExposureAdvisory(points: string): Resource<ExposureAdvisory> {
+  return useResource<ExposureAdvisory>('/exposure/advisory', { points });
 }

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 
 import { StatusMessage } from '@/components/ui/StatusMessage';
-import { useCorridorForecast } from '@/hooks/useAnalysis';
+import type { ExposureAdvisory } from '@/hooks/useAnalysis';
+import { useCorridorForecast, useExposureAdvisory } from '@/hooks/useAnalysis';
 import { aqiBand, aqiColour } from '@/lib/aqi';
 
 /**
@@ -60,6 +61,7 @@ export function CorridorView() {
 
   const corridor = CORRIDORS.find((item) => item.key === corridorKey) ?? CORRIDORS[0];
   const { data, error, isLoading } = useCorridorForecast(corridor.points, horizon);
+  const advisory = useExposureAdvisory(corridor.points);
 
   const segments = useMemo(() => {
     const points = data?.points ?? [];
@@ -194,6 +196,8 @@ export function CorridorView() {
             )}
           </section>
 
+          <ExposurePanel advisory={advisory.data} isLoading={advisory.isLoading} />
+
           <section className="rounded border border-neutral-200 bg-white">
             <table className="w-full text-sm">
               <thead className="border-b border-neutral-200 text-left text-xs text-neutral-600">
@@ -274,5 +278,88 @@ function Strip({
         })}
       </div>
     </div>
+  );
+}
+
+/**
+ * When to travel, if the day's shape supports an answer.
+ *
+ * This is the one decision the forecast is genuinely equipped to inform.
+ * Climatology has no day-to-day skill, so it cannot say whether tomorrow will be
+ * bad — but it does resolve the shape of an average day, and "is the evening
+ * usually better than the afternoon on this route" is exactly a question about
+ * that shape.
+ *
+ * When the day is flat, no hour is named. Naming one on a difference smaller
+ * than the forecast's own error would dress noise as advice, and advice gets
+ * acted on.
+ */
+function ExposurePanel({
+  advisory,
+  isLoading,
+}: {
+  readonly advisory: ExposureAdvisory | null;
+  readonly isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="rounded border border-neutral-200 bg-white p-4">
+        <StatusMessage kind="loading" title="Comparing departure times…" />
+      </div>
+    );
+  }
+  if (!advisory) return null;
+
+  const peak = Math.max(...advisory.options.map((option) => option.exposure), 1);
+
+  return (
+    <section className="rounded border border-neutral-200 bg-white p-4">
+      <h3 className="text-sm font-semibold">When to travel</h3>
+
+      <p
+        className={`mt-2 rounded px-2 py-1.5 text-sm ${
+          advisory.is_actionable
+            ? 'bg-emerald-50 text-emerald-900'
+            : 'bg-neutral-100 text-neutral-700'
+        }`}
+      >
+        {advisory.explanation}
+      </p>
+
+      <div className="mt-3 space-y-1">
+        {advisory.options.map((option) => {
+          const isBest = advisory.is_actionable && option.hour === advisory.best_hour;
+          const isWorst = advisory.is_actionable && option.hour === advisory.worst_hour;
+          return (
+            <div key={option.hour} className="flex items-center gap-2">
+              <span className="w-12 shrink-0 text-xs tabular-nums text-neutral-600">
+                {String(option.hour).padStart(2, '0')}:00
+              </span>
+              <div className="h-4 flex-1 overflow-hidden rounded bg-neutral-100">
+                <div
+                  className={`h-full ${
+                    isBest ? 'bg-emerald-500' : isWorst ? 'bg-red-400' : 'bg-neutral-400'
+                  }`}
+                  style={{ width: `${String((option.exposure / peak) * 100)}%` }}
+                  title={`${option.mean_concentration.toFixed(0)} µg/m³ average over ${option.travel_minutes.toFixed(0)} minutes`}
+                />
+              </div>
+              <span className="w-28 shrink-0 text-right text-xs tabular-nums text-neutral-600">
+                {option.mean_concentration.toFixed(0)} µg/m³ avg
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="mt-3 text-xs text-neutral-600">
+        Bars are exposure: concentration multiplied by the time spent in it, assuming a{' '}
+        {advisory.options[0]
+          ? `${advisory.options[0].travel_minutes.toFixed(0)}-minute`
+          : 'typical'}{' '}
+        journey. Not micrograms inhaled — that needs a breathing rate which depends on the person,
+        and inventing one would add a made-up factor to a number that is useful without it.
+      </p>
+    </section>
   );
 }

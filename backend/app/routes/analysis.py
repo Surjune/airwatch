@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core import aqi
-from app.core.constants import FORECAST_MAX_HORIZON_HOURS
+from app.core.constants import FORECAST_MAX_HORIZON_HOURS, METRES_PER_KILOMETRE
 from app.core.enums import Pollutant
 from app.core.exceptions import ValidationError
 from app.core.geo import LonLat, validate_lon_lat
@@ -21,6 +21,8 @@ from app.repositories.session import get_db_session
 from app.schemas.analysis import (
     AttributionResponse,
     CorridorForecastResponse,
+    DepartureOptionResponse,
+    ExposureAdvisoryResponse,
     ForecastPointResponse,
     HotspotResponse,
     HotspotsResponse,
@@ -38,9 +40,6 @@ _MAX_WINDOW_HOURS = 720
 
 #: Fewest vertices a corridor needs.
 _MIN_CORRIDOR_VERTICES = 2
-
-#: Distances are stored in metres and presented in kilometres.
-_METRES_PER_KM = 1000.0
 
 
 def _position(coordinates: LonLat) -> Position:
@@ -164,9 +163,9 @@ def corridor_forecast(
         horizon_hours=horizon_hours,
         issued_at=issued_at,
         method="diurnal climatology, distance-weighted across nearby stations",
-        corridor_length_km=outlook.length_m / _METRES_PER_KM,
+        corridor_length_km=outlook.length_m / METRES_PER_KILOMETRE,
         covered_length_km=(
-            (forecasts[-1].distance_along_m - forecasts[0].distance_along_m) / _METRES_PER_KM
+            (forecasts[-1].distance_along_m - forecasts[0].distance_along_m) / METRES_PER_KILOMETRE
             if forecasts
             else 0.0
         ),
@@ -174,7 +173,7 @@ def corridor_forecast(
         points=[
             ForecastPointResponse(
                 position=_position(point.coordinates),
-                distance_along_km=point.distance_along_m / _METRES_PER_KM,
+                distance_along_km=point.distance_along_m / METRES_PER_KILOMETRE,
                 target_time=point.target_time,
                 value=point.value,
                 uncertainty=point.uncertainty,
@@ -182,6 +181,55 @@ def corridor_forecast(
                 category=aqi.category(aqi.sub_index(pollutant, point.value)),
             )
             for point in forecasts
+        ],
+    )
+
+
+@router.get(
+    "/exposure/advisory",
+    response_model=ExposureAdvisoryResponse,
+    summary="When to travel a route, by the exposure each departure would cost",
+)
+def exposure_advisory(
+    session: Annotated[Session, Depends(get_db_session)],
+    points: Annotated[
+        str,
+        Query(
+            description=(
+                "Route vertices as lon,lat pairs separated by semicolons, "
+                "for example '77.03,28.59;77.21,28.61;77.32,28.65'."
+            )
+        ),
+    ],
+    pollutant: Pollutant = Pollutant.PM25,
+) -> ExposureAdvisoryResponse:
+    """Rank departure hours for a route."""
+    polyline = _parse_polyline(points)
+    issued_at = datetime.now(UTC)
+
+    advisory = analysis_service.exposure_advisory(session, polyline, pollutant, now=issued_at)
+
+    return ExposureAdvisoryResponse(
+        pollutant=pollutant,
+        issued_at=issued_at,
+        basis=(
+            "A diurnal climatology, which resolves the shape of an average day and has "
+            "no day-to-day skill. It can say which hour is usually better on this route; "
+            "it cannot say whether tomorrow will be worse than today."
+        ),
+        best_hour=advisory.best.hour if advisory.best else None,
+        worst_hour=advisory.worst.hour if advisory.worst else None,
+        reduction=advisory.reduction,
+        is_actionable=advisory.is_meaningful,
+        explanation=advisory.explanation,
+        options=[
+            DepartureOptionResponse(
+                hour=option.hour,
+                exposure=option.exposure,
+                mean_concentration=option.mean_concentration,
+                travel_minutes=option.travel_minutes,
+            )
+            for option in advisory.options
         ],
     )
 

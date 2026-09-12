@@ -139,3 +139,43 @@ class CorridorForecastResponse(BaseModel):
     )
     point_count: int
     points: list[ForecastPointResponse]
+
+
+class DepartureOptionResponse(BaseModel):
+    """What one departure hour would cost in exposure."""
+
+    hour: int = Field(description="Departure hour, local time.")
+    exposure: float = Field(
+        description=(
+            "Concentration times time, in ug/m3 x minutes. Not micrograms "
+            "inhaled: that needs a ventilation rate which depends on the person, "
+            "and inventing one would add a fabricated factor."
+        )
+    )
+    mean_concentration: float = Field(description="Time-weighted mean along the route, in ug/m3.")
+    travel_minutes: float
+
+
+class ExposureAdvisoryResponse(BaseModel):
+    """When to travel a route, if the day's shape supports an answer."""
+
+    pollutant: Pollutant
+    issued_at: datetime
+    basis: str = Field(description="Which estimator this rests on, and what it can and cannot say.")
+
+    best_hour: int | None = Field(
+        default=None,
+        description="Null when the day is too flat for a recommendation to mean anything.",
+    )
+    worst_hour: int | None = None
+    reduction: float = Field(
+        description="Fraction of exposure avoided by the best option over the worst."
+    )
+    is_actionable: bool = Field(
+        description=(
+            "False when the spread across the day is smaller than the forecast's "
+            "own error. Naming an hour then would dress noise as advice."
+        )
+    )
+    explanation: str
+    options: list[DepartureOptionResponse]

@@ -15,6 +15,11 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.orm import Session
 
 from app.core import aqi
+from app.core.constants import (
+    EXPOSURE_CANDIDATE_HOURS,
+    HOURS_PER_DAY,
+    METRES_PER_KILOMETRE,
+)
 from app.core.enums import Pollutant
 from app.core.geo import LonLat
 from app.core.h3_grid import H3Cell
@@ -27,6 +32,7 @@ from app.ml.attribution import (
     back_trajectory,
     fire_to_candidate,
 )
+from app.ml.exposure import Advisory, DepartureOption, RouteSample, advise, route_exposure
 from app.ml.forecasting import ForecastPoint, forecast_corridor, sample_corridor
 from app.ml.hotspot_detection import Hotspot, detect_over_window
 from app.repositories import observation_repository, station_repository
@@ -250,3 +256,69 @@ def corridor_outlook(
         # denominator for how much of it the network can actually support.
         length_m=sample_corridor(polyline)[-1][1],
     )
+
+
+def exposure_advisory(
+    session: Session,
+    polyline: list[LonLat],
+    pollutant: Pollutant,
+    *,
+    history_hours: int = 336,
+    now: datetime | None = None,
+) -> Advisory:
+    """Rank departure times for a route by the exposure each would cost.
+
+    Built on the daily cycle, which is what the climatological forecast actually
+    resolves. Each candidate hour is forecast along the whole route, the route
+    is integrated with time spent in each segment as the weight, and the hours
+    are ranked.
+
+    Returns:
+        The ranking, with the recommendation withheld when the spread across the
+        day is smaller than the forecast's own error.
+    """
+    issued_at = now or datetime.now(UTC)
+    since = issued_at - timedelta(hours=history_hours)
+
+    history: dict[int, dict[datetime, float]] = defaultdict(dict)
+    positions: dict[int, LonLat] = {}
+
+    for row in observation_repository.readings_in_window(session, pollutant, since):
+        station_id, _, lon, lat, _, observed_at, value = row
+        station_id = int(station_id)
+        positions[station_id] = (float(lon), float(lat))
+        history[station_id][observed_at] = float(value)
+
+    options: list[DepartureOption] = []
+    for hour in EXPOSURE_CANDIDATE_HOURS:
+        # Each candidate is the next occurrence of that hour, so every option is
+        # a forecast rather than a mix of forecast and hindsight.
+        horizon = (hour - issued_at.hour) % HOURS_PER_DAY or HOURS_PER_DAY
+        points = forecast_corridor(polyline, history, positions, issued_at, horizon)
+
+        exposure, mean, minutes = route_exposure(
+            [
+                RouteSample(
+                    distance_along_km=point.distance_along_m / METRES_PER_KILOMETRE,
+                    value=point.value,
+                )
+                for point in points
+            ]
+        )
+        options.append(
+            DepartureOption(
+                hour=hour,
+                exposure=exposure,
+                mean_concentration=mean,
+                travel_minutes=minutes,
+            )
+        )
+
+    advisory = advise(options)
+    logger.info(
+        "analysis.exposure_advisory",
+        pollutant=pollutant.value,
+        actionable=advisory.is_meaningful,
+        reduction=round(advisory.reduction, 3),
+    )
+    return advisory

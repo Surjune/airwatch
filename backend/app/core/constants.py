@@ -254,6 +254,9 @@ FUSION_DENSITY_RADII_M: Final[tuple[float, ...]] = (2000.0, 5000.0)
 #: sine and cosine pairs so that hour 23 and hour 0 are adjacent, which a raw
 #: integer would place maximally far apart.
 HOURS_PER_DAY: Final[int] = 24
+
+#: Distances are stored in metres and presented in kilometres.
+METRES_PER_KILOMETRE: Final[float] = 1000.0
 DAYS_PER_WEEK: Final[int] = 7
 
 #: Uncertainty of a fused estimate, in ug/m3, before any local penalty. Fitted
@@ -811,3 +814,28 @@ FEDERATED_TEST_ROWS: Final[dict[str, int]] = {"delhi": 493, "kanpur": 23}
 #: Relative degradation a node tolerates before the federated model is judged to
 #: have harmed it. Two percent is inside the noise of a holdout this size.
 FEDERATED_HARM_TOLERANCE: Final[float] = 0.02
+
+
+# ---------------------------------------------------------------------------
+# Personal exposure
+# ---------------------------------------------------------------------------
+# The forecast is a diurnal climatology with no day-to-day skill, so it cannot
+# say whether tomorrow will be worse than today. What it does resolve is the
+# daily cycle, and that is exactly what a timing decision needs: "is 3pm better
+# than 8am on this route" is answerable from a climatology in a way that "will
+# Friday be bad" is not. The advisory is built on the one thing the estimator is
+# actually good at.
+
+#: Assumed travel speed along a corridor, in km/h. Urban arterial traffic in an
+#: Indian metro, well below the free-flow limit. Time spent in a segment is what
+#: turns a concentration into an exposure, so this is the factor that matters.
+EXPOSURE_TRAVEL_SPEED_KMH: Final[float] = 20.0
+
+#: Departure hours evaluated, in local time. A working day at two-hour
+#: resolution; finer would imply a precision the climatology does not have.
+EXPOSURE_CANDIDATE_HOURS: Final[tuple[int, ...]] = (6, 8, 10, 12, 14, 16, 18, 20, 22)
+
+#: Relative reduction below which two departure times are treated as equivalent.
+#: The forecast error is frequently larger than the signal, so a difference of a
+#: few percent is not a recommendation -- it is noise wearing one.
+EXPOSURE_MEANINGFUL_REDUCTION: Final[float] = 0.10
