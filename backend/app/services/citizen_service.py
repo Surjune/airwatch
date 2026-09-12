@@ -39,6 +39,7 @@ from app.core.constants import (
     CITIZEN_MIN_TRUST,
     CITIZEN_PHOTO_MAX_BYTES,
     CITIZEN_TRUST_STEP,
+    CITIZEN_UNVERIFIED_TRUST,
     HOURS_PER_DAY,
 )
 from app.core.enums import Pollutant
@@ -46,6 +47,7 @@ from app.core.exceptions import RateLimitExceededError, ValidationError
 from app.core.geo import LonLat, validate_within_india
 from app.core.h3_grid import point_to_cell
 from app.core.logging import get_logger
+from app.ml.exif import PhotoProvenance, Verdict, verify
 from app.ml.haze_calibration import HazeCalibration, HazeEstimate
 from app.ml.haze_calibration import fit as fit_calibration
 from app.ml.vision import HazeAnalysis, Rejection, analyse
@@ -97,6 +99,9 @@ class AcceptedReport:
     #: The nearby monitor this was compared with, when one was in range.
     reference: NearestReading | None
     agrees_with_reference: bool | None
+
+    #: What the file's own metadata said about the submission.
+    provenance: PhotoProvenance
 
     calibration: CalibrationStatus
 
@@ -263,6 +268,13 @@ def submit(
     capture_time = _validate_capture_time(captured_at, reference_time)
     _enforce_rate_limit(session, device_id, reference_time)
 
+    provenance = verify(content, claimed_position=position, claimed_time=capture_time)
+    if provenance.verdict is Verdict.CONTRADICTED:
+        # The file's own header disagrees with what was claimed about it. That is
+        # the one direction EXIF is worth anything in, so it is acted on.
+        logger.info("citizen.photo_contradicted", detail=provenance.detail)
+        raise ValidationError(provenance.detail)
+
     analysis = analyse(decode_image(content))
     if isinstance(analysis, Rejection):
         logger.info("citizen.photo_rejected", reason=analysis.reason.value)
@@ -275,6 +287,7 @@ def submit(
         capture_time=capture_time,
         device_id=device_id,
         pollutant=pollutant,
+        provenance=provenance,
     )
 
 
@@ -286,6 +299,7 @@ def _store(
     capture_time: datetime,
     device_id: str,
     pollutant: Pollutant,
+    provenance: PhotoProvenance,
 ) -> AcceptedReport:
     """Persist an analysed submission and describe what it supports."""
     reference = citizen_repository.nearest_station_reading(session, position, pollutant)
@@ -301,6 +315,11 @@ def _store(
     trust = _next_trust(
         previous_trust if previous_trust is not None else CITIZEN_INITIAL_TRUST, agrees
     )
+    if provenance.verdict is Verdict.UNVERIFIABLE:
+        # Accepted and shown, but held below the threshold that lets a pair
+        # shape the calibration. A submission nothing can corroborate should not
+        # move a relation every other estimate is derived from.
+        trust = min(trust, CITIZEN_UNVERIFIED_TRUST)
 
     report_id = citizen_repository.insert_report(
         session,
@@ -326,6 +345,7 @@ def _store(
         haze_index=round(analysis.haze_index, 3),
         calibrated=status.is_calibrated,
         paired=reference is not None,
+        provenance=provenance.verdict.value,
         trust=round(trust, 2),
     )
 
@@ -339,5 +359,6 @@ def _store(
         is_extrapolating=extrapolating,
         reference=reference,
         agrees_with_reference=agrees,
+        provenance=provenance,
         calibration=status,
     )

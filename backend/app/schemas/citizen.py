@@ -72,6 +72,26 @@ class ReferenceComparisonResponse(BaseModel):
     )
 
 
+class ProvenanceResponse(BaseModel):
+    """What the photograph's own metadata said about the submission.
+
+    Reported rather than hidden because the three verdicts mean different
+    things to a consumer. "Unverifiable" is the common case and carries no
+    suspicion -- most apps strip metadata -- but a submission nobody can
+    corroborate is deliberately kept out of the calibration.
+    """
+
+    verdict: str = Field(description="consistent, contradicted, or unverifiable.")
+    detail: str
+    contributes_to_calibration: bool = Field(
+        description=(
+            "False when the submission cannot be corroborated. It still appears "
+            "on the map; it just does not move the relation every other estimate "
+            "is derived from."
+        )
+    )
+
+
 class SubmissionResponse(BaseModel):
     """What a submitted photograph yielded."""
 
@@ -103,6 +123,7 @@ class SubmissionResponse(BaseModel):
         ),
     )
     reference: ReferenceComparisonResponse | None = None
+    provenance: ProvenanceResponse
     calibration: CalibrationStatusResponse
 
 

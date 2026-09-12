@@ -742,3 +742,29 @@ CITIZEN_TRUST_STEP: Final[float] = 0.1
 #: Relative disagreement with the co-located reference above which a submission
 #: counts as contradicted for trust purposes.
 CITIZEN_DISAGREEMENT_TOLERANCE: Final[float] = 0.5
+
+
+# ---------------------------------------------------------------------------
+# Photo provenance
+# ---------------------------------------------------------------------------
+# EXIF cannot be trusted as proof: it is trivially editable and most messaging
+# apps strip it entirely. It is useful in exactly one direction -- when metadata
+# is present and contradicts the submitted claim, that is evidence against the
+# claim. Absence is not evidence either way, so an unverifiable submission is
+# accepted and marked, never rejected.
+
+#: How far the EXIF geotag may sit from the submitted position before the two
+#: are treated as describing different places. Generous, because consumer GPS
+#: under tree cover or beside tall buildings drifts by a few hundred metres and
+#: a stricter bound would reject honest submissions.
+EXIF_POSITION_TOLERANCE_M: Final[int] = 1000
+
+#: How far the EXIF capture time may sit from the submitted capture time.
+#: Cameras with an unset clock are common, so this catches a contradiction
+#: rather than enforcing accuracy.
+EXIF_TIME_TOLERANCE_MINUTES: Final[int] = 30
+
+#: Trust a submission carries when its metadata could not be checked at all.
+#: Below CITIZEN_INITIAL_TRUST, so an unverifiable photo still appears on the
+#: map but does not shape the calibration.
+CITIZEN_UNVERIFIED_TRUST: Final[float] = 0.3

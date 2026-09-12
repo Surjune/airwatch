@@ -21,12 +21,17 @@ from app.schemas.citizen import (
     CitizenReportsResponse,
     CitizenReportSummary,
     HazeEstimateResponse,
+    ProvenanceResponse,
     ReferenceComparisonResponse,
     RejectionResponse,
     SubmissionResponse,
 )
 from app.services import citizen_service
-from app.services.citizen_service import AcceptedReport, CalibrationStatus
+from app.services.citizen_service import (
+    CALIBRATION_MIN_TRUST,
+    AcceptedReport,
+    CalibrationStatus,
+)
 
 router = APIRouter(prefix="/citizen", tags=["citizen"])
 
@@ -83,6 +88,11 @@ def _accepted(report: AcceptedReport) -> SubmissionResponse:
             )
             if report.reference is not None
             else None
+        ),
+        provenance=ProvenanceResponse(
+            verdict=report.provenance.verdict.value,
+            detail=report.provenance.detail,
+            contributes_to_calibration=report.trust_score >= CALIBRATION_MIN_TRUST,
         ),
         calibration=_calibration(report.calibration),
     )

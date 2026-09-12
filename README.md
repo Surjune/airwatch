@@ -364,10 +364,11 @@ Deferred deliberately, and tracked here rather than as TODOs in the code.
 - **The citizen tier has no calibration yet, by construction.** It needs thirty photographs taken
   near a reference monitor across a range of conditions. Until then it reports a haze index and no
   concentration, which is the intended behaviour rather than an unfinished one.
-- **Capture time is taken from the file's modified time,** not from EXIF. For a photograph taken in
-  order to be submitted these are the same moment, but EXIF parsing and geotag verification — the
-  anti-spoofing the design calls for — are not implemented. A submitted position is currently
-  trusted as given.
+- **EXIF corroborates but cannot authenticate.** Metadata is read and a photograph whose own header
+  places it in another city, or hours from the claimed time, is refused. But EXIF is editable and
+  routinely stripped, so absence cannot be treated as fraud: an unverifiable submission is accepted,
+  marked, and held below the trust a pair needs to shape the calibration. A determined spoofer can
+  still write matching metadata; this raises the cost, it does not close the hole.
 - **Federated averaging harmed the sparse node** on the two cities available;
   see the table above. The aggregation, FedProx and negative-transfer check are
   implemented and tested, but the measured recommendation is that Kanpur keeps

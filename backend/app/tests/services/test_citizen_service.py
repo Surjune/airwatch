@@ -26,15 +26,18 @@ from app.core.constants import (
     CITIZEN_INITIAL_TRUST,
     CITIZEN_MAX_CAPTURE_AGE_HOURS,
     CITIZEN_MAX_REPORTS_PER_DEVICE_PER_HOUR,
+    CITIZEN_UNVERIFIED_TRUST,
 )
 from app.core.enums import Pollutant, StationTier
 from app.core.exceptions import RateLimitExceededError, ValidationError
 from app.core.h3_grid import point_to_cell
+from app.ml.exif import Verdict
 from app.ml.vision import Rejection, RejectionReason
 from app.repositories import citizen_repository, observation_repository, station_repository
 from app.repositories.citizen_repository import CitizenReportRow
 from app.repositories.observation_repository import MeasurementRow
 from app.services import citizen_service
+from app.tests.ml.test_exif import photo as photo_with_metadata
 
 pytestmark = pytest.mark.integration
 
@@ -240,10 +243,17 @@ class TestReferenceComparison:
 
 
 class TestTrust:
+    """Trust as it moves with agreement.
+
+    These use photographs carrying consistent metadata, so the provenance cap is
+    out of the way and what is measured is the trust mechanism itself. The cap
+    has its own tests in TestProvenance.
+    """
+
     def test_a_new_device_starts_at_the_initial_trust(self, session: Session) -> None:
         result = citizen_service.submit(
             session,
-            content=photo_bytes(haze=0.3),
+            content=photo_with_metadata(position=REMOTE, captured_at=NOW),
             coordinates=REMOTE,
             captured_at=NOW,
             device_id=DEVICE,
@@ -259,7 +269,7 @@ class TestTrust:
         for index in range(3):
             result = citizen_service.submit(
                 session,
-                content=photo_bytes(haze=0.3),
+                content=photo_with_metadata(position=REMOTE, captured_at=NOW),
                 coordinates=REMOTE,
                 captured_at=NOW,
                 device_id=DEVICE,
@@ -276,7 +286,7 @@ class TestTrust:
 
         result = citizen_service.submit(
             session,
-            content=photo_bytes(haze=0.75),
+            content=photo_with_metadata(position=DELHI, captured_at=NOW),
             coordinates=DELHI,
             captured_at=NOW,
             device_id=DEVICE,
@@ -444,3 +454,79 @@ class TestRateLimit:
         )
 
         assert not isinstance(other, Rejection)
+
+
+class TestProvenance:
+    def test_a_photo_whose_metadata_matches_is_marked_consistent(self, session: Session) -> None:
+        result = citizen_service.submit(
+            session,
+            content=photo_with_metadata(position=DELHI, captured_at=NOW),
+            coordinates=DELHI,
+            captured_at=NOW,
+            device_id=DEVICE,
+            now=NOW,
+        )
+
+        assert not isinstance(result, Rejection)
+        assert result.provenance.verdict is Verdict.CONSISTENT
+
+    def test_a_photo_taken_elsewhere_is_refused(self, session: Session) -> None:
+        # The one direction EXIF is worth anything in. A photograph whose own
+        # header places it in another city is not describing this air.
+        mumbai = (72.8777, 19.0760)
+
+        with pytest.raises(ValidationError, match="km from the position"):
+            citizen_service.submit(
+                session,
+                content=photo_with_metadata(position=mumbai, captured_at=NOW),
+                coordinates=DELHI,
+                captured_at=NOW,
+                device_id=DEVICE,
+                now=NOW,
+            )
+
+    def test_a_photo_with_no_metadata_is_accepted(self, session: Session) -> None:
+        # Most apps strip EXIF. Rejecting on absence would reject the majority
+        # of honest submissions.
+        result = citizen_service.submit(
+            session,
+            content=photo_with_metadata(),
+            coordinates=DELHI,
+            captured_at=NOW,
+            device_id=DEVICE,
+            now=NOW,
+        )
+
+        assert not isinstance(result, Rejection)
+        assert result.provenance.verdict is Verdict.UNVERIFIABLE
+
+    def test_an_unverifiable_submission_does_not_shape_the_calibration(
+        self, session: Session
+    ) -> None:
+        # Accepted and shown, but held below the trust a pair needs to move the
+        # relation every other estimate is derived from.
+        result = citizen_service.submit(
+            session,
+            content=photo_with_metadata(),
+            coordinates=DELHI,
+            captured_at=NOW,
+            device_id=DEVICE,
+            now=NOW,
+        )
+
+        assert not isinstance(result, Rejection)
+        assert result.trust_score <= CITIZEN_UNVERIFIED_TRUST
+        assert result.trust_score < citizen_service.CALIBRATION_MIN_TRUST
+
+    def test_a_verified_submission_can_shape_the_calibration(self, session: Session) -> None:
+        result = citizen_service.submit(
+            session,
+            content=photo_with_metadata(position=DELHI, captured_at=NOW),
+            coordinates=DELHI,
+            captured_at=NOW,
+            device_id=DEVICE,
+            now=NOW,
+        )
+
+        assert not isinstance(result, Rejection)
+        assert result.trust_score >= citizen_service.CALIBRATION_MIN_TRUST
