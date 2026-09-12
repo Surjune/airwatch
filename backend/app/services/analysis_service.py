@@ -27,7 +27,7 @@ from app.ml.attribution import (
     back_trajectory,
     fire_to_candidate,
 )
-from app.ml.forecasting import ForecastPoint, forecast_corridor
+from app.ml.forecasting import ForecastPoint, forecast_corridor, sample_corridor
 from app.ml.hotspot_detection import Hotspot, detect_over_window
 from app.repositories import observation_repository, station_repository
 
@@ -50,6 +50,20 @@ class StationSnapshot:
     unit: str
     aqi: float
     category: str
+
+
+@dataclass(frozen=True, slots=True)
+class CorridorOutlook:
+    """A corridor forecast, with how much of the route it actually covers.
+
+    The covered length is reported because the points alone cannot express it.
+    A route whose western six kilometres return nothing looks identical to a
+    shorter route, and a consumer that cannot tell them apart would read
+    unmonitored ground as clean.
+    """
+
+    points: list[ForecastPoint]
+    length_m: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -195,7 +209,7 @@ def corridor_outlook(
     *,
     history_hours: int = 336,
     now: datetime | None = None,
-) -> list[ForecastPoint]:
+) -> CorridorOutlook:
     """Forecast a corridor from stored station history.
 
     Args:
@@ -222,4 +236,9 @@ def corridor_outlook(
         positions[station_id] = (float(lon), float(lat))
         history[station_id][observed_at] = float(value)
 
-    return forecast_corridor(polyline, history, positions, issued_at, horizon_hours)
+    return CorridorOutlook(
+        points=forecast_corridor(polyline, history, positions, issued_at, horizon_hours),
+        # The last sample's distance is the route's full length, which is the
+        # denominator for how much of it the network can actually support.
+        length_m=sample_corridor(polyline)[-1][1],
+    )

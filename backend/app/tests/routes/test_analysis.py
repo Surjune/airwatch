@@ -141,6 +141,29 @@ class TestCorridorForecast:
             assert point["upper_bound"] == pytest.approx(point["value"] + point["uncertainty"])
             assert point["category"]
 
+    def test_reports_how_much_of_the_route_is_covered(self, api: TestClient) -> None:
+        # The points alone cannot express this. A route whose western stretch
+        # returns nothing looks identical to a shorter route, and a consumer
+        # that cannot tell them apart reads unmonitored ground as clean.
+        body = api.get(
+            "/v1/forecast/corridor",
+            params={"points": "77.185,28.590;77.220,28.615", "horizon_hours": 24},
+        ).json()
+
+        assert body["corridor_length_km"] > 0
+        assert body["covered_length_km"] <= body["corridor_length_km"]
+
+    def test_an_unsupported_route_still_reports_its_length(self, api: TestClient) -> None:
+        body = api.get(
+            "/v1/forecast/corridor",
+            params={"points": "72.80,19.00;72.85,19.05"},
+        ).json()
+
+        assert body["point_count"] == 0
+        assert body["covered_length_km"] == 0
+        # The route exists; nothing supports it. Those are different facts.
+        assert body["corridor_length_km"] > 0
+
     def test_a_route_no_station_supports_returns_no_points(self, api: TestClient) -> None:
         body = api.get(
             "/v1/forecast/corridor",

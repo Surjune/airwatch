@@ -129,5 +129,13 @@ class CorridorForecastResponse(BaseModel):
             "learned model on a temporal holdout."
         )
     )
+    corridor_length_km: float = Field(description="Total length of the requested route.")
+    covered_length_km: float = Field(
+        description=(
+            "How much of the route the station network can support. Stretches "
+            "beyond this return no forecast and must render as unknown, never "
+            "as clean: an interpolation from nothing would be worse than silence."
+        )
+    )
     point_count: int
     points: list[ForecastPointResponse]

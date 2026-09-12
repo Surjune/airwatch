@@ -357,7 +357,7 @@ class TestCorridorOutlook:
             lambda *a, **k: reading_rows(hours=72),
         )
 
-        points = analysis_service.corridor_outlook(
+        outlook = analysis_service.corridor_outlook(
             _session(),
             [(77.185, 28.590), (77.220, 28.615)],
             Pollutant.PM25,
@@ -365,8 +365,9 @@ class TestCorridorOutlook:
             now=NOW,
         )
 
-        assert points
-        assert all(point.uncertainty > 0 for point in points)
+        assert outlook.points
+        assert all(point.uncertainty > 0 for point in outlook.points)
+        assert outlook.length_m > 0
 
     def test_a_corridor_with_no_stations_in_range_returns_nothing(
         self, monkeypatch: pytest.MonkeyPatch, stub_repositories: None
@@ -378,7 +379,7 @@ class TestCorridorOutlook:
             lambda *a, **k: reading_rows(hours=72),
         )
 
-        points = analysis_service.corridor_outlook(
+        outlook = analysis_service.corridor_outlook(
             _session(),
             [(72.80, 19.00), (72.85, 19.05)],  # Mumbai, far from the test network
             Pollutant.PM25,
@@ -386,10 +387,13 @@ class TestCorridorOutlook:
             now=NOW,
         )
 
-        assert points == []
+        # No points, but a real length: the route exists, nothing supports it.
+        # A consumer that saw only an empty list could not tell those apart.
+        assert outlook.points == []
+        assert outlook.length_m > 0
 
     def test_an_empty_history_forecasts_nothing(self, stub_repositories: None) -> None:
-        points = analysis_service.corridor_outlook(
+        outlook = analysis_service.corridor_outlook(
             _session(),
             [(77.185, 28.590), (77.220, 28.615)],
             Pollutant.PM25,
@@ -397,7 +401,7 @@ class TestCorridorOutlook:
             now=NOW,
         )
 
-        assert points == []
+        assert outlook.points == []
 
 
 def _session() -> Any:

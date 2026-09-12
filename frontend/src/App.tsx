@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { AlertConsole } from '@/features/alerts/AlertConsole';
 import { CitizenSubmit } from '@/features/citizen/CitizenSubmit';
+import { CorridorView } from '@/features/corridor/CorridorView';
 import { HotspotPanel } from '@/features/hotspots/HotspotPanel';
 import { MapView } from '@/features/map/MapView';
 import { useHotspots, useStations } from '@/hooks/useAnalysis';
@@ -16,6 +17,7 @@ const DETECTION_WINDOW_HOURS = 336;
  */
 const VIEWS = [
   { key: 'map', label: 'Map' },
+  { key: 'corridor', label: 'Corridor outlook' },
   { key: 'alerts', label: 'Authority console' },
   { key: 'citizen', label: 'Contribute' },
 ] as const;
@@ -74,6 +76,10 @@ export function App(): React.JSX.Element {
       ) : view === 'citizen' ? (
         <div className="min-h-0 flex-1">
           <CitizenSubmit />
+        </div>
+      ) : view === 'corridor' ? (
+        <div className="min-h-0 flex-1">
+          <CorridorView />
         </div>
       ) : (
         <div className="flex min-h-0 flex-1">

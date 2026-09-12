@@ -533,6 +533,16 @@ export interface components {
              * @description Which estimator produced this. Climatological, because it beat every learned model on a temporal holdout.
              */
             method: string;
+            /**
+             * Corridor Length Km
+             * @description Total length of the requested route.
+             */
+            corridor_length_km: number;
+            /**
+             * Covered Length Km
+             * @description How much of the route the station network can support. Stretches beyond this return no forecast and must render as unknown, never as clean: an interpolation from nothing would be worse than silence.
+             */
+            covered_length_km: number;
             /** Point Count */
             point_count: number;
             /** Points */
@@ -1062,6 +1072,29 @@ export interface components {
             latitude: number;
         };
         /**
+         * ProvenanceResponse
+         * @description What the photograph's own metadata said about the submission.
+         *
+         *     Reported rather than hidden because the three verdicts mean different
+         *     things to a consumer. "Unverifiable" is the common case and carries no
+         *     suspicion -- most apps strip metadata -- but a submission nobody can
+         *     corroborate is deliberately kept out of the calibration.
+         */
+        ProvenanceResponse: {
+            /**
+             * Verdict
+             * @description consistent, contradicted, or unverifiable.
+             */
+            verdict: string;
+            /** Detail */
+            detail: string;
+            /**
+             * Contributes To Calibration
+             * @description False when the submission cannot be corroborated. It still appears on the map; it just does not move the relation every other estimate is derived from.
+             */
+            contributes_to_calibration: boolean;
+        };
+        /**
          * ReferenceComparisonResponse
          * @description The nearby monitor a submission was checked against.
          */
@@ -1221,6 +1254,7 @@ export interface components {
             /** @description Null until a calibration exists. Null is an answer, not an error: an uncalibrated concentration derived from a photograph would be a fabricated reading. */
             estimate?: components["schemas"]["HazeEstimateResponse"] | null;
             reference?: components["schemas"]["ReferenceComparisonResponse"] | null;
+            provenance: components["schemas"]["ProvenanceResponse"];
             calibration: components["schemas"]["CalibrationStatusResponse"];
         };
         /**

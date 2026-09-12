@@ -39,6 +39,9 @@ _MAX_WINDOW_HOURS = 720
 #: Fewest vertices a corridor needs.
 _MIN_CORRIDOR_VERTICES = 2
 
+#: Distances are stored in metres and presented in kilometres.
+_METRES_PER_KM = 1000.0
+
 
 def _position(coordinates: LonLat) -> Position:
     lon, lat = coordinates
@@ -151,20 +154,27 @@ def corridor_forecast(
     polyline = _parse_polyline(points)
     issued_at = datetime.now(UTC)
 
-    forecasts = analysis_service.corridor_outlook(
+    outlook = analysis_service.corridor_outlook(
         session, polyline, pollutant, horizon_hours, now=issued_at
     )
+    forecasts = outlook.points
 
     return CorridorForecastResponse(
         pollutant=pollutant,
         horizon_hours=horizon_hours,
         issued_at=issued_at,
         method="diurnal climatology, distance-weighted across nearby stations",
+        corridor_length_km=outlook.length_m / _METRES_PER_KM,
+        covered_length_km=(
+            (forecasts[-1].distance_along_m - forecasts[0].distance_along_m) / _METRES_PER_KM
+            if forecasts
+            else 0.0
+        ),
         point_count=len(forecasts),
         points=[
             ForecastPointResponse(
                 position=_position(point.coordinates),
-                distance_along_km=point.distance_along_m / 1000.0,
+                distance_along_km=point.distance_along_m / _METRES_PER_KM,
                 target_time=point.target_time,
                 value=point.value,
                 uncertainty=point.uncertainty,
