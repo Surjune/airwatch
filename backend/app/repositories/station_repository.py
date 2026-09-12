@@ -7,16 +7,18 @@ must converge rather than accumulate duplicates.
 
 from __future__ import annotations
 
-from datetime import datetime
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import Row, select
+from sqlalchemy import Row, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from app.core.enums import SourceType, StationTier
+from app.core.constants import PILOT_CITY_RADIUS_M, PILOT_REPORTING_WINDOW_HOURS
+from app.core.enums import Pollutant, SourceType, StationTier
 from app.core.geo import LonLat
 from app.core.h3_grid import point_to_cell
-from app.repositories.models import PollutionSource, Station
+from app.repositories.models import Measurement, PollutionSource, Station
 
 
 def _point_wkt(point: LonLat) -> str:
@@ -158,3 +160,72 @@ def list_sources_with_coordinates(
         PollutionSource.geom.ST_Y(),
     )
     return list(session.execute(statement).all())
+
+
+@dataclass(frozen=True, slots=True)
+class CityCoverage:
+    """How much monitoring a city actually has, as opposed to how much it claims.
+
+    ``stations`` counts sites in range. ``reporting_stations`` counts those that
+    have produced a reading for the pollutant recently. The gap between the two
+    is the finding: a site whose PM2.5 sensor died months ago still reports as
+    active if its thermometer works, so every published count of "active
+    stations" includes monitors measuring nothing.
+    """
+
+    stations: int
+    reporting_stations: int
+    readings: int
+    latest_reading_at: datetime | None
+
+
+def city_coverage(
+    session: Session,
+    centre: LonLat,
+    pollutant: Pollutant,
+    *,
+    radius_m: int = PILOT_CITY_RADIUS_M,
+    reporting_window_hours: int = PILOT_REPORTING_WINDOW_HOURS,
+    now: datetime | None = None,
+) -> CityCoverage:
+    """Count the monitoring available to one city."""
+    reference = now or datetime.now(UTC)
+    cutoff = reference - timedelta(hours=reporting_window_hours)
+    origin = func.ST_GeomFromEWKT(_point_wkt(centre))
+    in_range = func.ST_DistanceSphere(Station.geom, origin) <= radius_m
+
+    stations = int(
+        session.execute(select(func.count()).select_from(Station).where(in_range)).scalar_one()
+    )
+
+    reporting = int(
+        session.execute(
+            select(func.count(func.distinct(Measurement.station_id)))
+            .select_from(Measurement)
+            .join(Station, Station.id == Measurement.station_id)
+            .where(
+                in_range,
+                Measurement.pollutant == pollutant,
+                Measurement.is_plausible.is_(True),
+                Measurement.observed_at >= cutoff,
+            )
+        ).scalar_one()
+    )
+
+    totals = session.execute(
+        select(func.count(), func.max(Measurement.observed_at))
+        .select_from(Measurement)
+        .join(Station, Station.id == Measurement.station_id)
+        .where(
+            in_range,
+            Measurement.pollutant == pollutant,
+            Measurement.is_plausible.is_(True),
+        )
+    ).one()
+
+    return CityCoverage(
+        stations=stations,
+        reporting_stations=reporting,
+        readings=int(totals[0]),
+        latest_reading_at=totals[1],
+    )

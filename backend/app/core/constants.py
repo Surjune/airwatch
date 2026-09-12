@@ -768,3 +768,46 @@ EXIF_TIME_TOLERANCE_MINUTES: Final[int] = 30
 #: Below CITIZEN_INITIAL_TRUST, so an unverifiable photo still appears on the
 #: map but does not shape the calibration.
 CITIZEN_UNVERIFIED_TRUST: Final[float] = 0.3
+
+
+# ---------------------------------------------------------------------------
+# Federation
+# ---------------------------------------------------------------------------
+
+#: Pilot city centres, in (longitude, latitude). Chosen to span distinct
+#: pollution regimes: Delhi for stubble, traffic and industry together; Kanpur
+#: for the Indo-Gangetic industrial belt; Coimbatore as the southern node with
+#: almost no monitoring, which is the one federation is supposed to help and
+#: therefore the one that tests the claim.
+PILOT_CITY_CENTRES: Final[dict[str, tuple[float, float]]] = {
+    "delhi": (77.2090, 28.6139),
+    "kanpur": (80.3319, 26.4499),
+    "coimbatore": (76.9558, 11.0168),
+}
+
+#: Radius, in metres, within which a station counts as belonging to a city.
+PILOT_CITY_RADIUS_M: Final[int] = 25_000
+
+#: How recently a station must have reported a pollutant to count as reporting
+#: it. Deliberately separate from a station being "active": a site whose PM2.5
+#: sensor died months ago still reports as active if its thermometer works, and
+#: that distinction is the whole Coimbatore finding.
+PILOT_REPORTING_WINDOW_HOURS: Final[int] = 48
+
+#: Measured error, in ug/m3, of each node's own forecast model against the
+#: federated global model on that node's held-out data. Source: `npm run
+#: fl:validate`. Published unchanged: a federation where nodes advertise only
+#: favourable numbers is worse than none, because a data-poor city would adopt a
+#: model that harms it and have no way to find out.
+FEDERATED_LOCAL_MAE_UGM3: Final[dict[str, float]] = {"delhi": 16.82, "kanpur": 9.21}
+FEDERATED_GLOBAL_MAE_UGM3: Final[dict[str, float]] = {"delhi": 16.84, "kanpur": 9.85}
+
+#: Training and test rows each node contributed to that run, so a reader can see
+#: how thin the evidence is. Kanpur's 23-row test set is why its result is
+#: reported as a signal rather than a settled fact.
+FEDERATED_TRAIN_ROWS: Final[dict[str, int]] = {"delhi": 1719, "kanpur": 55}
+FEDERATED_TEST_ROWS: Final[dict[str, int]] = {"delhi": 493, "kanpur": 23}
+
+#: Relative degradation a node tolerates before the federated model is judged to
+#: have harmed it. Two percent is inside the noise of a holdout this size.
+FEDERATED_HARM_TOLERANCE: Final[float] = 0.02

@@ -4,6 +4,7 @@ import { StatusMessage } from '@/components/ui/StatusMessage';
 import { AlertConsole } from '@/features/alerts/AlertConsole';
 import { CitizenSubmit } from '@/features/citizen/CitizenSubmit';
 import { CorridorView } from '@/features/corridor/CorridorView';
+import { FederationView } from '@/features/federation/FederationView';
 import { HotspotPanel } from '@/features/hotspots/HotspotPanel';
 import { MapView } from '@/features/map/MapView';
 import { useHotspots, useStations } from '@/hooks/useAnalysis';
@@ -19,6 +20,7 @@ const VIEWS = [
   { key: 'map', label: 'Map' },
   { key: 'corridor', label: 'Corridor outlook' },
   { key: 'alerts', label: 'Authority console' },
+  { key: 'federation', label: 'Federation' },
   { key: 'citizen', label: 'Contribute' },
 ] as const;
 
@@ -80,6 +82,10 @@ export function App(): React.JSX.Element {
       ) : view === 'corridor' ? (
         <div className="min-h-0 flex-1">
           <CorridorView />
+        </div>
+      ) : view === 'federation' ? (
+        <div className="min-h-0 flex-1">
+          <FederationView />
         </div>
       ) : (
         <div className="flex min-h-0 flex-1">

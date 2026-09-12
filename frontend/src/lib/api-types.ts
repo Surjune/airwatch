@@ -124,6 +124,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/alerts/deliver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send recorded alerts to the authorities' endpoint
+         * @description Drain the delivery queue.
+         *
+         *     Separate from dispatch because delivery depends on somebody else's endpoint
+         *     being up, and a slow one must not be able to stall detection.
+         */
+        post: operations["deliver_v1_alerts_deliver_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/alerts/{alert_id}/acknowledge": {
         parameters: {
             query?: never;
@@ -316,6 +339,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/federation/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Node coverage, and whether federating helped
+         * @description Report live monitoring coverage and the measured transfer result.
+         */
+        get: operations["status_v1_federation_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -374,8 +417,19 @@ export interface components {
             /**
              * Sent At
              * Format: date-time
+             * @description When the alert was recorded.
              */
             sent_at: string;
+            /**
+             * Delivered At
+             * @description When the authority's endpoint accepted it. Null with a non-null sent_at means the alert exists in the trail but nobody has been told -- a different finding from an authority that was told and stayed silent.
+             */
+            delivered_at?: string | null;
+            /**
+             * Delivery Error
+             * @description Why delivery failed, when it did. The alert stays queued.
+             */
+            delivery_error?: string | null;
             /** Acknowledged At */
             acknowledged_at?: string | null;
             /** Resolved At */
@@ -549,6 +603,31 @@ export interface components {
             points: components["schemas"]["ForecastPointResponse"][];
         };
         /**
+         * DeliveryResponse
+         * @description What one delivery run achieved.
+         */
+        DeliveryResponse: {
+            /** Attempted */
+            attempted: number;
+            /** Delivered */
+            delivered: number;
+            /**
+             * Failed
+             * @description Attempts that failed. Those alerts stay queued rather than being lost.
+             */
+            failed: number;
+            /**
+             * Endpoint Configured
+             * @description False when no endpoint is configured, so nothing was attempted. Distinct from zero pending: one means nothing to send, the other means nowhere to send it.
+             */
+            endpoint_configured: boolean;
+            /**
+             * Pending
+             * @description Alerts still waiting after this run.
+             */
+            pending: number;
+        };
+        /**
          * DispatchResponse
          * @description What one dispatch run did.
          */
@@ -606,6 +685,26 @@ export interface components {
              * @default false
              */
             truncated: boolean;
+        };
+        /**
+         * FederationStatusResponse
+         * @description The federation as it currently stands.
+         */
+        FederationStatusResponse: {
+            /**
+             * Reporting Window Hours
+             * @description How recently a station must have reported to count as reporting.
+             */
+            reporting_window_hours: number;
+            /**
+             * Summary
+             * @description The position in one sentence, stated whether or not it flatters the design.
+             */
+            summary: string;
+            /** Coverage */
+            coverage: components["schemas"]["NodeCoverageResponse"][];
+            /** Transfer */
+            transfer: components["schemas"]["TransferResultResponse"][];
         };
         /**
          * ForecastPointResponse
@@ -956,6 +1055,43 @@ export interface components {
             contact?: string | null;
         };
         /**
+         * NodeCoverageResponse
+         * @description One city's monitoring, counted now.
+         */
+        NodeCoverageResponse: {
+            /** Node */
+            node: string;
+            /**
+             * Stations
+             * @description Sites within range of the city centre.
+             */
+            stations: number;
+            /**
+             * Reporting Stations
+             * @description Of those, how many have produced a reading for this pollutant recently.
+             */
+            reporting_stations: number;
+            /**
+             * Silent Stations
+             * @description Stations in range not reporting this pollutant. A site whose PM2.5 sensor died still counts as active if its thermometer works, so every published count of active stations includes monitors measuring nothing.
+             */
+            silent_stations: number;
+            /** Readings */
+            readings: number;
+            /** Latest Reading At */
+            latest_reading_at?: string | null;
+            /**
+             * Is Unmonitored
+             * @description True when monitors in range have never reported this pollutant. A genuine monitoring gap.
+             */
+            is_unmonitored: boolean;
+            /**
+             * Is Stale
+             * @description True when there is historical data but nothing recent. That is this deployment's ingestion falling behind, not a gap in the city's network, and the two must not be conflated.
+             */
+            is_stale: boolean;
+        };
+        /**
          * ObservationCollection
          * @description A GeoJSON FeatureCollection of observations.
          */
@@ -1258,6 +1394,40 @@ export interface components {
             calibration: components["schemas"]["CalibrationStatusResponse"];
         };
         /**
+         * TransferResultResponse
+         * @description Whether the federated model helped one node, as measured.
+         */
+        TransferResultResponse: {
+            /** Node */
+            node: string;
+            /**
+             * Local Mae
+             * @description Error of the node's own model, in ug/m3.
+             */
+            local_mae: number;
+            /**
+             * Global Mae
+             * @description Error of the federated model on the same holdout.
+             */
+            global_mae: number;
+            /**
+             * Improvement
+             * @description Relative change from adopting the global model. Negative means worse.
+             */
+            improvement: number;
+            /** Is Harmed */
+            is_harmed: boolean;
+            /** Recommendation */
+            recommendation: string;
+            /** Train Rows */
+            train_rows: number;
+            /**
+             * Test Rows
+             * @description Published so a reader can weigh the result. A holdout of a few dozen rows is a signal, not a settled fact.
+             */
+            test_rows: number;
+        };
+        /**
          * UnitOfMeasurement
          * @description An OGC SensorThings unit block.
          */
@@ -1493,6 +1663,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deliver_v1_alerts_deliver_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryResponse"];
                 };
             };
         };
@@ -1767,6 +1957,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CalibrationStatusResponse"];
+                };
+            };
+        };
+    };
+    status_v1_federation_status_get: {
+        parameters: {
+            query?: {
+                pollutant?: components["schemas"]["Pollutant"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FederationStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

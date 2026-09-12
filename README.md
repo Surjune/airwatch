@@ -251,6 +251,7 @@ every error returns the same envelope with a correlation ID.
 | `POST /v1/alerts/{id}/resolve` | Close an alert with a note describing the outcome |
 | `POST /v1/alerts/deliver` | Send recorded alerts to the configured endpoint |
 | `GET /v1/alerts/sla-breaches` | Alerts past their response deadline |
+| `GET /v1/federation/status` | Live node coverage, and whether federating helped |
 | `GET /v1/interop/capabilities` | What this node offers a partner, discoverable at runtime |
 | `GET /v1/interop/observations` | Observations as GeoJSON with OGC SensorThings property names |
 | `GET /v1/interop/hotspots` | Detected episodes as GeoJSON, carrying observed, expected and excess |
@@ -379,7 +380,12 @@ Deferred deliberately, and tracked here rather than as TODOs in the code.
 - **Federated averaging harmed the sparse node** on the two cities available;
   see the table above. The aggregation, FedProx and negative-transfer check are
   implemented and tested, but the measured recommendation is that Kanpur keeps
-  its local model.
+  its local model. `GET /v1/federation/status` publishes that result rather than
+  hiding it, alongside live node coverage.
+- **Nodes are not separate deployables.** Aggregation runs in one process against
+  one database. Flower would make each city an independent participant, which is
+  what the design calls for; until the measured result stops saying "keep your
+  local model" there is little to gain from the extra machinery.
 - **Station-level activity is not pollutant-level activity.** A site whose
   PM2.5 sensor is dead still reports as active if any other sensor is live.
   Confirming a pollutant is reporting requires querying its sensor history.

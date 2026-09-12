@@ -12,7 +12,7 @@ import asyncio
 import sys
 
 from app.core.config import get_settings
-from app.core.constants import BACKFILL_DAYS
+from app.core.constants import BACKFILL_DAYS, PILOT_CITY_CENTRES
 from app.core.enums import Pollutant
 from app.core.geo import LonLat
 from app.core.logging import configure_logging, get_logger
@@ -27,11 +27,16 @@ logger = get_logger(__name__)
 #: Pilot cities, chosen to span distinct pollution regimes. Coimbatore is
 #: deliberately included as the data-poor southern node: it is the one that
 #: benefits from federated model sharing, which is the whole argument for it.
+#: Fire search boxes per city, (west, south, east, north). Wider than the
+#: station radius because a fire upwind of a city is the thing being looked for.
+_FIRE_BOXES: dict[str, tuple[float, float, float, float]] = {
+    "delhi": (76.0, 27.8, 78.2, 29.3),
+    "kanpur": (79.8, 26.0, 80.9, 27.0),
+    "coimbatore": (76.4, 10.6, 77.5, 11.5),
+}
+
 PILOT_CITIES: dict[str, tuple[LonLat, tuple[float, float, float, float]]] = {
-    # name: (centre (lon, lat), fire bbox (west, south, east, north))
-    "delhi": ((77.2090, 28.6139), (76.0, 27.8, 78.2, 29.3)),
-    "kanpur": ((80.3319, 26.4499), (79.8, 26.0, 80.9, 27.0)),
-    "coimbatore": ((76.9558, 11.0168), (76.4, 10.6, 77.5, 11.5)),
+    name: (centre, _FIRE_BOXES[name]) for name, centre in PILOT_CITY_CENTRES.items()
 }
 
 #: Exit code used when at least one upstream failed.
