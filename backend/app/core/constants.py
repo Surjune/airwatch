@@ -660,3 +660,85 @@ PUBLISHED_FORECAST_PERSISTENCE_MAE_UGM3: Final[float] = 22.05
 #: negative-transfer check recommended it keep the local model.
 #: Source: `npm run fl:validate`.
 PUBLISHED_FEDERATED_SPARSE_NODE_CHANGE: Final[float] = -0.068
+
+
+# ---------------------------------------------------------------------------
+# Citizen photo haze estimation
+# ---------------------------------------------------------------------------
+# A photograph cannot measure PM2.5. What it can measure is how much contrast
+# the atmosphere has removed, and that quantity -- dimensionless, in [0, 1] --
+# is what this tier produces. Turning it into a concentration needs an empirical
+# relation fitted against co-located reference monitors, so the conversion only
+# happens once enough pairs exist to fit one. Until then the tier reports the
+# haze index and says it is uncalibrated, because an uncalibrated concentration
+# derived from a photograph is a fabricated reading.
+
+#: Local patch width, in pixels, for the dark-channel prior. He, Sun and Tang
+#: (CVPR 2009) use 15x15: large enough that most patches contain a genuinely
+#: dark pixel in a haze-free scene, small enough not to blur across depth edges.
+HAZE_DCP_PATCH_PIXELS: Final[int] = 15
+
+#: Fraction of haze retained when inverting the scattering model. He et al. use
+#: 0.95 rather than 1.0 because a perfectly dehazed distant object looks
+#: unnatural, and because some aerial perspective is a real depth cue.
+HAZE_DCP_OMEGA: Final[float] = 0.95
+
+#: Top fraction of dark-channel pixels averaged to estimate atmospheric light.
+#: He et al. use the brightest 0.1%, which lands on sky or haze rather than on a
+#: white object.
+HAZE_ATMOSPHERIC_LIGHT_FRACTION: Final[float] = 0.001
+
+#: Longest edge, in pixels, an image is downscaled to before analysis. The dark
+#: channel is a local-minimum filter, so cost grows with pixel count while the
+#: statistic itself is scale-stable; 512 keeps a phone photo under a second.
+HAZE_ANALYSIS_MAX_EDGE_PIXELS: Final[int] = 512
+
+#: Shortest edge, in pixels, an image must have to be analysed at all. Below
+#: this the patch filter has too few independent patches to be meaningful.
+HAZE_MIN_EDGE_PIXELS: Final[int] = 64
+
+#: Mean luminance, 0-255, below which a photo is treated as taken in darkness.
+#: The dark-channel prior assumes a lit outdoor scene; at night the dark channel
+#: is low everywhere and a clear night is indistinguishable from thick haze.
+HAZE_MIN_MEAN_LUMINANCE: Final[float] = 40.0
+
+#: Mean luminance above which the frame is treated as blown out, where the prior
+#: also fails because nothing in it is dark.
+HAZE_MAX_MEAN_LUMINANCE: Final[float] = 240.0
+
+#: Variance of the Laplacian below which an image is treated as out of focus.
+#: Blur removes exactly the high-frequency contrast haze removes, so a blurred
+#: clear photo reads as a sharp hazy one.
+HAZE_MIN_LAPLACIAN_VARIANCE: Final[float] = 15.0
+
+#: Radius, in metres, within which a citizen photo is treated as co-located with
+#: a reference station for the purpose of building the calibration. Wider than
+#: the fusion sensor cutoff because the pairing only has to be representative of
+#: the same air mass, not of the same 0.46 km cell.
+CITIZEN_COLOCATION_RADIUS_M: Final[int] = 3000
+
+#: Co-located pairs needed before a haze index is converted to a concentration.
+#: Thirty is the smallest sample from which a single-predictor fit reports an
+#: error worth publishing; below it the fit's own uncertainty exceeds the signal.
+CITIZEN_CALIBRATION_MIN_PAIRS: Final[int] = 30
+
+#: How stale a photo's capture time may be and still describe current air, in
+#: hours. A pollution episode lasts hours, so a photo from yesterday is a
+#: photograph of different air.
+CITIZEN_MAX_CAPTURE_AGE_HOURS: Final[int] = 3
+
+#: Reports one device may submit per hour. A dense tier is only useful if it is
+#: not trivially floodable by a single participant.
+CITIZEN_MAX_REPORTS_PER_DEVICE_PER_HOUR: Final[int] = 6
+
+#: Trust a new device starts with, and the floor and step of its adjustment.
+#: Trust rises when a submission agrees with the surrounding network and falls
+#: when it does not, so a device that consistently disagrees stops influencing
+#: anything without being blocked outright.
+CITIZEN_INITIAL_TRUST: Final[float] = 0.5
+CITIZEN_MIN_TRUST: Final[float] = 0.05
+CITIZEN_TRUST_STEP: Final[float] = 0.1
+
+#: Relative disagreement with the co-located reference above which a submission
+#: counts as contradicted for trust purposes.
+CITIZEN_DISAGREEMENT_TOLERANCE: Final[float] = 0.5
