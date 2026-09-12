@@ -254,6 +254,9 @@ every error returns the same envelope with a correlation ID.
 | `GET /v1/interop/observations` | Observations as GeoJSON with OGC SensorThings property names |
 | `GET /v1/interop/hotspots` | Detected episodes as GeoJSON, carrying observed, expected and excess |
 | `GET /v1/interop/models` | Model cards: what each estimator scored, and what it lost to |
+| `POST /v1/citizen/reports` | Submit a geotagged photograph; returns the haze it measured |
+| `GET /v1/citizen/reports` | Recent submissions, and which of them also calibrate |
+| `GET /v1/citizen/calibration` | Whether a photograph can yield a concentration yet |
 
 ### Alerting, and why it is shaped this way
 
@@ -276,6 +279,40 @@ done, and the difference is the whole value of the trail.
 Measured against the live database: **21 episodes detected, 21 routed, 0
 unrouted**, and a second run suppressed all 21. Anand Vihar routes to East Delhi,
 Nehru Nagar to South Delhi.
+
+### The citizen tier, and what a photograph can establish
+
+A reference monitor costs ~₹1 crore and there are a few hundred in the country.
+There are a billion cameras. The risk is that density arrives without accuracy
+and gets treated as if it had both, so this tier is arranged to fail towards
+silence.
+
+A photograph cannot measure PM2.5. It can measure how much contrast the
+atmosphere removed, which the dark-channel prior (He, Sun and Tang, CVPR 2009)
+recovers as a transmission map; transmission is `exp(-βd)` for extinction over
+scene depth. The depth is not in the image, so the measurement stops at a
+dimensionless **haze index** in [0, 1].
+
+Converting that to micrograms needs an empirical relation, and the only
+defensible source is this network's own data: submissions taken within 3 km of a
+reference monitor pair a haze index with a measured concentration. **Below
+thirty pairs, no concentration is published** — not a rough number, not a wide
+interval. The response carries the haze index, a null estimate, and a sentence
+saying what is missing. An uncalibrated concentration derived from a photograph
+is a fabricated reading.
+
+The error is measured by leave-one-out rather than in-sample, because at this
+sample size the fit has seen every point it would otherwise be scored on.
+
+Three image conditions are refused outright — **darkness, blur, over-exposure**
+— because each one makes clean air look dirty. A bug here would not produce an
+obviously broken number; it would produce a plausible pollution reading from a
+clear day, which is the worst output this system can emit. A refusal returns the
+reason, so the photograph can be retaken.
+
+Trust moves only when a comparison was possible. A device is never penalised for
+photographing somewhere the reference network cannot check it, since that is
+exactly where the tier is most needed.
 
 ### Interoperability, and why weights are withheld
 
@@ -320,11 +357,17 @@ reason when there is none, so `npm run check` is green on a clean clone.
 
 Deferred deliberately, and tracked here rather than as TODOs in the code.
 
-- **Sensor calibration is not yet trained.** Calibration needs paired
-  (low-cost sensor, reference) observations and every station ingested so far is
-  reference-grade, so there is nothing to calibrate against yet. The conversion
-  and storage path keeps the raw value and the calibrating model version
-  separately, so calibration can be applied later without re-ingesting.
+- **No low-cost sensor tier exists.** Every station ingested is reference-grade, so the
+  sensor-calibration model the three-tier design depends on has nothing to calibrate against. The
+  storage path keeps the raw value and the calibrating model version separately, so calibration can
+  be applied later without re-ingesting.
+- **The citizen tier has no calibration yet, by construction.** It needs thirty photographs taken
+  near a reference monitor across a range of conditions. Until then it reports a haze index and no
+  concentration, which is the intended behaviour rather than an unfinished one.
+- **Capture time is taken from the file's modified time,** not from EXIF. For a photograph taken in
+  order to be submitted these are the same moment, but EXIF parsing and geotag verification — the
+  anti-spoofing the design calls for — are not implemented. A submitted position is currently
+  trusted as given.
 - **Federated averaging harmed the sparse node** on the two cities available;
   see the table above. The aggregation, FedProx and negative-transfer check are
   implemented and tested, but the measured recommendation is that Kanpur keeps
