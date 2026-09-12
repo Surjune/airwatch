@@ -480,3 +480,62 @@ class Alert(Base):
         UniqueConstraint("hotspot_id", "authority_id", name="uq_alert_hotspot_authority"),
         Index("ix_alerts_status", "status"),
     )
+
+
+class CitizenReport(Base):
+    """A photograph submitted by a member of the public, and what it yielded.
+
+    The haze index is stored; a derived concentration is not. The conversion is a
+    model output fitted from co-located pairs and it changes whenever the fit is
+    rebuilt, so storing a concentration would freeze one version of the relation
+    into the record and make a published figure impossible to reproduce. The same
+    reasoning as calibrated station readings, applied to a weaker measurement.
+
+    ``reference_value`` is the concentration a nearby monitor reported at the
+    time, when one was in range. That pairing is what the calibration is fitted
+    from, which makes early submissions near stations the thing that eventually
+    lets a submission far from any station mean something.
+    """
+
+    __tablename__ = "citizen_reports"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    geom: Mapped[str] = _point_column()
+    h3_cell: Mapped[str] = mapped_column(String(H3_INDEX_LENGTH), nullable=False, index=True)
+
+    #: When the photograph was taken, not when it was uploaded.
+    captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    submitted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    #: Opaque per-device identifier, used for rate limiting and trust. Not a
+    #: user account: this tier is anonymous, and a device that submits nonsense
+    #: needs to stop counting without anyone being identified.
+    device_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+
+    haze_index: Mapped[float] = mapped_column(Float, nullable=False)
+    transmission: Mapped[float] = mapped_column(Float, nullable=False)
+    mean_luminance: Mapped[float] = mapped_column(Float, nullable=False)
+    sharpness: Mapped[float] = mapped_column(Float, nullable=False)
+
+    #: Nearest reference station at submission time, when one was within range.
+    reference_station_id: Mapped[int | None] = mapped_column(
+        ForeignKey("stations.id", ondelete="SET NULL"), nullable=True
+    )
+    reference_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    reference_distance_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    #: Confidence this device's submissions carry, decayed when a submission
+    #: disagrees with the surrounding network.
+    trust_score: Mapped[float] = mapped_column(Float, nullable=False)
+
+    extra: Mapped[dict[str, object] | None] = mapped_column(JSONB, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("haze_index >= 0 AND haze_index <= 1", name="ck_citizen_haze_range"),
+        CheckConstraint("trust_score >= 0 AND trust_score <= 1", name="ck_citizen_trust_range"),
+        Index("ix_citizen_reports_captured", "captured_at"),
+        Index("ix_citizen_reports_geom", "geom", postgresql_using="gist"),
+    )
