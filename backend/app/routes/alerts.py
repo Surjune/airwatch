@@ -49,6 +49,7 @@ def _to_response(detail: AlertDetail) -> AlertResponse:
         first_seen_at=detail.first_seen_at,
         last_seen_at=detail.last_seen_at,
         peak_observed=detail.peak_observed,
+        peak_expected=detail.peak_observed - detail.peak_excess,
         peak_excess=detail.peak_excess,
         peak_z=detail.peak_z,
         sent_at=detail.sent_at,

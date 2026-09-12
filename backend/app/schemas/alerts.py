@@ -40,6 +40,13 @@ class AlertResponse(BaseModel):
     last_seen_at: datetime
 
     peak_observed: float = Field(description="Highest concentration during the episode.")
+    peak_expected: float = Field(
+        description=(
+            "What the surrounding network predicted at that moment. Carried "
+            "alongside the observation rather than left to the client to derive, "
+            "so every consumer states the comparison the same way."
+        )
+    )
     peak_excess: float = Field(
         description="How far above the neighbourhood prediction. This is what locates a source."
     )

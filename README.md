@@ -234,9 +234,87 @@ Delhi, and a feature one node can compute and another cannot does not average.
 Agreeing the smaller common schema is the correct trade, and is a good example
 of federation being a governance problem before it is a modelling one.
 
-## Status
+## What the API exposes
 
-Under active development. See `docs/` for architecture notes.
+Four analysis endpoints, four exchange endpoints, and the alert console. Every
+estimated quantity carries its uncertainty or confidence in the payload, and
+every error returns the same envelope with a correlation ID.
+
+| Endpoint | What it answers |
+| --- | --- |
+| `GET /v1/stations` | Latest reading at every station, worst first |
+| `GET /v1/hotspots` | Locations dirtier than their neighbourhood predicts, with ranked candidate sources |
+| `GET /v1/forecast/corridor` | Concentration outlook along a route |
+| `GET /v1/alerts` | The alert inbox, ordered by standardised excess |
+| `POST /v1/alerts/dispatch` | Detect over a window and route alerts to the responsible authorities |
+| `POST /v1/alerts/{id}/acknowledge` | Record that an authority has seen an alert |
+| `POST /v1/alerts/{id}/resolve` | Close an alert with a note describing the outcome |
+| `GET /v1/alerts/sla-breaches` | Alerts past their response deadline |
+| `GET /v1/interop/capabilities` | What this node offers a partner, discoverable at runtime |
+| `GET /v1/interop/observations` | Observations as GeoJSON with OGC SensorThings property names |
+| `GET /v1/interop/hotspots` | Detected episodes as GeoJSON, carrying observed, expected and excess |
+| `GET /v1/interop/models` | Model cards: what each estimator scored, and what it lost to |
+
+### Alerting, and why it is shaped this way
+
+Routing is spatial, not configured per station, because a hotspot can appear on
+ground no monitor covers -- which is the reason for estimating a surface at all.
+Three rules follow, and all three exist to protect the one thing the chain
+depends on, that alerts keep being read:
+
+- **One alert per episode.** A source that burns for eight hours is one event.
+- **Lowest jurisdiction tier first,** so a municipal body is reached before a
+  state board rather than both being told and each assuming the other is acting.
+- **An unrouted hotspot is reported, not dropped.** A hotspot inside no
+  registered jurisdiction is a gap in the authority registry; hiding it would
+  make an incomplete registry look like a quiet day.
+
+Resolution requires a note. A resolution with no explanation records that
+someone clicked a button, which is not the same as recording that something was
+done, and the difference is the whole value of the trail.
+
+Measured against the live database: **21 episodes detected, 21 routed, 0
+unrouted**, and a second run suppressed all 21. Anand Vihar routes to East Delhi,
+Nehru Nagar to South Delhi.
+
+### Interoperability, and why weights are withheld
+
+No state hands another its raw database, so a national data lake stalls on
+ownership rather than bandwidth. What a state will exchange is a bounded,
+self-describing envelope it can audit before sending -- hence GeoJSON, OGC
+SensorThings property names, and an explicit CRS, licence and measurement tier
+on every payload.
+
+`GET /v1/interop/models` publishes the measured performance of every estimator,
+including the two that lost, and offers **no weight vector**. That is deliberate
+rather than unfinished: the learned models were trained, validated and beaten by
+their baselines, and federated averaging of the forecast model measurably harmed
+the sparse node. Publishing those weights would invite a data-poor city to adopt
+something this node measured to be worse. The reason is stated in the card.
+
+## Running it
+
+```bash
+npm run db:up         # Postgres + PostGIS + TimescaleDB, and Redis
+npm run db:migrate    # apply migrations
+npm run seed          # load the source and authority registries
+npm run ingest:once   # pull live data from OpenAQ, Open-Meteo and FIRMS
+npm run backfill      # pull hourly history so forecasting has a series
+npm run dev           # API on :8000, web on :5173
+```
+
+Verification:
+
+```bash
+npm run check              # lint, formatting, types, and every test
+npm run ml:validate-loso   # leave-one-station-out on the fused surface
+npm run ml:validate-forecast
+npm run fl:validate        # does federation help the sparse node?
+npm run alerts:dispatch    # detect and route from the command line
+```
+
+Tests marked `integration` need a reachable PostgreSQL and skip with a reported
+reason when there is none, so `npm run check` is green on a clean clone.
 
 ## Known limitations
 
@@ -263,6 +341,17 @@ Deferred deliberately, and tracked here rather than as TODOs in the code.
   lost; see the validation table above.
 - **The fusion model is inverse-distance weighting, not machine learning.** That
   is an empirical decision recorded above, not an unfinished one.
+- **Jurisdiction polygons are illustrative bounding boxes.** `infra/seed/delhi_authorities.json`
+  stands in for authoritative administrative boundaries, which were unavailable. Routing works and
+  is spatially correct at city-zone granularity, but a deployment must load the real geometry: an
+  alert delivered to the wrong body is worse than one never sent, because it creates a record of
+  notification that nobody could act on.
+- **No model weights are published for exchange.** `GET /v1/interop/models` serves model cards with
+  measured performance and withholds weights, because both learned models lost to their baselines.
+  The envelope supports weights; there is nothing this node would honestly recommend adopting.
+- **Alerts are recorded, not delivered.** The routing, suppression, acknowledgement, resolution and
+  SLA trail are all implemented and persisted, but no email, SMS or webhook is actually sent. The
+  channel is the missing piece, not the accountability logic.
 - **No authentication in v1.** The API is anonymous, protected only by per-IP rate limiting and a
   locked CORS allowlist.
 - **Upstream CO units are not trustworthy at face value.** Several live Delhi stations declare CO
@@ -273,9 +362,11 @@ Deferred deliberately, and tracked here rather than as TODOs in the code.
 - **Stations carry duplicate sensors across generations.** A live station commonly exposes both a
   current sensor and a decommissioned one for the same pollutant, and the API returns the final
   value of each. Readings are filtered by observation recency per reading, not per station.
-- **data.gov.in is intermittently unavailable.** The CPCB direct client is a redundancy path; the
-  portal's API gateway returned 502 across all endpoints during development. OpenAQ carries the
-  same CPCB station data and is the primary reference-tier source.
+- **There is no direct CPCB client.** `CPCB_API_KEY` is accepted by the configuration but nothing
+  reads it. A direct data.gov.in path was planned as redundancy and abandoned when the portal's API
+  gateway returned 502 across every endpoint during development. OpenAQ carries the same CPCB and
+  DPCC station data and is the only reference-tier source actually in use, so the network currently
+  has a single point of failure upstream.
 - **Sentinel-5P is ~7 km resolution with a daily revisit,** so it constrains fusion covariates
   rather than detecting hotspots directly.
 - **Back-trajectory uses a single-layer wind field,** not full HYSPLIT dispersion.

@@ -84,10 +84,272 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The alert inbox
+         * @description Alerts routed to authorities, most urgent first.
+         */
+        get: operations["list_alerts_v1_alerts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/alerts/dispatch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Detect hotspots and route alerts for them
+         * @description Run detection over a recent window and notify the responsible authorities.
+         */
+        post: operations["dispatch_v1_alerts_dispatch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/alerts/{alert_id}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record that an authority has seen an alert
+         * @description Acknowledge an alert.
+         */
+        post: operations["acknowledge_v1_alerts__alert_id__acknowledge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/alerts/{alert_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close an alert with a note describing the outcome
+         * @description Resolve an alert.
+         */
+        post: operations["resolve_v1_alerts__alert_id__resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/alerts/sla-breaches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Alerts past their response deadline
+         * @description Alerts whose response window has elapsed, longest overdue first.
+         */
+        get: operations["sla_breaches_v1_alerts_sla_breaches_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/interop/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What this node offers a partner
+         * @description Describe this node so a partner can integrate without prior arrangement.
+         */
+        get: operations["capabilities_v1_interop_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/interop/observations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Station observations as GeoJSON
+         * @description Recent observations in an OGC SensorThings-shaped GeoJSON envelope.
+         */
+        get: operations["observations_v1_interop_observations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/interop/hotspots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Detected episodes as GeoJSON
+         * @description Episodes this node has detected, with observed, expected and excess.
+         */
+        get: operations["hotspots_v1_interop_hotspots_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/interop/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Model cards for every estimator this node runs
+         * @description Publish what this node runs, how it was validated, and where it fails.
+         */
+        get: operations["models_v1_interop_models_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AlertResponse
+         * @description One alert with the context needed to act on it.
+         */
+        AlertResponse: {
+            /** Alert Id */
+            alert_id: number;
+            status: components["schemas"]["AlertStatus"];
+            /** Authority Id */
+            authority_id: number;
+            /** Authority Name */
+            authority_name: string;
+            /** Hotspot Id */
+            hotspot_id: number;
+            /**
+             * Station Name
+             * @description Null when the episode was detected on ground no station covers, which is the case the fused surface exists to reach.
+             */
+            station_name?: string | null;
+            position: components["schemas"]["Position"];
+            pollutant: components["schemas"]["Pollutant"];
+            /**
+             * First Seen At
+             * Format: date-time
+             */
+            first_seen_at: string;
+            /**
+             * Last Seen At
+             * Format: date-time
+             */
+            last_seen_at: string;
+            /**
+             * Peak Observed
+             * @description Highest concentration during the episode.
+             */
+            peak_observed: number;
+            /**
+             * Peak Expected
+             * @description What the surrounding network predicted at that moment. Carried alongside the observation rather than left to the client to derive, so every consumer states the comparison the same way.
+             */
+            peak_expected: number;
+            /**
+             * Peak Excess
+             * @description How far above the neighbourhood prediction. This is what locates a source.
+             */
+            peak_excess: number;
+            /**
+             * Peak Z
+             * @description Excess in units of the expected error at this location.
+             */
+            peak_z: number;
+            /**
+             * Sent At
+             * Format: date-time
+             */
+            sent_at: string;
+            /** Acknowledged At */
+            acknowledged_at?: string | null;
+            /** Resolved At */
+            resolved_at?: string | null;
+            /** Resolution Note */
+            resolution_note?: string | null;
+        };
+        /**
+         * AlertStatus
+         * @description Lifecycle of an alert routed to an authority.
+         *
+         *     The transitions are what turn a detection into an accountability trail; an
+         *     alert with no acknowledgement is as much a finding as the hotspot itself.
+         * @enum {string}
+         */
+        AlertStatus: "sent" | "acknowledged" | "resolved" | "escalated";
+        /**
+         * AlertsResponse
+         * @description The alert inbox.
+         */
+        AlertsResponse: {
+            /** Alert Count */
+            alert_count: number;
+            /** Alerts */
+            alerts: components["schemas"]["AlertResponse"][];
+        };
         /**
          * AttributionResponse
          * @description A ranked candidate explanation for a hotspot.
@@ -108,6 +370,18 @@ export interface components {
             hours_upwind: number;
             /** Explanation */
             explanation: string;
+        };
+        /**
+         * Capability
+         * @description One exchange endpoint this node offers.
+         */
+        Capability: {
+            /** Path */
+            path: string;
+            /** Method */
+            method: string;
+            /** Description */
+            description: string;
         };
         /**
          * CorridorForecastResponse
@@ -131,6 +405,65 @@ export interface components {
             point_count: number;
             /** Points */
             points: components["schemas"]["ForecastPointResponse"][];
+        };
+        /**
+         * DispatchResponse
+         * @description What one dispatch run did.
+         */
+        DispatchResponse: {
+            /** Detected */
+            detected: number;
+            /** Raised */
+            raised: number;
+            /**
+             * Suppressed
+             * @description Episodes already in flight with the same authority. A source that burns for eight hours is one event, not eight alerts.
+             */
+            suppressed: number;
+            /**
+             * Unrouted
+             * @description Hotspots inside no registered jurisdiction. Reported rather than dropped: an incomplete authority registry must not read as a quiet day.
+             */
+            unrouted: number;
+        };
+        /**
+         * ExchangeMetadata
+         * @description Who sent this, when, and on what terms.
+         */
+        ExchangeMetadata: {
+            /** Node Id */
+            node_id: string;
+            /** Node Name */
+            node_name: string;
+            /** Operator */
+            operator: string;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /**
+             * Crs
+             * @default http://www.opengis.net/def/crs/OGC/1.3/CRS84
+             */
+            crs: string;
+            /** H3 Resolution */
+            h3_resolution: number;
+            /** Licence */
+            licence: string;
+            /** Disclaimer */
+            disclaimer: string;
+            /**
+             * Returned
+             * @description Features in this response.
+             */
+            returned: number;
+            /**
+             * Truncated
+             * @description True when more features matched than the response carries. A partner that cannot tell a complete answer from a clipped one would silently treat a truncated window as a quiet period.
+             * @default false
+             */
+            truncated: boolean;
         };
         /**
          * ForecastPointResponse
@@ -196,6 +529,80 @@ export interface components {
              * @description Configuration state of each upstream data source.
              */
             upstreams: components["schemas"]["UpstreamStatus"][];
+        };
+        /**
+         * HotspotCollection
+         * @description A GeoJSON FeatureCollection of hotspot episodes.
+         */
+        HotspotCollection: {
+            /**
+             * Type
+             * @default FeatureCollection
+             * @constant
+             */
+            type: "FeatureCollection";
+            /** Features */
+            features: components["schemas"]["HotspotFeature"][];
+            metadata: components["schemas"]["ExchangeMetadata"];
+        };
+        /**
+         * HotspotFeature
+         * @description One hotspot as a GeoJSON feature.
+         */
+        HotspotFeature: {
+            /**
+             * Type
+             * @default Feature
+             * @constant
+             */
+            type: "Feature";
+            geometry: components["schemas"]["PointGeometry"];
+            properties: components["schemas"]["HotspotProperties"];
+        };
+        /**
+         * HotspotProperties
+         * @description Properties of one exchanged hotspot episode.
+         *
+         *     Deliberately carries expected alongside observed. A neighbouring state
+         *     receiving only the concentration cannot tell a local source from a regional
+         *     episode it is already living through, which is the distinction that decides
+         *     whether the finding is theirs to act on.
+         */
+        HotspotProperties: {
+            /** @Iot.Id */
+            "@iot.id": string;
+            /** Node Id */
+            node_id: string;
+            /** Station Name */
+            station_name?: string | null;
+            /** H3 Cell */
+            h3_cell: string;
+            pollutant: components["schemas"]["Pollutant"];
+            /**
+             * First Seen At
+             * Format: date-time
+             */
+            first_seen_at: string;
+            /**
+             * Last Seen At
+             * Format: date-time
+             */
+            last_seen_at: string;
+            /** Duration Hours */
+            duration_hours: number;
+            /** Peak Observed */
+            peak_observed: number;
+            /** Peak Expected */
+            peak_expected: number;
+            /** Peak Excess */
+            peak_excess: number;
+            /** Peak Z */
+            peak_z: number;
+            /**
+             * Detection Method
+             * @description How the excess was established, so a partner can judge comparability.
+             */
+            detection_method: string;
         };
         /**
          * HotspotResponse
@@ -265,6 +672,225 @@ export interface components {
             hotspots: components["schemas"]["HotspotResponse"][];
         };
         /**
+         * ModelCard
+         * @description What a partner city needs in order to decide whether to adopt a model.
+         *
+         *     The performance figures are reported whether or not they flatter the system.
+         *     A federation in which nodes publish only favourable numbers is worse than no
+         *     federation: a data-poor city would adopt a model that harms it and have no
+         *     way to find out.
+         */
+        ModelCard: {
+            /** Model Id */
+            model_id: string;
+            /** Node Id */
+            node_id: string;
+            /** Task */
+            task: string;
+            /** Estimator */
+            estimator: string;
+            /** Version */
+            version: string;
+            /** Trained At */
+            trained_at?: string | null;
+            /**
+             * Feature Schema
+             * @description The shared feature set. Smaller than any single node's, because a feature one node can compute and another cannot does not average.
+             */
+            feature_schema: string[];
+            /** Training Rows */
+            training_rows?: number | null;
+            /** Performance */
+            performance: components["schemas"]["ModelPerformance"][];
+            /**
+             * Weights
+             * @description Published only when a learned model beat its baseline on this node's own holdout. Null means no weight vector is offered, and the reason is in `weights_withheld_because`.
+             */
+            weights?: number[] | null;
+            /** Weights Withheld Because */
+            weights_withheld_because?: string | null;
+            /** Limitations */
+            limitations: string[];
+            /** Licence */
+            licence: string;
+        };
+        /**
+         * ModelCatalogue
+         * @description Every model this node is willing to share.
+         */
+        ModelCatalogue: {
+            /** Node Id */
+            node_id: string;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Model Count */
+            model_count: number;
+            /** Models */
+            models: components["schemas"]["ModelCard"][];
+        };
+        /**
+         * ModelPerformance
+         * @description A measured score, with what it was measured against.
+         *
+         *     The baseline is optional because not every metric has one. A metric with no
+         *     comparison says so rather than naming itself as its own baseline, which
+         *     would read as a model that matched a rival exactly.
+         */
+        ModelPerformance: {
+            /** Metric */
+            metric: string;
+            /** Value */
+            value: number;
+            /**
+             * Baseline
+             * @description What this was compared with, if anything.
+             */
+            baseline?: string | null;
+            /** Baseline Value */
+            baseline_value?: number | null;
+            /**
+             * Validation
+             * @description How the holdout was constructed.
+             */
+            validation: string;
+        };
+        /**
+         * NodeCapabilities
+         * @description A node's self-description, so a partner can integrate without asking.
+         *
+         *     Discovery matters more here than in an ordinary API. Nodes are operated by
+         *     different agencies on different timelines, so a partner has to be able to
+         *     find out what a node supports at runtime rather than from a document that
+         *     was accurate when someone last edited it.
+         */
+        NodeCapabilities: {
+            /** Node Id */
+            node_id: string;
+            /** Node Name */
+            node_name: string;
+            /** Operator */
+            operator: string;
+            /** Api Version */
+            api_version: string;
+            /**
+             * Crs
+             * @default http://www.opengis.net/def/crs/OGC/1.3/CRS84
+             */
+            crs: string;
+            /** Spatial Index */
+            spatial_index: string;
+            /** H3 Resolution */
+            h3_resolution: number;
+            /** Pollutants */
+            pollutants: components["schemas"]["Pollutant"][];
+            /** Endpoints */
+            endpoints: components["schemas"]["Capability"][];
+            /** Licence */
+            licence: string;
+            /** Contact */
+            contact?: string | null;
+        };
+        /**
+         * ObservationCollection
+         * @description A GeoJSON FeatureCollection of observations.
+         */
+        ObservationCollection: {
+            /**
+             * Type
+             * @default FeatureCollection
+             * @constant
+             */
+            type: "FeatureCollection";
+            /** Features */
+            features: components["schemas"]["ObservationFeature"][];
+            metadata: components["schemas"]["ExchangeMetadata"];
+        };
+        /**
+         * ObservationFeature
+         * @description One observation as a GeoJSON feature.
+         */
+        ObservationFeature: {
+            /**
+             * Type
+             * @default Feature
+             * @constant
+             */
+            type: "Feature";
+            geometry: components["schemas"]["PointGeometry"];
+            properties: components["schemas"]["ObservationProperties"];
+        };
+        /**
+         * ObservationProperties
+         * @description Properties of one exchanged observation.
+         */
+        ObservationProperties: {
+            /**
+             * @Iot.Id
+             * @description Globally unique within the federation: node id plus local identity.
+             */
+            "@iot.id": string;
+            /**
+             * Node Id
+             * @description Which node produced this observation.
+             */
+            node_id: string;
+            /** Station Name */
+            station_name: string;
+            /**
+             * H3 Cell
+             * @description Resolution-8 H3 index. The shared spatial key that makes two cities' data comparable without either resampling the other's grid.
+             */
+            h3_cell: string;
+            /** Result */
+            result: number;
+            /**
+             * Resulttime
+             * @description UTC, ISO 8601.
+             */
+            resultTime: string;
+            unitOfMeasurement: components["schemas"]["UnitOfMeasurement"];
+            observedProperty: components["schemas"]["ObservedProperty"];
+            /**
+             * Resultquality
+             * @description Measurement tier. 'reference' is a calibrated regulatory monitor; anything else carries wider error and must not be treated as ground truth.
+             */
+            resultQuality: string;
+            /** Aqi */
+            aqi: number;
+            /** Aqi Category */
+            aqi_category: string;
+        };
+        /**
+         * ObservedProperty
+         * @description What was measured, named in a way a partner can resolve.
+         */
+        ObservedProperty: {
+            /** Name */
+            name: string;
+            /** Definition */
+            definition: string;
+        };
+        /**
+         * PointGeometry
+         * @description A GeoJSON point, always (longitude, latitude).
+         */
+        PointGeometry: {
+            /**
+             * Type
+             * @default Point
+             * @constant
+             */
+            type: "Point";
+            /** Coordinates */
+            coordinates: [
+                number,
+                number
+            ];
+        };
+        /**
          * Pollutant
          * @description Pollutants in the CPCB National AQI.
          *
@@ -282,6 +908,44 @@ export interface components {
             longitude: number;
             /** Latitude */
             latitude: number;
+        };
+        /**
+         * ResolveRequest
+         * @description Closing an alert requires saying what was found.
+         */
+        ResolveRequest: {
+            /**
+             * Note
+             * @description What was found or done. Required: a resolution with no explanation records that someone clicked a button, which is not the same as recording that something was done.
+             */
+            note: string;
+        };
+        /**
+         * SlaBreachResponse
+         * @description An alert that has outlived the time its authority had to respond.
+         */
+        SlaBreachResponse: {
+            /** Alert Id */
+            alert_id: number;
+            /** Authority Id */
+            authority_id: number;
+            /**
+             * Stage
+             * @description Which deadline elapsed: acknowledgement or resolution.
+             */
+            stage: string;
+            /** Overdue Hours */
+            overdue_hours: number;
+        };
+        /**
+         * SlaBreachesResponse
+         * @description Alerts past their response deadline, longest overdue first.
+         */
+        SlaBreachesResponse: {
+            /** Breach Count */
+            breach_count: number;
+            /** Breaches */
+            breaches: components["schemas"]["SlaBreachResponse"][];
         };
         /**
          * SourceType
@@ -334,6 +998,18 @@ export interface components {
             station_count: number;
             /** Readings */
             readings: components["schemas"]["StationReadingResponse"][];
+        };
+        /**
+         * UnitOfMeasurement
+         * @description An OGC SensorThings unit block.
+         */
+        UnitOfMeasurement: {
+            /** Name */
+            name: string;
+            /** Symbol */
+            symbol: string;
+            /** Definition */
+            definition: string;
         };
         /**
          * UpstreamStatus
@@ -496,6 +1172,259 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_alerts_v1_alerts_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["AlertStatus"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dispatch_v1_alerts_dispatch_post: {
+        parameters: {
+            query?: {
+                pollutant?: components["schemas"]["Pollutant"];
+                window_hours?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DispatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    acknowledge_v1_alerts__alert_id__acknowledge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_v1_alerts__alert_id__resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sla_breaches_v1_alerts_sla_breaches_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlaBreachesResponse"];
+                };
+            };
+        };
+    };
+    capabilities_v1_interop_capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeCapabilities"];
+                };
+            };
+        };
+    };
+    observations_v1_interop_observations_get: {
+        parameters: {
+            query?: {
+                pollutant?: components["schemas"]["Pollutant"];
+                window_hours?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObservationCollection"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hotspots_v1_interop_hotspots_get: {
+        parameters: {
+            query?: {
+                pollutant?: components["schemas"]["Pollutant"];
+                window_hours?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HotspotCollection"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    models_v1_interop_models_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelCatalogue"];
                 };
             };
         };
