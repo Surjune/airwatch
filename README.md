@@ -426,8 +426,17 @@ Deferred deliberately, and tracked here rather than as TODOs in the code.
   gateway returned 502 across every endpoint during development. OpenAQ carries the same CPCB and
   DPCC station data and is the only reference-tier source actually in use, so the network currently
   has a single point of failure upstream.
-- **Sentinel-5P is ~7 km resolution with a daily revisit,** so it constrains fusion covariates
-  rather than detecting hotspots directly.
+- **Sentinel-5P is not ingested, and the blocker is a permission rather than code.** The service
+  account authenticates, but Earth Engine refuses the project: the caller needs
+  `roles/serviceusage.serviceUsageConsumer` on the Google Cloud project, and the project itself must
+  be registered for Earth Engine with the API enabled. No client was written against an API that has
+  never answered — every other upstream here was verified against the live service before being
+  documented as working, and a client shipped on the strength of mocked tests alone would not meet
+  that bar.
+  When it is unblocked, the honest use is narrow: Sentinel-5P measures NO2 column density at ~7 km
+  with a daily revisit, so it would be published as NO2 in its own units and never converted into a
+  PM2.5 figure. It constrains covariates and covers ground no station reaches; it does not detect
+  hyperlocal hotspots.
 - **Back-trajectory uses a single-layer wind field,** not full HYSPLIT dispersion.
 - **Citizen photo PM2.5 is a proxy** with wide error bars, and is never used as the sole evidence
   for a cell.
