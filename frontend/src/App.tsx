@@ -2,16 +2,22 @@ import { useState } from 'react';
 
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { AlertConsole } from '@/features/alerts/AlertConsole';
+import { CitizenSubmit } from '@/features/citizen/CitizenSubmit';
 import { HotspotPanel } from '@/features/hotspots/HotspotPanel';
 import { MapView } from '@/features/map/MapView';
 import { useHotspots, useStations } from '@/hooks/useAnalysis';
 
 const DETECTION_WINDOW_HOURS = 336;
 
-/** The two things this system does: show what is happening, and make someone answer for it. */
+/**
+ * The three audiences this system serves: anyone looking at the map, the
+ * authority that has to act, and the citizen whose photograph extends the
+ * network into ground no monitor covers.
+ */
 const VIEWS = [
   { key: 'map', label: 'Map' },
   { key: 'alerts', label: 'Authority console' },
+  { key: 'citizen', label: 'Contribute' },
 ] as const;
 
 type ViewKey = (typeof VIEWS)[number]['key'];
@@ -64,6 +70,10 @@ export function App(): React.JSX.Element {
       {view === 'alerts' ? (
         <div className="min-h-0 flex-1">
           <AlertConsole />
+        </div>
+      ) : view === 'citizen' ? (
+        <div className="min-h-0 flex-1">
+          <CitizenSubmit />
         </div>
       ) : (
         <div className="flex min-h-0 flex-1">

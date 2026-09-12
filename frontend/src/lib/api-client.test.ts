@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { ApiError, get, post } from './api-client';
+import { ApiError, get, post, request } from './api-client';
 
 function mockFetch(response: Response): void {
   vi.stubGlobal(
@@ -130,5 +130,63 @@ describe('error handling', () => {
     const error = (await get('/health').catch((cause: unknown) => cause)) as ApiError;
 
     expect(error.code).toBe('unknown_error');
+  });
+});
+
+
+describe('multipart uploads', () => {
+  it('sends the form data untouched', async () => {
+    const spy = vi.fn().mockResolvedValue(jsonResponse({ report_id: 1 }));
+    vi.stubGlobal('fetch', spy);
+
+    const form = new FormData();
+    form.append('longitude', '77.2');
+
+    await request('/citizen/reports', { method: 'POST', formData: form });
+
+    const init = spy.mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(init?.body).toBe(form);
+  });
+
+  it('does not set a content type, so the browser can add the boundary', async () => {
+    // Setting it here would produce a multipart body with no boundary, which
+    // the server cannot parse -- and the failure would look like a bad photo
+    // rather than a bad request.
+    const spy = vi.fn().mockResolvedValue(jsonResponse({}));
+    vi.stubGlobal('fetch', spy);
+
+    await request('/citizen/reports', { method: 'POST', formData: new FormData() });
+
+    const init = spy.mock.calls[0]?.[1] as RequestInit | undefined;
+    const headers = init?.headers as Record<string, string> | undefined;
+    expect(headers?.['Content-Type']).toBeUndefined();
+  });
+});
+
+describe('non-envelope error bodies', () => {
+  it('keeps the raw body so a typed rejection can be read', async () => {
+    // A photograph the server declines to score returns its reason rather than
+    // the standard envelope. Discarding the body would throw away the only
+    // part of that response worth showing the submitter.
+    mockFetch(
+      jsonResponse({ accepted: false, reason: 'out_of_focus', detail: 'The image is blurred.' }, 422),
+    );
+
+    const error = (await post('/citizen/reports', {}).catch((cause: unknown) => cause)) as ApiError;
+
+    expect(error.body).toEqual({
+      accepted: false,
+      reason: 'out_of_focus',
+      detail: 'The image is blurred.',
+    });
+  });
+
+  it('keeps the body for a standard envelope too', async () => {
+    mockFetch(jsonResponse({ error: { code: 'not_found', message: 'gone' } }, 404));
+
+    const error = (await get('/alerts/9').catch((cause: unknown) => cause)) as ApiError;
+
+    expect(error.code).toBe('not_found');
+    expect(error.body).toBeDefined();
   });
 });

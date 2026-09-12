@@ -34,12 +34,23 @@ export class ApiError extends Error {
   readonly details: Record<string, unknown>;
   readonly requestId: string | undefined;
 
+  /**
+   * The parsed response body, whatever shape it had.
+   *
+   * Kept because not every failure is the standard envelope. A photograph the
+   * server declines to score comes back as a typed rejection carrying the
+   * reason the submitter needs, and discarding the body would throw away the
+   * only part of that response worth reading.
+   */
+  readonly body: unknown;
+
   constructor(
     code: string,
     message: string,
     status: number,
     details: Record<string, unknown> = {},
     requestId?: string,
+    body?: unknown,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -47,6 +58,7 @@ export class ApiError extends Error {
     this.status = status;
     this.details = details;
     this.requestId = requestId;
+    this.body = body;
   }
 
   /**
@@ -65,6 +77,14 @@ export class ApiError extends Error {
 export interface RequestOptions {
   readonly method?: 'GET' | 'POST' | 'PATCH';
   readonly body?: unknown;
+  /**
+   * Multipart payload, for a request carrying a file.
+   *
+   * Passed through untouched and without a Content-Type header: the browser has
+   * to set that itself so it can include the multipart boundary, and setting it
+   * here would produce a body the server cannot parse.
+   */
+  readonly formData?: FormData;
   readonly signal?: AbortSignal;
   readonly searchParams?: Record<string, string | number | boolean | undefined>;
 }
@@ -102,12 +122,12 @@ function isApiErrorBody(value: unknown): value is ApiErrorBody {
  *   silently empty result, because an empty result reads as "nothing to see".
  */
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, signal, searchParams } = options;
+  const { method = 'GET', body, formData, signal, searchParams } = options;
 
   // Held as a plain record rather than HeadersInit: the union also admits an
   // array and a Headers instance, neither of which can be spread into an object.
   const headers: Record<string, string> = { Accept: 'application/json' };
-  if (body !== undefined) {
+  if (body !== undefined && formData === undefined) {
     headers['Content-Type'] = 'application/json';
   }
 
@@ -115,7 +135,11 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     method,
     headers,
     ...(signal ? { signal } : {}),
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    ...(formData !== undefined
+      ? { body: formData }
+      : body !== undefined
+        ? { body: JSON.stringify(body) }
+        : {}),
   };
 
   let response: Response;
@@ -157,9 +181,17 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
         response.status,
         payload.error.details ?? {},
         payload.error.request_id ?? requestId,
+        payload,
       );
     }
-    throw new ApiError('unknown_error', 'The API returned an unrecognised error.', response.status, {}, requestId);
+    throw new ApiError(
+      'unknown_error',
+      'The API returned an unrecognised error.',
+      response.status,
+      {},
+      requestId,
+      payload,
+    );
   }
 
   return payload as T;

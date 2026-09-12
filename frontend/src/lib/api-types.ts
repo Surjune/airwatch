@@ -264,6 +264,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/citizen/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent citizen submissions
+         * @description Submissions over a recent window, newest first.
+         */
+        get: operations["list_reports_v1_citizen_reports_get"];
+        put?: never;
+        /**
+         * Submit a geotagged photograph
+         * @description Measure atmospheric haze in a photograph and store what it yielded.
+         *
+         *     Constraints are declared on the form fields themselves so FastAPI checks
+         *     them at the boundary. Validating inside the body instead would raise a
+         *     Pydantic error that is not a request-validation error, and the caller would
+         *     receive an opaque 500 for a request they could have corrected.
+         *
+         *     The fields are flat rather than nested under one model, because that is how
+         *     a phone client posts multipart data alongside a file.
+         */
+        post: operations["submit_report_v1_citizen_reports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/citizen/calibration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether a photograph can yield a concentration yet
+         * @description Report the state of the haze-to-concentration relation.
+         */
+        get: operations["calibration_v1_citizen_calibration_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -371,6 +423,48 @@ export interface components {
             /** Explanation */
             explanation: string;
         };
+        /** Body_submit_report_v1_citizen_reports_post */
+        Body_submit_report_v1_citizen_reports_post: {
+            /**
+             * Photo
+             * @description A geotagged outdoor photograph.
+             */
+            photo: string;
+            /** Longitude */
+            longitude: number;
+            /** Latitude */
+            latitude: number;
+            /**
+             * Captured At
+             * Format: date-time
+             * @description When the photo was taken, timezone-aware. Not the upload time.
+             */
+            captured_at: string;
+            /** Device Id */
+            device_id: string;
+        };
+        /**
+         * CalibrationStatusResponse
+         * @description Whether a photograph can currently yield a concentration.
+         */
+        CalibrationStatusResponse: {
+            /** Is Calibrated */
+            is_calibrated: boolean;
+            /**
+             * Pairs
+             * @description Co-located submissions available to fit the haze-to-concentration relation.
+             */
+            pairs: number;
+            /** Pairs Needed */
+            pairs_needed: number;
+            /**
+             * Mae
+             * @description Leave-one-out error of the fit, in ug/m3. Measured out of sample because at this sample size the fit has seen every point it would otherwise be scored on.
+             */
+            mae?: number | null;
+            /** Explanation */
+            explanation: string;
+        };
         /**
          * Capability
          * @description One exchange endpoint this node offers.
@@ -382,6 +476,44 @@ export interface components {
             method: string;
             /** Description */
             description: string;
+        };
+        /**
+         * CitizenReportSummary
+         * @description One submission on the public map.
+         */
+        CitizenReportSummary: {
+            /** Report Id */
+            report_id: number;
+            position: components["schemas"]["Position"];
+            /** H3 Cell */
+            h3_cell: string;
+            /**
+             * Captured At
+             * Format: date-time
+             */
+            captured_at: string;
+            /** Haze Index */
+            haze_index: number;
+            /** Trust Score */
+            trust_score: number;
+            /**
+             * Had Reference
+             * @description Whether a monitor was in range, so this submission also calibrates.
+             */
+            had_reference: boolean;
+        };
+        /**
+         * CitizenReportsResponse
+         * @description Recent submissions, newest first.
+         */
+        CitizenReportsResponse: {
+            /** Window Hours */
+            window_hours: number;
+            /** Report Count */
+            report_count: number;
+            /** Reports */
+            reports: components["schemas"]["CitizenReportSummary"][];
+            calibration: components["schemas"]["CalibrationStatusResponse"];
         };
         /**
          * CorridorForecastResponse
@@ -497,6 +629,26 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * HazeEstimateResponse
+         * @description A concentration derived from a haze index.
+         */
+        HazeEstimateResponse: {
+            /** Value */
+            value: number;
+            /** Uncertainty */
+            uncertainty: number;
+            /**
+             * Upper Bound
+             * @description Value plus uncertainty, which is what a precautionary decision uses.
+             */
+            upper_bound: number;
+            /**
+             * Is Extrapolating
+             * @description True when the photograph's haze sits outside the range the relation was fitted across, so the number is an extrapolation.
+             */
+            is_extrapolating: boolean;
         };
         /**
          * HealthResponse
@@ -910,6 +1062,49 @@ export interface components {
             latitude: number;
         };
         /**
+         * ReferenceComparisonResponse
+         * @description The nearby monitor a submission was checked against.
+         */
+        ReferenceComparisonResponse: {
+            /** Station Id */
+            station_id: number;
+            /** Station Name */
+            station_name: string;
+            /** Value */
+            value: number;
+            /**
+             * Observed At
+             * Format: date-time
+             */
+            observed_at: string;
+            /** Distance M */
+            distance_m: number;
+            /**
+             * Agrees
+             * @description Null when no comparison was possible -- either no calibration exists or the monitor reported nothing usable. An uncomparable submission is not a disagreement.
+             */
+            agrees?: boolean | null;
+        };
+        /**
+         * RejectionResponse
+         * @description A photograph that cannot support an estimate, and why.
+         */
+        RejectionResponse: {
+            /**
+             * Accepted
+             * @description Always false. Present so a client can branch on one field.
+             * @default false
+             */
+            accepted: boolean;
+            /** Reason */
+            reason: string;
+            /**
+             * Detail
+             * @description Written for the person who took the photo. Every rejection here is a condition that would make clean air look dirty, so refusing is the safe direction to fail in.
+             */
+            detail: string;
+        };
+        /**
          * ResolveRequest
          * @description Closing an alert requires saying what was found.
          */
@@ -998,6 +1193,35 @@ export interface components {
             station_count: number;
             /** Readings */
             readings: components["schemas"]["StationReadingResponse"][];
+        };
+        /**
+         * SubmissionResponse
+         * @description What a submitted photograph yielded.
+         */
+        SubmissionResponse: {
+            /** Report Id */
+            report_id: number;
+            /** H3 Cell */
+            h3_cell: string;
+            /**
+             * Captured At
+             * Format: date-time
+             */
+            captured_at: string;
+            /**
+             * Haze Index
+             * @description Atmospheric opacity measured from the photograph, dimensionless. Zero is perfectly clear air. This is what a camera can actually establish; everything else here is derived from it.
+             */
+            haze_index: number;
+            /**
+             * Trust Score
+             * @description Weight this device's submissions currently carry.
+             */
+            trust_score: number;
+            /** @description Null until a calibration exists. Null is an answer, not an error: an uncalibrated concentration derived from a photograph would be a fabricated reading. */
+            estimate?: components["schemas"]["HazeEstimateResponse"] | null;
+            reference?: components["schemas"]["ReferenceComparisonResponse"] | null;
+            calibration: components["schemas"]["CalibrationStatusResponse"];
         };
         /**
          * UnitOfMeasurement
@@ -1425,6 +1649,90 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModelCatalogue"];
+                };
+            };
+        };
+    };
+    list_reports_v1_citizen_reports_get: {
+        parameters: {
+            query?: {
+                window_hours?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CitizenReportsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_report_v1_citizen_reports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_submit_report_v1_citizen_reports_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionResponse"] | components["schemas"]["RejectionResponse"];
+                };
+            };
+            /** @description The photograph could not support an estimate. Returned with the reason rather than as a generic failure, because each reason tells the submitter something different about how to retake it. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RejectionResponse"];
+                };
+            };
+        };
+    };
+    calibration_v1_citizen_calibration_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalibrationStatusResponse"];
                 };
             };
         };
