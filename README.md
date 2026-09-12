@@ -347,6 +347,34 @@ npm run backfill      # pull hourly history so forecasting has a series
 npm run dev           # API on :8000, web on :5173
 ```
 
+### Reproducing the headline result
+
+Every figure here came from live upstreams over a fourteen-day window, which
+nobody else can reproduce without three API keys and the same fortnight of
+weather. So the episode is committed:
+
+```bash
+npm run demo:replay
+```
+
+That loads `infra/fixtures/delhi-anand-vihar-august.json` — 1,232 real CPCB and
+DPCC readings from 63 stations over three days — and runs the actual detection
+over them. It prints what it found and exits non-zero if the episode is not
+there:
+
+```
+Anand Vihar, New Delhi - DPCC: 381 ug/m3 where the network predicted 40
+                               (excess 341, z=20.4, 7 intervals)
+    candidate: Anand Vihar ISBT and rail terminal (60% plausible)
+PASS: the expected episode at Anand Vihar was found.
+```
+
+The fixture carries its own acceptance criterion, so the file states what it is
+supposed to demonstrate. The same replay runs in the test suite against an empty
+database, which makes it a regression test rather than a demo: if a change to
+fusion, the uncertainty model or the persistence filter quietly stops the system
+seeing a bus terminal running nine times its neighbourhood, the suite fails.
+
 Verification:
 
 ```bash

@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import sys
+from datetime import datetime
 
 from app.core.config import get_settings
 from app.core.constants import BACKFILL_DAYS, PILOT_CITY_CENTRES
@@ -18,7 +20,13 @@ from app.core.geo import LonLat
 from app.core.logging import configure_logging, get_logger
 from app.repositories import observation_repository, station_repository
 from app.repositories.session import session_scope
-from app.services import alert_delivery_service, alert_service, seed_service
+from app.services import (
+    alert_delivery_service,
+    alert_service,
+    analysis_service,
+    fixture_service,
+    seed_service,
+)
 from app.services.alert_service import DEFAULT_DISPATCH_WINDOW_HOURS
 from app.services.ingestion_service import IngestionReport, IngestionService, SourceResult
 
@@ -41,6 +49,10 @@ PILOT_CITIES: dict[str, tuple[LonLat, tuple[float, float, float, float]]] = {
 
 #: Exit code used when at least one upstream failed.
 _EXIT_PARTIAL_FAILURE = 1
+
+#: Most hotspots and candidates a replay lists, so the output stays readable.
+_REPLAY_MAX_LISTED = 5
+_REPLAY_MAX_CANDIDATES = 2
 
 
 def _print_report(report: IngestionReport) -> None:
@@ -81,6 +93,73 @@ async def _run_backfill(city: str, pollutant: Pollutant, days: int) -> SourceRes
     centre, _ = PILOT_CITIES[city]
     service = IngestionService(get_settings())
     return await service.backfill_history(centre, pollutant=pollutant, days=days)
+
+
+def _replay(event: str) -> int:
+    """Load a recorded episode and check the system still finds it.
+
+    Returns a non-zero exit code when the expected finding is absent. That is
+    the point of the command: it is a regression test with a public-health
+    meaning, not a demo. If a change quietly stops the system seeing a large
+    excess at a monitored location, this is what says so.
+    """
+    path = fixture_service.FIXTURE_DIRECTORY / f"{event}.json"
+    document = fixture_service.read_fixture(path)
+    expected = fixture_service.expected_finding(document)
+
+    with session_scope() as session:
+        report = fixture_service.load(session, document)
+        window = document["window"]
+        since = datetime.fromisoformat(window["since"])
+        until = datetime.fromisoformat(window["until"])
+        hours = int((until - since).total_seconds() // 3600) + 1
+
+        detected = analysis_service.detect_and_attribute(
+            session,
+            Pollutant(document["pollutant"]),
+            window_hours=hours,
+            now=until,
+            bounded=True,
+        )
+
+    print("")
+    print(f"replayed {event}")
+    print(f"  loaded       : {report.stations} stations, {report.measurements} readings")
+    print(f"  window       : {window['since']} to {window['until']}")
+    print(f"  expecting    : {expected.description}")
+    print("")
+    print(f"detected {len(detected)} hotspot(s):")
+    for item in detected[:_REPLAY_MAX_LISTED]:
+        hotspot = item.hotspot
+        expected_value = hotspot.peak_observed - hotspot.peak_residual
+        print(
+            f"  {item.station_name}: {hotspot.peak_observed:.0f} ug/m3 where the network "
+            f"predicted {expected_value:.0f} (excess {hotspot.peak_residual:.0f}, "
+            f"z={hotspot.peak_z:.1f}, {hotspot.intervals} intervals)"
+        )
+        for candidate in item.attributions[:_REPLAY_MAX_CANDIDATES]:
+            print(
+                f"      candidate: {candidate.source.name} ({candidate.confidence:.0%} plausible)"
+            )
+
+    match = [
+        item
+        for item in detected
+        if expected.station_name.lower() in item.station_name.lower()
+        and item.hotspot.peak_z >= expected.min_peak_z
+        and item.hotspot.peak_residual >= expected.min_peak_excess
+    ]
+
+    print("")
+    if match:
+        print(f"PASS: the expected episode at {expected.station_name} was found.")
+        return 0
+
+    print(
+        f"FAIL: no episode at {expected.station_name} with z >= {expected.min_peak_z} "
+        f"and excess >= {expected.min_peak_excess} ug/m3."
+    )
+    return _EXIT_PARTIAL_FAILURE
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -138,6 +217,22 @@ def main(argv: list[str] | None = None) -> int:
         help="Send recorded alerts to the configured authority endpoint",
     )
 
+    record = subparsers.add_parser(
+        "record-fixture", help="Record a window of observations as a replayable episode"
+    )
+    record.add_argument("--name", required=True, help="Fixture name, used as the filename")
+    record.add_argument("--since", required=True, help="ISO timestamp, inclusive")
+    record.add_argument("--until", required=True, help="ISO timestamp, exclusive")
+    record.add_argument("--station", required=True, help="Station the episode is expected at")
+    record.add_argument("--min-z", type=float, required=True)
+    record.add_argument("--min-excess", type=float, required=True)
+    record.add_argument("--description", required=True)
+
+    replay = subparsers.add_parser(
+        "replay", help="Load a recorded episode and assert the system still finds it"
+    )
+    replay.add_argument("--event", required=True, help="Fixture name under infra/fixtures")
+
     args = parser.parse_args(argv)
     settings = get_settings()
     configure_logging(level=settings.log_level, json_output=False)
@@ -182,6 +277,34 @@ def main(argv: list[str] | None = None) -> int:
         print(f"failed          : {delivery.failed}")
         print(f"still waiting   : {still_pending}")
         return 0 if delivery.failed == 0 else _EXIT_PARTIAL_FAILURE
+
+    if args.command == "record-fixture":
+        with session_scope() as session:
+            document = fixture_service.export(
+                session,
+                since=datetime.fromisoformat(args.since),
+                until=datetime.fromisoformat(args.until),
+                pollutant=Pollutant.PM25,
+                name=args.name,
+                expected=fixture_service.ExpectedFinding(
+                    station_name=args.station,
+                    min_peak_z=args.min_z,
+                    min_peak_excess=args.min_excess,
+                    description=args.description,
+                ),
+            )
+        fixture_service.FIXTURE_DIRECTORY.mkdir(parents=True, exist_ok=True)
+        target = fixture_service.FIXTURE_DIRECTORY / f"{args.name}.json"
+        target.write_text(json.dumps(document, indent=2), encoding="utf-8")
+        print("")
+        print(f"recorded {target.name}")
+        print(f"  stations    : {len(document['stations'])}")
+        print(f"  measurements: {len(document['measurements'])}")
+        print(f"  weather     : {len(document['weather'])}")
+        return 0
+
+    if args.command == "replay":
+        return _replay(args.event)
 
     if args.command == "backfill":
         result = asyncio.run(_run_backfill(args.city, Pollutant(args.pollutant), args.days))

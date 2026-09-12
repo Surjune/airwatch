@@ -36,6 +36,8 @@
     "seed": "node scripts/py.mjs -m app.cli seed",
     "alerts:dispatch": "node scripts/py.mjs -m app.cli dispatch",
     "alerts:deliver": "node scripts/py.mjs -m app.cli deliver",
+    "demo:replay": "node scripts/py.mjs -m app.cli replay --event delhi-anand-vihar-august",
+    "fixture:record": "node scripts/py.mjs -m app.cli record-fixture",
     "ml:validate-loso": "node scripts/py.mjs ../ml/validate_loso.py",
     "ml:validate-forecast": "node scripts/py.mjs ../ml/validate_forecast.py",
     "fl:validate": "node scripts/py.mjs ../ml/validate_federated.py"

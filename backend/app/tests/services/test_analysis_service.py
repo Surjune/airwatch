@@ -334,9 +334,15 @@ class TestDetectAndAttribute:
     ) -> None:
         seen: dict[str, Any] = {}
 
-        def capture(_session: Any, pollutant: Pollutant, since: datetime) -> list[Any]:
+        def capture(
+            _session: Any,
+            pollutant: Pollutant,
+            since: datetime,
+            until: datetime | None = None,
+        ) -> list[Any]:
             seen["pollutant"] = pollutant
             seen["since"] = since
+            seen["until"] = until
             return []
 
         monkeypatch.setattr(observation_repository, "readings_in_window", capture)
@@ -345,6 +351,34 @@ class TestDetectAndAttribute:
 
         assert seen["pollutant"] is Pollutant.PM10
         assert seen["since"] == NOW - timedelta(hours=6)
+        # Unbounded by default: the live API always means "up to now", and
+        # capping the window there would hide the most recent hours.
+        assert seen["until"] is None
+
+    def test_a_bounded_window_stops_at_the_reference_time(
+        self, monkeypatch: pytest.MonkeyPatch, stub_repositories: None
+    ) -> None:
+        # Replaying a recorded episode needs the upper bound, or observations
+        # from after the episode leak in and the result stops being a property
+        # of the recording.
+        seen: dict[str, Any] = {}
+
+        def capture(
+            _session: Any,
+            pollutant: Pollutant,
+            since: datetime,
+            until: datetime | None = None,
+        ) -> list[Any]:
+            seen["until"] = until
+            return []
+
+        monkeypatch.setattr(observation_repository, "readings_in_window", capture)
+
+        analysis_service.detect_and_attribute(
+            _session(), Pollutant.PM25, window_hours=6, now=NOW, bounded=True
+        )
+
+        assert seen["until"] == NOW
 
 
 class TestCorridorOutlook:

@@ -233,8 +233,15 @@ def readings_in_window(
     session: Session,
     pollutant: Pollutant,
     since: datetime,
+    until: datetime | None = None,
 ) -> list[Row[tuple[int, str, float, float, str, datetime, float]]]:
-    """Every plausible reading for a pollutant since a point in time."""
+    """Every plausible reading for a pollutant in a time window.
+
+    ``until`` is optional because the live API always means "since then, up to
+    now". It exists for replaying a recorded episode, where an unbounded window
+    would quietly include observations from after the episode and make the
+    replay depend on whatever else the database happens to hold.
+    """
     statement = (
         select(
             Station.id,
@@ -253,6 +260,8 @@ def readings_in_window(
         )
         .order_by(Measurement.observed_at)
     )
+    if until is not None:
+        statement = statement.where(Measurement.observed_at < until)
     return list(session.execute(statement).all())
 
 
@@ -260,6 +269,7 @@ def observed_readings_in_window(
     session: Session,
     pollutant: Pollutant,
     since: datetime,
+    until: datetime | None = None,
 ) -> list[ObservedReading]:
     """Readings since a point in time, shaped for analysis.
 
@@ -278,7 +288,7 @@ def observed_readings_in_window(
             value=float(value),
         )
         for station_id, name, lon, lat, cell, observed_at, value in readings_in_window(
-            session, pollutant, since
+            session, pollutant, since, until
         )
     ]
 

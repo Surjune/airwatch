@@ -109,6 +109,7 @@ def detect_and_attribute(
     *,
     window_hours: int = DEFAULT_DETECTION_WINDOW_HOURS,
     now: datetime | None = None,
+    bounded: bool = False,
 ) -> list[AttributedHotspot]:
     """Detect hotspots over a recent window and rank candidate sources for each.
 
@@ -117,6 +118,11 @@ def detect_and_attribute(
         pollutant: Pollutant to analyse.
         window_hours: How far back to look.
         now: Reference time, injectable for tests.
+        bounded: Stop the window at ``now`` rather than running to the present.
+            The live API always means "up to now", so this is off by default; a
+            replay of a recorded episode needs it, or observations from after
+            the episode would leak in and the result would depend on whatever
+            else the database happens to hold.
 
     Returns:
         Confirmed hotspots, worst first, each with its ranked candidates. An
@@ -126,7 +132,9 @@ def detect_and_attribute(
     reference = now or datetime.now(UTC)
     since = reference - timedelta(hours=window_hours)
 
-    readings = observation_repository.observed_readings_in_window(session, pollutant, since)
+    readings = observation_repository.observed_readings_in_window(
+        session, pollutant, since, reference if bounded else None
+    )
     names = {reading.station_id: reading.station_name for reading in readings}
 
     hotspots = detect_over_window(readings)

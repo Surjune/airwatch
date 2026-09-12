@@ -1,0 +1,7607 @@
+{
+  "version": 1,
+  "name": "delhi-anand-vihar-august",
+  "_about": "A recorded window of real CPCB and DPCC reference-monitor observations, replayable without API keys. Public data, recorded verbatim.",
+  "_coordinate_order": "[longitude, latitude], WGS84",
+  "window": {
+    "since": "2026-08-27T00:00:00+00:00",
+    "until": "2026-08-30T00:00:00+00:00"
+  },
+  "pollutant": "pm25",
+  "expected": {
+    "station_name": "Anand Vihar",
+    "min_peak_z": 10.0,
+    "min_peak_excess": 200.0,
+    "description": "A sustained excess at Anand Vihar bus terminal and rail yard, far above what the surrounding network predicts."
+  },
+  "stations": [
+    {
+      "source": "OpenAQ",
+      "source_station_id": "5404",
+      "name": "Pusa, Delhi - IMD",
+      "tier": "reference",
+      "coordinates": [
+        77.146263,
+        28.639645
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "5541",
+      "name": "Burari Crossing, New Delhi - IMD",
+      "tier": "reference",
+      "coordinates": [
+        77.2011573,
+        28.7256504
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "5570",
+      "name": "Aya Nagar, New Delhi - IMD",
+      "tier": "reference",
+      "coordinates": [
+        77.131606,
+        28.474261
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "5586",
+      "name": "Sirifort, Delhi - CPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.2159377,
+        28.5504249
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "5598",
+      "name": "Sector - 125, Noida, UP - UPPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.3231257,
+        28.5447608
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "5610",
+      "name": "North Campus, DU, Delhi - IMD",
+      "tier": "reference",
+      "coordinates": [
+        77.1585447,
+        28.6573814
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "5613",
+      "name": "ITO, New Delhi - CPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.24106,
+        28.628624
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "5616",
+      "name": "Sector - 62, Noida, UP - IMD",
+      "tier": "reference",
+      "coordinates": [
+        77.3577104,
+        28.6245479
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "5622",
+      "name": "NSIT Dwarka, Delhi - CPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.0325413,
+        28.60909
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "5626",
+      "name": "DTU, New Delhi - CPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.1112615,
+        28.7500499
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "5627",
+      "name": "CRRI Mathura Road, New Delhi - IMD",
+      "tier": "reference",
+      "coordinates": [
+        77.2735737,
+        28.5512005
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "5630",
+      "name": "Shadipur, Delhi - CPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.1473105,
+        28.6514781
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "5634",
+      "name": "Lodhi Road, New Delhi - IMD",
+      "tier": "reference",
+      "coordinates": [
+        77.2273074,
+        28.5918245
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "5650",
+      "name": "IGI Airport (T3), Delhi - IMD",
+      "tier": "reference",
+      "coordinates": [
+        77.1180053,
+        28.5627763
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "5665",
+      "name": "Vasundhara, Ghaziabad - UPPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.3572563,
+        28.6603346
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6356",
+      "name": "Pusa, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.146262,
+        28.639645
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6358",
+      "name": "Mandir Marg, New Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.201067,
+        28.636429
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6359",
+      "name": "IHBAS, Dilshad Garden,New Delhi - CPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.3025234,
+        28.6811736
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6924",
+      "name": "Indirapuram, Ghaziabad - UPPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.358075,
+        28.646233
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6931",
+      "name": "Dwarka-Sector 8, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.0719006,
+        28.5710274
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6932",
+      "name": "Alipur, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.15301,
+        28.815329
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6934",
+      "name": "Dr. Karni Singh Shooting Range, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.26484,
+        28.498571
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6938",
+      "name": "Vivek Vihar, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.31526,
+        28.672342
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6957",
+      "name": "Jawaharlal Nehru Stadium, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.233829,
+        28.58028
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6960",
+      "name": "Patparganj, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.287205,
+        28.623748
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6980",
+      "name": "Sector-1, Noida - UPPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.321962,
+        28.589247
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6986",
+      "name": "Knowledge Park - V, Greater Noida - UPPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.453663,
+        28.557054
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6988",
+      "name": "Sector-116, Noida - UPPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.393848,
+        28.56923
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "7005",
+      "name": "Loni, Ghaziabad - UPPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.278792,
+        28.757294
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "8118",
+      "name": "New Delhi",
+      "tier": "reference",
+      "coordinates": [
+        77.22445,
+        28.63576
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "8235",
+      "name": "Jahangirpuri, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.170633,
+        28.73282
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "8239",
+      "name": "Okhla Phase-2, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.271255,
+        28.530785
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "8365",
+      "name": "Nehru Nagar, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.250515,
+        28.56789
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "8472",
+      "name": "Bawana, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.051074,
+        28.7762
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "50",
+      "name": "Punjabi Bagh, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.131023,
+        28.674045
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "8475",
+      "name": "Sonia Vihar, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.249485,
+        28.710508
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "8915",
+      "name": "Wazirpur, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.165453,
+        28.699793
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "8917",
+      "name": "Ashok Vihar, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.181665,
+        28.695381
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "10484",
+      "name": "Sri Aurobindo Marg, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.190156,
+        28.531346
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "10486",
+      "name": "Mundka, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.076574,
+        28.684678
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "10820",
+      "name": "Sector 30, Faridabad - HSPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.3217,
+        28.4417
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "10831",
+      "name": "Rohini, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.11992,
+        28.732528
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "10900",
+      "name": "Teri Gram, Gurugram - HSPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.1465,
+        28.4275
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "10921",
+      "name": "NISE Gwal Pahari, Gurugram - IMD",
+      "tier": "reference",
+      "coordinates": [
+        77.148944,
+        28.422681
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "235",
+      "name": "Anand Vihar, New Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.316032,
+        28.646835
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6254665",
+      "name": "Commonwealth Sports Complex, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.271992,
+        28.615828
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6254666",
+      "name": "IGNOU_Maidan Garhi, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.201159,
+        28.493624
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6257818",
+      "name": "Cantonment Area, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.1251,
+        28.594169
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6299494",
+      "name": "Prashant Garden, Khora - UPPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.34206,
+        28.61119
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6299678",
+      "name": "Ved Vihar-Loni, Ghaziabad - UPPCB",
+      "tier": "reference",
+      "coordinates": [
+        77.273668,
+        28.739153
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "5662",
+      "name": "Nehru Nagar, Kanpur - UPPCB",
+      "tier": "reference",
+      "coordinates": [
+        80.3229863,
+        26.4703136
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "229252",
+      "name": "NSI Kalyanpur, Kanpur - UPPCB",
+      "tier": "reference",
+      "coordinates": [
+        80.249612,
+        26.509953999999997
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "234568",
+      "name": "FTI Kidwai Nagar, Kanpur - UPPCB",
+      "tier": "reference",
+      "coordinates": [
+        80.327067,
+        26.428282
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "17",
+      "name": "R K Puram, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.186937,
+        28.563262
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6929",
+      "name": "Major Dhyan Chand National Stadium, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.237738,
+        28.611281
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "11603",
+      "name": "Chandni Chowk, Delhi - IITM",
+      "tier": "reference",
+      "coordinates": [
+        77.227234,
+        28.656756
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "4663956",
+      "name": "Santushti Apartments, Vasant Kunj",
+      "tier": "reference",
+      "coordinates": [
+        77.1493,
+        28.5266
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "4712609",
+      "name": "Air Check",
+      "tier": "reference",
+      "coordinates": [
+        77.234167,
+        28.623056
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6105800",
+      "name": "Sector 1, Noida extension",
+      "tier": "reference",
+      "coordinates": [
+        77.431714,
+        28.583491
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6145551",
+      "name": "Anand Lok",
+      "tier": "reference",
+      "coordinates": [
+        77.21886,
+        28.5587
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6148686",
+      "name": "IIT Delhi, Delhi - IITM",
+      "tier": "reference",
+      "coordinates": [
+        77.191651,
+        28.54246
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6254594",
+      "name": "Talkatora Garden, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.1944633,
+        28.62181
+      ]
+    },
+    {
+      "source": "OpenAQ",
+      "source_station_id": "6254663",
+      "name": "JNU, Delhi - DPCC",
+      "tier": "reference",
+      "coordinates": [
+        77.168544,
+        28.540721
+      ]
+    }
+  ],
+  "measurements": [
+    {
+      "source_station_id": "6299494",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 69.4
+    },
+    {
+      "source_station_id": "8472",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 69.0
+    },
+    {
+      "source_station_id": "5662",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 17.8
+    },
+    {
+      "source_station_id": "6148686",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 36.5
+    },
+    {
+      "source_station_id": "8917",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 50.0
+    },
+    {
+      "source_station_id": "6358",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 12.0
+    },
+    {
+      "source_station_id": "229252",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 21.2
+    },
+    {
+      "source_station_id": "6257818",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 12.9
+    },
+    {
+      "source_station_id": "6957",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 55.0
+    },
+    {
+      "source_station_id": "10921",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 34.0
+    },
+    {
+      "source_station_id": "17",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 48.0
+    },
+    {
+      "source_station_id": "6960",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 42.0
+    },
+    {
+      "source_station_id": "7005",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 33.0
+    },
+    {
+      "source_station_id": "6986",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 39.3
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 50.8
+    },
+    {
+      "source_station_id": "6254594",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 44.6
+    },
+    {
+      "source_station_id": "5627",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 43.3
+    },
+    {
+      "source_station_id": "10486",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 23.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 57.0
+    },
+    {
+      "source_station_id": "50",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 29.0
+    },
+    {
+      "source_station_id": "6254665",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 47.0
+    },
+    {
+      "source_station_id": "11603",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 52.8
+    },
+    {
+      "source_station_id": "6929",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 38.0
+    },
+    {
+      "source_station_id": "6924",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 48.8
+    },
+    {
+      "source_station_id": "235",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 81.8
+    },
+    {
+      "source_station_id": "6932",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 41.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 45.1
+    },
+    {
+      "source_station_id": "5650",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 27.7
+    },
+    {
+      "source_station_id": "5570",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 32.7
+    },
+    {
+      "source_station_id": "5586",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 54.4
+    },
+    {
+      "source_station_id": "8235",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 27.0
+    },
+    {
+      "source_station_id": "5630",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 28.2
+    },
+    {
+      "source_station_id": "5622",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 18.7
+    },
+    {
+      "source_station_id": "6254666",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 14.7
+    },
+    {
+      "source_station_id": "5634",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 35.7
+    },
+    {
+      "source_station_id": "5541",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 45.8
+    },
+    {
+      "source_station_id": "8365",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 13.0
+    },
+    {
+      "source_station_id": "5626",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 37.0
+    },
+    {
+      "source_station_id": "10484",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 30.0
+    },
+    {
+      "source_station_id": "6299678",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 50.3
+    },
+    {
+      "source_station_id": "6359",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 38.9
+    },
+    {
+      "source_station_id": "8915",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 39.0
+    },
+    {
+      "source_station_id": "10831",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 51.0
+    },
+    {
+      "source_station_id": "10820",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 53.4
+    },
+    {
+      "source_station_id": "8239",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 41.0
+    },
+    {
+      "source_station_id": "5598",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 54.5
+    },
+    {
+      "source_station_id": "6931",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 20.0
+    },
+    {
+      "source_station_id": "5404",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 26.3
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 48.0
+    },
+    {
+      "source_station_id": "5665",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 30.8
+    },
+    {
+      "source_station_id": "5610",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 36.3
+    },
+    {
+      "source_station_id": "5616",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 55.9
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 41.0
+    },
+    {
+      "source_station_id": "6938",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 38.8
+    },
+    {
+      "source_station_id": "6988",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 76.3
+    },
+    {
+      "source_station_id": "5613",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 35.0
+    },
+    {
+      "source_station_id": "10900",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 111.0
+    },
+    {
+      "source_station_id": "6254663",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 41.3
+    },
+    {
+      "source_station_id": "6356",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 39.0
+    },
+    {
+      "source_station_id": "8475",
+      "observed_at": "2026-08-27T00:30:00+00:00",
+      "value": 61.0
+    },
+    {
+      "source_station_id": "6929",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 32.0
+    },
+    {
+      "source_station_id": "10900",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 140.0
+    },
+    {
+      "source_station_id": "6358",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 11.0
+    },
+    {
+      "source_station_id": "6299678",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 50.7
+    },
+    {
+      "source_station_id": "6356",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 53.0
+    },
+    {
+      "source_station_id": "5610",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 52.1
+    },
+    {
+      "source_station_id": "5665",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 36.5
+    },
+    {
+      "source_station_id": "10486",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 30.0
+    },
+    {
+      "source_station_id": "6254665",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 46.7
+    },
+    {
+      "source_station_id": "235",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 83.0
+    },
+    {
+      "source_station_id": "6257818",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 12.7
+    },
+    {
+      "source_station_id": "5626",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 50.5
+    },
+    {
+      "source_station_id": "10484",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 34.0
+    },
+    {
+      "source_station_id": "5404",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 25.5
+    },
+    {
+      "source_station_id": "5598",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 67.0
+    },
+    {
+      "source_station_id": "10921",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 42.3
+    },
+    {
+      "source_station_id": "6934",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 20.0
+    },
+    {
+      "source_station_id": "10831",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 46.0
+    },
+    {
+      "source_station_id": "6254663",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 36.3
+    },
+    {
+      "source_station_id": "6299494",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 63.1
+    },
+    {
+      "source_station_id": "6960",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 28.0
+    },
+    {
+      "source_station_id": "6938",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 33.3
+    },
+    {
+      "source_station_id": "6957",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 52.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 52.0
+    },
+    {
+      "source_station_id": "5627",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 41.6
+    },
+    {
+      "source_station_id": "6254594",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 42.3
+    },
+    {
+      "source_station_id": "5616",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 58.2
+    },
+    {
+      "source_station_id": "11603",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 51.8
+    },
+    {
+      "source_station_id": "6924",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 53.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 43.6
+    },
+    {
+      "source_station_id": "6932",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 36.0
+    },
+    {
+      "source_station_id": "8235",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 25.0
+    },
+    {
+      "source_station_id": "8915",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 46.0
+    },
+    {
+      "source_station_id": "5570",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 31.5
+    },
+    {
+      "source_station_id": "50",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 46.0
+    },
+    {
+      "source_station_id": "7005",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 38.3
+    },
+    {
+      "source_station_id": "17",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 54.0
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 44.0
+    },
+    {
+      "source_station_id": "229252",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 19.1
+    },
+    {
+      "source_station_id": "8917",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 49.0
+    },
+    {
+      "source_station_id": "5662",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 19.0
+    },
+    {
+      "source_station_id": "5630",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 24.5
+    },
+    {
+      "source_station_id": "8475",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 64.0
+    },
+    {
+      "source_station_id": "8239",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 47.0
+    },
+    {
+      "source_station_id": "10820",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 48.7
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 48.9
+    },
+    {
+      "source_station_id": "5613",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 34.5
+    },
+    {
+      "source_station_id": "6988",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 83.8
+    },
+    {
+      "source_station_id": "6359",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 41.2
+    },
+    {
+      "source_station_id": "6986",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 54.5
+    },
+    {
+      "source_station_id": "5634",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 38.3
+    },
+    {
+      "source_station_id": "6254666",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 18.1
+    },
+    {
+      "source_station_id": "5541",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 44.0
+    },
+    {
+      "source_station_id": "6931",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 22.0
+    },
+    {
+      "source_station_id": "5622",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 17.8
+    },
+    {
+      "source_station_id": "5586",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 52.4
+    },
+    {
+      "source_station_id": "6148686",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 43.9
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 63.4
+    },
+    {
+      "source_station_id": "8365",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 9.0
+    },
+    {
+      "source_station_id": "8472",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 69.0
+    },
+    {
+      "source_station_id": "5650",
+      "observed_at": "2026-08-27T01:30:00+00:00",
+      "value": 29.6
+    },
+    {
+      "source_station_id": "10486",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 35.5
+    },
+    {
+      "source_station_id": "5662",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 29.5
+    },
+    {
+      "source_station_id": "5586",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 54.3
+    },
+    {
+      "source_station_id": "234568",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 17.1
+    },
+    {
+      "source_station_id": "229252",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 23.1
+    },
+    {
+      "source_station_id": "6932",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 42.8
+    },
+    {
+      "source_station_id": "8472",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 90.8
+    },
+    {
+      "source_station_id": "8475",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 54.8
+    },
+    {
+      "source_station_id": "6934",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 30.0
+    },
+    {
+      "source_station_id": "8239",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 46.3
+    },
+    {
+      "source_station_id": "6358",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 59.3
+    },
+    {
+      "source_station_id": "235",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 83.0
+    },
+    {
+      "source_station_id": "10831",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 60.3
+    },
+    {
+      "source_station_id": "5404",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 45.3
+    },
+    {
+      "source_station_id": "6254665",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 44.1
+    },
+    {
+      "source_station_id": "10820",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 38.9
+    },
+    {
+      "source_station_id": "10921",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 41.9
+    },
+    {
+      "source_station_id": "5610",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 51.1
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 49.1
+    },
+    {
+      "source_station_id": "10484",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 33.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 70.4
+    },
+    {
+      "source_station_id": "5634",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 26.2
+    },
+    {
+      "source_station_id": "6988",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 77.5
+    },
+    {
+      "source_station_id": "6148686",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 37.7
+    },
+    {
+      "source_station_id": "8365",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 64.3
+    },
+    {
+      "source_station_id": "5541",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 40.2
+    },
+    {
+      "source_station_id": "6986",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 57.5
+    },
+    {
+      "source_station_id": "6356",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 57.8
+    },
+    {
+      "source_station_id": "5650",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 25.7
+    },
+    {
+      "source_station_id": "5613",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 39.3
+    },
+    {
+      "source_station_id": "6254666",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 16.9
+    },
+    {
+      "source_station_id": "6254594",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 41.6
+    },
+    {
+      "source_station_id": "6359",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 43.4
+    },
+    {
+      "source_station_id": "8235",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 77.3
+    },
+    {
+      "source_station_id": "5626",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 60.5
+    },
+    {
+      "source_station_id": "11603",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 54.5
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 43.4
+    },
+    {
+      "source_station_id": "8915",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 56.3
+    },
+    {
+      "source_station_id": "6299678",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 55.3
+    },
+    {
+      "source_station_id": "6924",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 53.0
+    },
+    {
+      "source_station_id": "5570",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 34.2
+    },
+    {
+      "source_station_id": "7005",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 40.0
+    },
+    {
+      "source_station_id": "5616",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 63.5
+    },
+    {
+      "source_station_id": "5627",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 36.1
+    },
+    {
+      "source_station_id": "6257818",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 13.3
+    },
+    {
+      "source_station_id": "50",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 48.0
+    },
+    {
+      "source_station_id": "5665",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 63.0
+    },
+    {
+      "source_station_id": "6931",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 21.8
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 55.9
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 42.0
+    },
+    {
+      "source_station_id": "17",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 58.0
+    },
+    {
+      "source_station_id": "10900",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 81.0
+    },
+    {
+      "source_station_id": "6938",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 42.5
+    },
+    {
+      "source_station_id": "5598",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 35.5
+    },
+    {
+      "source_station_id": "6957",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 46.0
+    },
+    {
+      "source_station_id": "5622",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 20.0
+    },
+    {
+      "source_station_id": "5630",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 25.1
+    },
+    {
+      "source_station_id": "8917",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 46.0
+    },
+    {
+      "source_station_id": "6929",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 30.3
+    },
+    {
+      "source_station_id": "6254663",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 33.4
+    },
+    {
+      "source_station_id": "6299494",
+      "observed_at": "2026-08-27T02:30:00+00:00",
+      "value": 71.4
+    },
+    {
+      "source_station_id": "10820",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 25.0
+    },
+    {
+      "source_station_id": "5630",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 30.0
+    },
+    {
+      "source_station_id": "6960",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 5.75
+    },
+    {
+      "source_station_id": "5626",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 49.0
+    },
+    {
+      "source_station_id": "6254666",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 13.5
+    },
+    {
+      "source_station_id": "8915",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 62.3
+    },
+    {
+      "source_station_id": "8365",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 53.0
+    },
+    {
+      "source_station_id": "5613",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 37.0
+    },
+    {
+      "source_station_id": "10484",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 40.8
+    },
+    {
+      "source_station_id": "6957",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 36.8
+    },
+    {
+      "source_station_id": "6932",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 48.3
+    },
+    {
+      "source_station_id": "6358",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 30.0
+    },
+    {
+      "source_station_id": "6934",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 25.3
+    },
+    {
+      "source_station_id": "6299494",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 70.9
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 48.3
+    },
+    {
+      "source_station_id": "5627",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 38.6
+    },
+    {
+      "source_station_id": "6924",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 55.0
+    },
+    {
+      "source_station_id": "8235",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 52.0
+    },
+    {
+      "source_station_id": "6254594",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 43.4
+    },
+    {
+      "source_station_id": "17",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 40.0
+    },
+    {
+      "source_station_id": "50",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 41.0
+    },
+    {
+      "source_station_id": "8917",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 35.0
+    },
+    {
+      "source_station_id": "5662",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 36.5
+    },
+    {
+      "source_station_id": "8475",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 29.8
+    },
+    {
+      "source_station_id": "5634",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 37.2
+    },
+    {
+      "source_station_id": "6986",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 50.5
+    },
+    {
+      "source_station_id": "5586",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 47.0
+    },
+    {
+      "source_station_id": "5622",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 19.7
+    },
+    {
+      "source_station_id": "6148686",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 38.5
+    },
+    {
+      "source_station_id": "8472",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 108.0
+    },
+    {
+      "source_station_id": "10900",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 57.8
+    },
+    {
+      "source_station_id": "6356",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 45.0
+    },
+    {
+      "source_station_id": "5650",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 29.0
+    },
+    {
+      "source_station_id": "5610",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 48.9
+    },
+    {
+      "source_station_id": "235",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 89.5
+    },
+    {
+      "source_station_id": "5598",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 28.0
+    },
+    {
+      "source_station_id": "6257818",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 12.6
+    },
+    {
+      "source_station_id": "10486",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 37.8
+    },
+    {
+      "source_station_id": "6254665",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 46.3
+    },
+    {
+      "source_station_id": "6299678",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 55.3
+    },
+    {
+      "source_station_id": "6929",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 25.8
+    },
+    {
+      "source_station_id": "6359",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 45.3
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 52.6
+    },
+    {
+      "source_station_id": "6931",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 11.3
+    },
+    {
+      "source_station_id": "6988",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 69.5
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 44.7
+    },
+    {
+      "source_station_id": "8239",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 39.5
+    },
+    {
+      "source_station_id": "229252",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 25.2
+    },
+    {
+      "source_station_id": "7005",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 45.5
+    },
+    {
+      "source_station_id": "6938",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 35.0
+    },
+    {
+      "source_station_id": "5570",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 34.0
+    },
+    {
+      "source_station_id": "11603",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 49.8
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 42.7
+    },
+    {
+      "source_station_id": "6254663",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 41.1
+    },
+    {
+      "source_station_id": "5404",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 43.1
+    },
+    {
+      "source_station_id": "5541",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 33.9
+    },
+    {
+      "source_station_id": "10921",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 32.6
+    },
+    {
+      "source_station_id": "5665",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 48.5
+    },
+    {
+      "source_station_id": "5616",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 56.4
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 43.0
+    },
+    {
+      "source_station_id": "10831",
+      "observed_at": "2026-08-27T03:30:00+00:00",
+      "value": 68.3
+    },
+    {
+      "source_station_id": "5598",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 37.0
+    },
+    {
+      "source_station_id": "8235",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 77.5
+    },
+    {
+      "source_station_id": "5626",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 36.0
+    },
+    {
+      "source_station_id": "8475",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 36.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 43.5
+    },
+    {
+      "source_station_id": "5630",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 30.4
+    },
+    {
+      "source_station_id": "8239",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 36.8
+    },
+    {
+      "source_station_id": "6924",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 65.5
+    },
+    {
+      "source_station_id": "5586",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 41.8
+    },
+    {
+      "source_station_id": "5627",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 45.8
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 49.5
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 44.0
+    },
+    {
+      "source_station_id": "229252",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 26.9
+    },
+    {
+      "source_station_id": "6988",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 83.5
+    },
+    {
+      "source_station_id": "6254663",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 46.9
+    },
+    {
+      "source_station_id": "5665",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 59.0
+    },
+    {
+      "source_station_id": "6299494",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 69.3
+    },
+    {
+      "source_station_id": "5662",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 39.5
+    },
+    {
+      "source_station_id": "6934",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 31.0
+    },
+    {
+      "source_station_id": "8917",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 16.3
+    },
+    {
+      "source_station_id": "6358",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 48.5
+    },
+    {
+      "source_station_id": "5634",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 33.8
+    },
+    {
+      "source_station_id": "8915",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 64.0
+    },
+    {
+      "source_station_id": "6931",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 26.0
+    },
+    {
+      "source_station_id": "6957",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 48.5
+    },
+    {
+      "source_station_id": "6932",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 40.0
+    },
+    {
+      "source_station_id": "6938",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 37.5
+    },
+    {
+      "source_station_id": "6148686",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 44.7
+    },
+    {
+      "source_station_id": "5404",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 50.1
+    },
+    {
+      "source_station_id": "50",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 43.5
+    },
+    {
+      "source_station_id": "10484",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 46.3
+    },
+    {
+      "source_station_id": "5613",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 40.0
+    },
+    {
+      "source_station_id": "17",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 48.5
+    },
+    {
+      "source_station_id": "8365",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 8.0
+    },
+    {
+      "source_station_id": "10921",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 39.6
+    },
+    {
+      "source_station_id": "10486",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 31.5
+    },
+    {
+      "source_station_id": "7005",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 50.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 40.6
+    },
+    {
+      "source_station_id": "5616",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 65.6
+    },
+    {
+      "source_station_id": "5541",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 29.9
+    },
+    {
+      "source_station_id": "235",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 93.0
+    },
+    {
+      "source_station_id": "6960",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 25.0
+    },
+    {
+      "source_station_id": "5610",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 50.9
+    },
+    {
+      "source_station_id": "6359",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 51.2
+    },
+    {
+      "source_station_id": "6986",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 64.5
+    },
+    {
+      "source_station_id": "6254665",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 51.5
+    },
+    {
+      "source_station_id": "5570",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 41.0
+    },
+    {
+      "source_station_id": "6257818",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 13.6
+    },
+    {
+      "source_station_id": "10820",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 19.1
+    },
+    {
+      "source_station_id": "5650",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 30.5
+    },
+    {
+      "source_station_id": "6356",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 45.3
+    },
+    {
+      "source_station_id": "6254594",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 45.6
+    },
+    {
+      "source_station_id": "6299678",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 59.5
+    },
+    {
+      "source_station_id": "5622",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 27.7
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 92.6
+    },
+    {
+      "source_station_id": "6929",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 32.5
+    },
+    {
+      "source_station_id": "6254666",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 11.0
+    },
+    {
+      "source_station_id": "10900",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 49.6
+    },
+    {
+      "source_station_id": "11603",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 42.8
+    },
+    {
+      "source_station_id": "10831",
+      "observed_at": "2026-08-27T04:30:00+00:00",
+      "value": 53.8
+    },
+    {
+      "source_station_id": "6929",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 43.0
+    },
+    {
+      "source_station_id": "10900",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 47.0
+    },
+    {
+      "source_station_id": "5541",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 25.8
+    },
+    {
+      "source_station_id": "6359",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 55.1
+    },
+    {
+      "source_station_id": "8472",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 115.0
+    },
+    {
+      "source_station_id": "6980",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 56.5
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 41.0
+    },
+    {
+      "source_station_id": "5622",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 28.3
+    },
+    {
+      "source_station_id": "5586",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 41.0
+    },
+    {
+      "source_station_id": "6254594",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 47.2
+    },
+    {
+      "source_station_id": "6356",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 45.5
+    },
+    {
+      "source_station_id": "6986",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 76.0
+    },
+    {
+      "source_station_id": "5598",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 59.0
+    },
+    {
+      "source_station_id": "5616",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 118.0
+    },
+    {
+      "source_station_id": "6988",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 102.0
+    },
+    {
+      "source_station_id": "6931",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 25.5
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 34.7
+    },
+    {
+      "source_station_id": "10820",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 31.8
+    },
+    {
+      "source_station_id": "5634",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 18.2
+    },
+    {
+      "source_station_id": "229252",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 30.6
+    },
+    {
+      "source_station_id": "8475",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 56.5
+    },
+    {
+      "source_station_id": "8239",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 42.0
+    },
+    {
+      "source_station_id": "6254666",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 11.5
+    },
+    {
+      "source_station_id": "5662",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 30.5
+    },
+    {
+      "source_station_id": "8917",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 62.3
+    },
+    {
+      "source_station_id": "6938",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 49.5
+    },
+    {
+      "source_station_id": "50",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 37.3
+    },
+    {
+      "source_station_id": "6254665",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 55.7
+    },
+    {
+      "source_station_id": "7005",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 54.0
+    },
+    {
+      "source_station_id": "5626",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 33.0
+    },
+    {
+      "source_station_id": "5570",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 35.4
+    },
+    {
+      "source_station_id": "17",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 47.5
+    },
+    {
+      "source_station_id": "8235",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 91.0
+    },
+    {
+      "source_station_id": "11603",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 43.4
+    },
+    {
+      "source_station_id": "6257818",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 13.5
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 38.8
+    },
+    {
+      "source_station_id": "10921",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 30.2
+    },
+    {
+      "source_station_id": "6924",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 92.5
+    },
+    {
+      "source_station_id": "5627",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 45.5
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 50.6
+    },
+    {
+      "source_station_id": "6254663",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 30.2
+    },
+    {
+      "source_station_id": "6299494",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 76.8
+    },
+    {
+      "source_station_id": "5665",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 83.0
+    },
+    {
+      "source_station_id": "6934",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 58.3
+    },
+    {
+      "source_station_id": "6957",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 57.3
+    },
+    {
+      "source_station_id": "8915",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 77.5
+    },
+    {
+      "source_station_id": "6358",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 51.5
+    },
+    {
+      "source_station_id": "10484",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 44.8
+    },
+    {
+      "source_station_id": "5630",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 27.0
+    },
+    {
+      "source_station_id": "5404",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 39.1
+    },
+    {
+      "source_station_id": "5613",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 44.0
+    },
+    {
+      "source_station_id": "8365",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 23.3
+    },
+    {
+      "source_station_id": "10486",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 29.5
+    },
+    {
+      "source_station_id": "235",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 92.0
+    },
+    {
+      "source_station_id": "6960",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 36.0
+    },
+    {
+      "source_station_id": "5610",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 44.3
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 92.5
+    },
+    {
+      "source_station_id": "6932",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 45.8
+    },
+    {
+      "source_station_id": "6148686",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 40.7
+    },
+    {
+      "source_station_id": "5650",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 32.4
+    },
+    {
+      "source_station_id": "10831",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 57.3
+    },
+    {
+      "source_station_id": "6299678",
+      "observed_at": "2026-08-27T05:30:00+00:00",
+      "value": 60.8
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 41.0
+    },
+    {
+      "source_station_id": "6359",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 65.7
+    },
+    {
+      "source_station_id": "5626",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 36.4
+    },
+    {
+      "source_station_id": "10921",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 30.2
+    },
+    {
+      "source_station_id": "10484",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 40.5
+    },
+    {
+      "source_station_id": "6358",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 53.3
+    },
+    {
+      "source_station_id": "6934",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 43.5
+    },
+    {
+      "source_station_id": "6924",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 92.0
+    },
+    {
+      "source_station_id": "5627",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 47.4
+    },
+    {
+      "source_station_id": "50",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 46.0
+    },
+    {
+      "source_station_id": "8917",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 79.3
+    },
+    {
+      "source_station_id": "5662",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 18.0
+    },
+    {
+      "source_station_id": "6986",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 73.5
+    },
+    {
+      "source_station_id": "5622",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 34.0
+    },
+    {
+      "source_station_id": "6980",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 86.0
+    },
+    {
+      "source_station_id": "10900",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 45.6
+    },
+    {
+      "source_station_id": "6932",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 52.3
+    },
+    {
+      "source_station_id": "235",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 111.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 87.6
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 37.2
+    },
+    {
+      "source_station_id": "6356",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 43.5
+    },
+    {
+      "source_station_id": "6988",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 119.0
+    },
+    {
+      "source_station_id": "8239",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 42.0
+    },
+    {
+      "source_station_id": "7005",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 76.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 36.4
+    },
+    {
+      "source_station_id": "6254663",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 16.7
+    },
+    {
+      "source_station_id": "8915",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 85.0
+    },
+    {
+      "source_station_id": "5404",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 47.1
+    },
+    {
+      "source_station_id": "5541",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 33.4
+    },
+    {
+      "source_station_id": "5616",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 103.0
+    },
+    {
+      "source_station_id": "6257818",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 13.8
+    },
+    {
+      "source_station_id": "10831",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 64.8
+    },
+    {
+      "source_station_id": "6254666",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 10.1
+    },
+    {
+      "source_station_id": "6960",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 47.5
+    },
+    {
+      "source_station_id": "6254665",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 56.8
+    },
+    {
+      "source_station_id": "5613",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 52.3
+    },
+    {
+      "source_station_id": "8365",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 69.3
+    },
+    {
+      "source_station_id": "5630",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 22.4
+    },
+    {
+      "source_station_id": "5665",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 73.0
+    },
+    {
+      "source_station_id": "11603",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 41.1
+    },
+    {
+      "source_station_id": "5570",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 48.9
+    },
+    {
+      "source_station_id": "6938",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 70.0
+    },
+    {
+      "source_station_id": "229252",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 30.3
+    },
+    {
+      "source_station_id": "6931",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 31.8
+    },
+    {
+      "source_station_id": "6299678",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 66.6
+    },
+    {
+      "source_station_id": "6929",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 38.3
+    },
+    {
+      "source_station_id": "10486",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 20.5
+    },
+    {
+      "source_station_id": "5610",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 60.0
+    },
+    {
+      "source_station_id": "6148686",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 43.3
+    },
+    {
+      "source_station_id": "5650",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 33.2
+    },
+    {
+      "source_station_id": "8472",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 126.0
+    },
+    {
+      "source_station_id": "5586",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 45.8
+    },
+    {
+      "source_station_id": "6254594",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 46.8
+    },
+    {
+      "source_station_id": "10820",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 149.0
+    },
+    {
+      "source_station_id": "5634",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 31.9
+    },
+    {
+      "source_station_id": "8475",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 55.3
+    },
+    {
+      "source_station_id": "17",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 53.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 55.9
+    },
+    {
+      "source_station_id": "6299494",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 89.2
+    },
+    {
+      "source_station_id": "6957",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 54.3
+    },
+    {
+      "source_station_id": "5598",
+      "observed_at": "2026-08-27T06:30:00+00:00",
+      "value": 76.5
+    },
+    {
+      "source_station_id": "5662",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 14.5
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 92.6
+    },
+    {
+      "source_station_id": "6254665",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 56.9
+    },
+    {
+      "source_station_id": "8475",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 60.5
+    },
+    {
+      "source_station_id": "5634",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 67.5
+    },
+    {
+      "source_station_id": "10820",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 287.0
+    },
+    {
+      "source_station_id": "10484",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 50.8
+    },
+    {
+      "source_station_id": "6929",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 56.8
+    },
+    {
+      "source_station_id": "6986",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 77.0
+    },
+    {
+      "source_station_id": "5598",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 72.5
+    },
+    {
+      "source_station_id": "5586",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 44.5
+    },
+    {
+      "source_station_id": "5622",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 27.6
+    },
+    {
+      "source_station_id": "6254594",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 51.1
+    },
+    {
+      "source_station_id": "6980",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 80.5
+    },
+    {
+      "source_station_id": "8472",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 115.0
+    },
+    {
+      "source_station_id": "10900",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 44.3
+    },
+    {
+      "source_station_id": "6359",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 70.9
+    },
+    {
+      "source_station_id": "5650",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 43.5
+    },
+    {
+      "source_station_id": "5626",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 45.3
+    },
+    {
+      "source_station_id": "8365",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 65.5
+    },
+    {
+      "source_station_id": "235",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 138.0
+    },
+    {
+      "source_station_id": "5613",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 55.3
+    },
+    {
+      "source_station_id": "10486",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 26.5
+    },
+    {
+      "source_station_id": "6254663",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 35.6
+    },
+    {
+      "source_station_id": "6934",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 55.3
+    },
+    {
+      "source_station_id": "5610",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 71.9
+    },
+    {
+      "source_station_id": "10921",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 40.7
+    },
+    {
+      "source_station_id": "6148686",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 54.4
+    },
+    {
+      "source_station_id": "5570",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 56.7
+    },
+    {
+      "source_station_id": "5541",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 45.4
+    },
+    {
+      "source_station_id": "7005",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 90.5
+    },
+    {
+      "source_station_id": "6299494",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 93.1
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 54.5
+    },
+    {
+      "source_station_id": "6957",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 61.0
+    },
+    {
+      "source_station_id": "6938",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 81.5
+    },
+    {
+      "source_station_id": "5630",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 25.2
+    },
+    {
+      "source_station_id": "6932",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 38.0
+    },
+    {
+      "source_station_id": "5404",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 47.1
+    },
+    {
+      "source_station_id": "6931",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 30.0
+    },
+    {
+      "source_station_id": "6924",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 94.5
+    },
+    {
+      "source_station_id": "8235",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 26.8
+    },
+    {
+      "source_station_id": "5616",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 92.2
+    },
+    {
+      "source_station_id": "17",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 68.5
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 35.7
+    },
+    {
+      "source_station_id": "5627",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 63.8
+    },
+    {
+      "source_station_id": "5665",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 64.3
+    },
+    {
+      "source_station_id": "229252",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 29.3
+    },
+    {
+      "source_station_id": "6358",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 51.7
+    },
+    {
+      "source_station_id": "10831",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 45.3
+    },
+    {
+      "source_station_id": "6988",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 122.0
+    },
+    {
+      "source_station_id": "6257818",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 14.8
+    },
+    {
+      "source_station_id": "6356",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 41.3
+    },
+    {
+      "source_station_id": "8915",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 90.5
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 37.6
+    },
+    {
+      "source_station_id": "11603",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 43.7
+    },
+    {
+      "source_station_id": "50",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 39.8
+    },
+    {
+      "source_station_id": "8917",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 92.5
+    },
+    {
+      "source_station_id": "6254666",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 14.0
+    },
+    {
+      "source_station_id": "6299678",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 76.6
+    },
+    {
+      "source_station_id": "6960",
+      "observed_at": "2026-08-27T07:30:00+00:00",
+      "value": 112.0
+    },
+    {
+      "source_station_id": "8475",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 71.0
+    },
+    {
+      "source_station_id": "10831",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 37.5
+    },
+    {
+      "source_station_id": "5541",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 68.8
+    },
+    {
+      "source_station_id": "5616",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 69.8
+    },
+    {
+      "source_station_id": "5630",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 28.3
+    },
+    {
+      "source_station_id": "6254663",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 41.7
+    },
+    {
+      "source_station_id": "8915",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 81.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 36.5
+    },
+    {
+      "source_station_id": "6934",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 76.0
+    },
+    {
+      "source_station_id": "7005",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 83.0
+    },
+    {
+      "source_station_id": "5570",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 55.2
+    },
+    {
+      "source_station_id": "6938",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 73.0
+    },
+    {
+      "source_station_id": "6931",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 36.8
+    },
+    {
+      "source_station_id": "11603",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 49.4
+    },
+    {
+      "source_station_id": "234568",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 14.5
+    },
+    {
+      "source_station_id": "8239",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 103.0
+    },
+    {
+      "source_station_id": "10484",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 59.5
+    },
+    {
+      "source_station_id": "6988",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 109.0
+    },
+    {
+      "source_station_id": "229252",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 28.1
+    },
+    {
+      "source_station_id": "6356",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 39.8
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 37.4
+    },
+    {
+      "source_station_id": "6299678",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 83.9
+    },
+    {
+      "source_station_id": "6358",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 65.7
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 86.5
+    },
+    {
+      "source_station_id": "235",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 129.0
+    },
+    {
+      "source_station_id": "10921",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 46.5
+    },
+    {
+      "source_station_id": "10486",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 33.5
+    },
+    {
+      "source_station_id": "5610",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 79.6
+    },
+    {
+      "source_station_id": "5404",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 66.2
+    },
+    {
+      "source_station_id": "6148686",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 56.3
+    },
+    {
+      "source_station_id": "5650",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 32.6
+    },
+    {
+      "source_station_id": "10900",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 49.3
+    },
+    {
+      "source_station_id": "6359",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 81.3
+    },
+    {
+      "source_station_id": "8472",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 110.0
+    },
+    {
+      "source_station_id": "6980",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 55.0
+    },
+    {
+      "source_station_id": "6254594",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 50.5
+    },
+    {
+      "source_station_id": "10820",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 106.0
+    },
+    {
+      "source_station_id": "5622",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 22.0
+    },
+    {
+      "source_station_id": "5586",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 49.8
+    },
+    {
+      "source_station_id": "6924",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 88.5
+    },
+    {
+      "source_station_id": "6986",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 74.7
+    },
+    {
+      "source_station_id": "5598",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 67.0
+    },
+    {
+      "source_station_id": "6929",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 72.8
+    },
+    {
+      "source_station_id": "5662",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 13.0
+    },
+    {
+      "source_station_id": "5626",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 39.6
+    },
+    {
+      "source_station_id": "5634",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 102.0
+    },
+    {
+      "source_station_id": "50",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 59.8
+    },
+    {
+      "source_station_id": "8917",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 67.8
+    },
+    {
+      "source_station_id": "5627",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 46.4
+    },
+    {
+      "source_station_id": "17",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 70.8
+    },
+    {
+      "source_station_id": "8235",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 35.3
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 51.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 76.1
+    },
+    {
+      "source_station_id": "6299494",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 100.0
+    },
+    {
+      "source_station_id": "8365",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 44.8
+    },
+    {
+      "source_station_id": "5613",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 59.3
+    },
+    {
+      "source_station_id": "6254665",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 59.2
+    },
+    {
+      "source_station_id": "6960",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 80.0
+    },
+    {
+      "source_station_id": "6254666",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 16.6
+    },
+    {
+      "source_station_id": "6257818",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 16.2
+    },
+    {
+      "source_station_id": "5665",
+      "observed_at": "2026-08-27T08:30:00+00:00",
+      "value": 77.5
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T09:30:00+00:00",
+      "value": 37.5
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T09:30:00+00:00",
+      "value": 60.7
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T09:30:00+00:00",
+      "value": 104.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T09:30:00+00:00",
+      "value": 43.4
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T10:30:00+00:00",
+      "value": 44.6
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T10:30:00+00:00",
+      "value": 42.9
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T10:30:00+00:00",
+      "value": 59.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T10:30:00+00:00",
+      "value": 38.8
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T10:30:00+00:00",
+      "value": 41.6
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T11:30:00+00:00",
+      "value": 54.2
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T11:30:00+00:00",
+      "value": 43.9
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T11:30:00+00:00",
+      "value": 45.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T11:30:00+00:00",
+      "value": 36.5
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T11:30:00+00:00",
+      "value": 44.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T12:30:00+00:00",
+      "value": 62.8
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T12:30:00+00:00",
+      "value": 35.2
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T12:30:00+00:00",
+      "value": 56.6
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T12:30:00+00:00",
+      "value": 39.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T12:30:00+00:00",
+      "value": 47.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T13:30:00+00:00",
+      "value": 47.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T13:30:00+00:00",
+      "value": 42.3
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T13:30:00+00:00",
+      "value": 70.1
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T13:30:00+00:00",
+      "value": 46.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T13:30:00+00:00",
+      "value": 53.4
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T14:30:00+00:00",
+      "value": 48.5
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T14:30:00+00:00",
+      "value": 50.9
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T14:30:00+00:00",
+      "value": 66.5
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T14:30:00+00:00",
+      "value": 63.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T14:30:00+00:00",
+      "value": 91.7
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T15:30:00+00:00",
+      "value": 64.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T15:30:00+00:00",
+      "value": 70.1
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T15:30:00+00:00",
+      "value": 75.2
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T15:30:00+00:00",
+      "value": 55.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T15:30:00+00:00",
+      "value": 55.2
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T16:30:00+00:00",
+      "value": 68.4
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T16:30:00+00:00",
+      "value": 51.6
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T16:30:00+00:00",
+      "value": 83.2
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T16:30:00+00:00",
+      "value": 86.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T16:30:00+00:00",
+      "value": 71.8
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T17:30:00+00:00",
+      "value": 72.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T17:30:00+00:00",
+      "value": 67.6
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T17:30:00+00:00",
+      "value": 69.6
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T17:30:00+00:00",
+      "value": 53.1
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T17:30:00+00:00",
+      "value": 60.6
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T18:30:00+00:00",
+      "value": 64.1
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T18:30:00+00:00",
+      "value": 67.9
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T18:30:00+00:00",
+      "value": 53.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T18:30:00+00:00",
+      "value": 51.4
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T18:30:00+00:00",
+      "value": 63.8
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T19:30:00+00:00",
+      "value": 42.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T19:30:00+00:00",
+      "value": 60.5
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T19:30:00+00:00",
+      "value": 62.4
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T19:30:00+00:00",
+      "value": 47.2
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T19:30:00+00:00",
+      "value": 53.8
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T20:30:00+00:00",
+      "value": 43.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T20:30:00+00:00",
+      "value": 63.8
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T20:30:00+00:00",
+      "value": 54.0
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T20:30:00+00:00",
+      "value": 41.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T20:30:00+00:00",
+      "value": 47.7
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T21:30:00+00:00",
+      "value": 38.8
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T21:30:00+00:00",
+      "value": 42.7
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T21:30:00+00:00",
+      "value": 49.5
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T21:30:00+00:00",
+      "value": 71.3
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T21:30:00+00:00",
+      "value": 39.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T22:30:00+00:00",
+      "value": 35.3
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T22:30:00+00:00",
+      "value": 39.3
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T22:30:00+00:00",
+      "value": 58.2
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T22:30:00+00:00",
+      "value": 46.1
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T22:30:00+00:00",
+      "value": 41.0
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-27T23:30:00+00:00",
+      "value": 29.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-27T23:30:00+00:00",
+      "value": 42.3
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-27T23:30:00+00:00",
+      "value": 36.3
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-27T23:30:00+00:00",
+      "value": 31.6
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-27T23:30:00+00:00",
+      "value": 50.1
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T00:30:00+00:00",
+      "value": 32.4
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T00:30:00+00:00",
+      "value": 27.4
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T00:30:00+00:00",
+      "value": 38.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T00:30:00+00:00",
+      "value": 51.4
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T00:30:00+00:00",
+      "value": 36.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T01:30:00+00:00",
+      "value": 24.6
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T01:30:00+00:00",
+      "value": 73.1
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T01:30:00+00:00",
+      "value": 29.6
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T01:30:00+00:00",
+      "value": 37.4
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T01:30:00+00:00",
+      "value": 30.0
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T02:30:00+00:00",
+      "value": 35.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T02:30:00+00:00",
+      "value": 27.8
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T02:30:00+00:00",
+      "value": 35.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T02:30:00+00:00",
+      "value": 82.1
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T02:30:00+00:00",
+      "value": 23.7
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T03:30:00+00:00",
+      "value": 31.3
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T03:30:00+00:00",
+      "value": 62.5
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T03:30:00+00:00",
+      "value": 26.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T03:30:00+00:00",
+      "value": 23.4
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T03:30:00+00:00",
+      "value": 35.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T04:30:00+00:00",
+      "value": 32.4
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T04:30:00+00:00",
+      "value": 41.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T04:30:00+00:00",
+      "value": 22.3
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T04:30:00+00:00",
+      "value": 24.5
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T04:30:00+00:00",
+      "value": 39.8
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T05:30:00+00:00",
+      "value": 39.9
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T05:30:00+00:00",
+      "value": 23.6
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T05:30:00+00:00",
+      "value": 31.1
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T05:30:00+00:00",
+      "value": 41.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T05:30:00+00:00",
+      "value": 18.1
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T06:30:00+00:00",
+      "value": 15.8
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T06:30:00+00:00",
+      "value": 30.1
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T06:30:00+00:00",
+      "value": 38.8
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T06:30:00+00:00",
+      "value": 23.7
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T07:30:00+00:00",
+      "value": 40.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T07:30:00+00:00",
+      "value": 37.1
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T07:30:00+00:00",
+      "value": 28.7
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T07:30:00+00:00",
+      "value": 12.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T07:30:00+00:00",
+      "value": 22.9
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T08:30:00+00:00",
+      "value": 41.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T08:30:00+00:00",
+      "value": 36.1
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T08:30:00+00:00",
+      "value": 22.7
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T08:30:00+00:00",
+      "value": 28.2
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T08:30:00+00:00",
+      "value": 12.4
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T09:30:00+00:00",
+      "value": 21.7
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T09:30:00+00:00",
+      "value": 35.6
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T09:30:00+00:00",
+      "value": 10.2
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T09:30:00+00:00",
+      "value": 34.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T09:30:00+00:00",
+      "value": 27.4
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T10:30:00+00:00",
+      "value": 19.9
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T10:30:00+00:00",
+      "value": 35.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T10:30:00+00:00",
+      "value": 8.4
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T10:30:00+00:00",
+      "value": 39.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T10:30:00+00:00",
+      "value": 25.2
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T11:30:00+00:00",
+      "value": 25.6
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T11:30:00+00:00",
+      "value": 16.8
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T11:30:00+00:00",
+      "value": 8.1
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T11:30:00+00:00",
+      "value": 34.2
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T11:30:00+00:00",
+      "value": 36.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T12:30:00+00:00",
+      "value": 13.1
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T12:30:00+00:00",
+      "value": 35.3
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T12:30:00+00:00",
+      "value": 42.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T12:30:00+00:00",
+      "value": 26.8
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T12:30:00+00:00",
+      "value": 7.1
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T13:30:00+00:00",
+      "value": 17.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T13:30:00+00:00",
+      "value": 39.2
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T13:30:00+00:00",
+      "value": 13.4
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T13:30:00+00:00",
+      "value": 28.6
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T13:30:00+00:00",
+      "value": 44.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T14:30:00+00:00",
+      "value": 42.4
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T14:30:00+00:00",
+      "value": 50.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T14:30:00+00:00",
+      "value": 24.8
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T14:30:00+00:00",
+      "value": 36.6
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T14:30:00+00:00",
+      "value": 20.8
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T15:30:00+00:00",
+      "value": 44.4
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T15:30:00+00:00",
+      "value": 29.1
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T15:30:00+00:00",
+      "value": 44.3
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T15:30:00+00:00",
+      "value": 32.7
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T15:30:00+00:00",
+      "value": 56.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T16:30:00+00:00",
+      "value": 44.2
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T16:30:00+00:00",
+      "value": 36.7
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T16:30:00+00:00",
+      "value": 47.2
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T16:30:00+00:00",
+      "value": 55.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T16:30:00+00:00",
+      "value": 31.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T17:30:00+00:00",
+      "value": 39.1
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T17:30:00+00:00",
+      "value": 43.9
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T17:30:00+00:00",
+      "value": 45.7
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T17:30:00+00:00",
+      "value": 44.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T17:30:00+00:00",
+      "value": 34.1
+    },
+    {
+      "source_station_id": "6359",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 58.9
+    },
+    {
+      "source_station_id": "8365",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 95.0
+    },
+    {
+      "source_station_id": "6924",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 64.5
+    },
+    {
+      "source_station_id": "6986",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 54.5
+    },
+    {
+      "source_station_id": "5616",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 52.7
+    },
+    {
+      "source_station_id": "5634",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 45.4
+    },
+    {
+      "source_station_id": "5665",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 75.0
+    },
+    {
+      "source_station_id": "5630",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 27.5
+    },
+    {
+      "source_station_id": "8475",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 34.0
+    },
+    {
+      "source_station_id": "6957",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 56.0
+    },
+    {
+      "source_station_id": "5570",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 36.4
+    },
+    {
+      "source_station_id": "6938",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 36.5
+    },
+    {
+      "source_station_id": "50",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 37.5
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 36.1
+    },
+    {
+      "source_station_id": "5586",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 57.3
+    },
+    {
+      "source_station_id": "10820",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 100.0
+    },
+    {
+      "source_station_id": "5541",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 48.0
+    },
+    {
+      "source_station_id": "6254594",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 34.7
+    },
+    {
+      "source_station_id": "8917",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 65.0
+    },
+    {
+      "source_station_id": "6931",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 15.3
+    },
+    {
+      "source_station_id": "6299494",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 77.9
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 41.0
+    },
+    {
+      "source_station_id": "10921",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 28.7
+    },
+    {
+      "source_station_id": "5626",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 48.3
+    },
+    {
+      "source_station_id": "7005",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 55.5
+    },
+    {
+      "source_station_id": "11603",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 43.8
+    },
+    {
+      "source_station_id": "5627",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 61.6
+    },
+    {
+      "source_station_id": "229252",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 26.8
+    },
+    {
+      "source_station_id": "6299678",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 104.0
+    },
+    {
+      "source_station_id": "8235",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 88.7
+    },
+    {
+      "source_station_id": "5650",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 33.4
+    },
+    {
+      "source_station_id": "5404",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 19.7
+    },
+    {
+      "source_station_id": "6148686",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 40.3
+    },
+    {
+      "source_station_id": "10831",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 62.0
+    },
+    {
+      "source_station_id": "6929",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 34.5
+    },
+    {
+      "source_station_id": "10484",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 41.5
+    },
+    {
+      "source_station_id": "8915",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 65.3
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 42.3
+    },
+    {
+      "source_station_id": "5610",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 31.4
+    },
+    {
+      "source_station_id": "6934",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 18.0
+    },
+    {
+      "source_station_id": "6932",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 56.0
+    },
+    {
+      "source_station_id": "6358",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 22.3
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 40.5
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 45.9
+    },
+    {
+      "source_station_id": "10486",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 24.0
+    },
+    {
+      "source_station_id": "5598",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 41.0
+    },
+    {
+      "source_station_id": "6257818",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 17.3
+    },
+    {
+      "source_station_id": "6254663",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 42.8
+    },
+    {
+      "source_station_id": "10900",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 58.3
+    },
+    {
+      "source_station_id": "6980",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 39.0
+    },
+    {
+      "source_station_id": "8239",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 27.3
+    },
+    {
+      "source_station_id": "234568",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 19.5
+    },
+    {
+      "source_station_id": "6356",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 9.75
+    },
+    {
+      "source_station_id": "6988",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 80.0
+    },
+    {
+      "source_station_id": "235",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 339.0
+    },
+    {
+      "source_station_id": "5622",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 16.8
+    },
+    {
+      "source_station_id": "6254666",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 20.0
+    },
+    {
+      "source_station_id": "6254665",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 51.9
+    },
+    {
+      "source_station_id": "17",
+      "observed_at": "2026-08-28T18:30:00+00:00",
+      "value": 53.5
+    },
+    {
+      "source_station_id": "5616",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 44.9
+    },
+    {
+      "source_station_id": "5404",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 26.2
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 36.9
+    },
+    {
+      "source_station_id": "6254663",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 42.2
+    },
+    {
+      "source_station_id": "8475",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 20.0
+    },
+    {
+      "source_station_id": "7005",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 42.0
+    },
+    {
+      "source_station_id": "8239",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 28.8
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 36.7
+    },
+    {
+      "source_station_id": "6356",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 17.8
+    },
+    {
+      "source_station_id": "6988",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 62.5
+    },
+    {
+      "source_station_id": "5634",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 32.4
+    },
+    {
+      "source_station_id": "6929",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 34.8
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 32.0
+    },
+    {
+      "source_station_id": "6932",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 41.5
+    },
+    {
+      "source_station_id": "5586",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 46.7
+    },
+    {
+      "source_station_id": "10820",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 84.2
+    },
+    {
+      "source_station_id": "6254594",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 34.7
+    },
+    {
+      "source_station_id": "6299494",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 70.1
+    },
+    {
+      "source_station_id": "10921",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 37.3
+    },
+    {
+      "source_station_id": "5650",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 30.6
+    },
+    {
+      "source_station_id": "6148686",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 35.1
+    },
+    {
+      "source_station_id": "6358",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 16.8
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 39.1
+    },
+    {
+      "source_station_id": "5610",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 26.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 42.4
+    },
+    {
+      "source_station_id": "10486",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 22.5
+    },
+    {
+      "source_station_id": "6934",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 33.8
+    },
+    {
+      "source_station_id": "10484",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 39.0
+    },
+    {
+      "source_station_id": "8235",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 52.0
+    },
+    {
+      "source_station_id": "6299678",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 92.8
+    },
+    {
+      "source_station_id": "6957",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 50.0
+    },
+    {
+      "source_station_id": "11603",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 38.1
+    },
+    {
+      "source_station_id": "229252",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 29.0
+    },
+    {
+      "source_station_id": "5627",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 54.3
+    },
+    {
+      "source_station_id": "6931",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 10.0
+    },
+    {
+      "source_station_id": "8917",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 38.8
+    },
+    {
+      "source_station_id": "5630",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 24.5
+    },
+    {
+      "source_station_id": "50",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 28.5
+    },
+    {
+      "source_station_id": "6938",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 34.0
+    },
+    {
+      "source_station_id": "5570",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 23.9
+    },
+    {
+      "source_station_id": "6986",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 41.5
+    },
+    {
+      "source_station_id": "5665",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 29.7
+    },
+    {
+      "source_station_id": "6924",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 49.0
+    },
+    {
+      "source_station_id": "17",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 43.0
+    },
+    {
+      "source_station_id": "8365",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 67.3
+    },
+    {
+      "source_station_id": "6254665",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 50.5
+    },
+    {
+      "source_station_id": "6960",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 17.0
+    },
+    {
+      "source_station_id": "6254666",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 18.5
+    },
+    {
+      "source_station_id": "6359",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 54.8
+    },
+    {
+      "source_station_id": "5622",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 15.1
+    },
+    {
+      "source_station_id": "10900",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 50.9
+    },
+    {
+      "source_station_id": "6980",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 24.0
+    },
+    {
+      "source_station_id": "234568",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 24.1
+    },
+    {
+      "source_station_id": "5598",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 29.5
+    },
+    {
+      "source_station_id": "6257818",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 18.3
+    },
+    {
+      "source_station_id": "10831",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 39.8
+    },
+    {
+      "source_station_id": "5541",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 33.2
+    },
+    {
+      "source_station_id": "235",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 381.0
+    },
+    {
+      "source_station_id": "5626",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 40.4
+    },
+    {
+      "source_station_id": "8915",
+      "observed_at": "2026-08-28T19:30:00+00:00",
+      "value": 44.5
+    },
+    {
+      "source_station_id": "6254665",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 43.3
+    },
+    {
+      "source_station_id": "5541",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 27.2
+    },
+    {
+      "source_station_id": "5570",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 19.8
+    },
+    {
+      "source_station_id": "6254663",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 39.5
+    },
+    {
+      "source_station_id": "6960",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 9.25
+    },
+    {
+      "source_station_id": "10831",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 46.5
+    },
+    {
+      "source_station_id": "6988",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 52.5
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 20.0
+    },
+    {
+      "source_station_id": "6254666",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 16.1
+    },
+    {
+      "source_station_id": "6929",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 22.3
+    },
+    {
+      "source_station_id": "229252",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 24.2
+    },
+    {
+      "source_station_id": "5627",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 39.2
+    },
+    {
+      "source_station_id": "6986",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 32.5
+    },
+    {
+      "source_station_id": "6356",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 35.8
+    },
+    {
+      "source_station_id": "5630",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 24.2
+    },
+    {
+      "source_station_id": "6931",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 17.3
+    },
+    {
+      "source_station_id": "10900",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 47.0
+    },
+    {
+      "source_station_id": "8239",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 30.5
+    },
+    {
+      "source_station_id": "5665",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 24.0
+    },
+    {
+      "source_station_id": "6980",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 21.0
+    },
+    {
+      "source_station_id": "8915",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 36.5
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 30.0
+    },
+    {
+      "source_station_id": "50",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 32.5
+    },
+    {
+      "source_station_id": "17",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 35.0
+    },
+    {
+      "source_station_id": "234568",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 29.2
+    },
+    {
+      "source_station_id": "10486",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 18.5
+    },
+    {
+      "source_station_id": "5626",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 37.3
+    },
+    {
+      "source_station_id": "5634",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 21.4
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 40.1
+    },
+    {
+      "source_station_id": "10921",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 33.7
+    },
+    {
+      "source_station_id": "7005",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 31.0
+    },
+    {
+      "source_station_id": "5610",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 30.5
+    },
+    {
+      "source_station_id": "6924",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 31.5
+    },
+    {
+      "source_station_id": "6934",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 19.8
+    },
+    {
+      "source_station_id": "5650",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 25.2
+    },
+    {
+      "source_station_id": "5598",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 15.5
+    },
+    {
+      "source_station_id": "6938",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 27.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 33.5
+    },
+    {
+      "source_station_id": "8365",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 2.0
+    },
+    {
+      "source_station_id": "5404",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 24.9
+    },
+    {
+      "source_station_id": "6932",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 25.5
+    },
+    {
+      "source_station_id": "6358",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 16.3
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 33.0
+    },
+    {
+      "source_station_id": "10484",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 34.5
+    },
+    {
+      "source_station_id": "5616",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 43.9
+    },
+    {
+      "source_station_id": "6148686",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 29.3
+    },
+    {
+      "source_station_id": "6254594",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 33.6
+    },
+    {
+      "source_station_id": "235",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 306.0
+    },
+    {
+      "source_station_id": "8235",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 38.3
+    },
+    {
+      "source_station_id": "6299494",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 68.5
+    },
+    {
+      "source_station_id": "8475",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 23.3
+    },
+    {
+      "source_station_id": "6299678",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 73.1
+    },
+    {
+      "source_station_id": "8917",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 22.8
+    },
+    {
+      "source_station_id": "6359",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 52.0
+    },
+    {
+      "source_station_id": "6957",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 38.3
+    },
+    {
+      "source_station_id": "5622",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 14.3
+    },
+    {
+      "source_station_id": "11603",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 33.8
+    },
+    {
+      "source_station_id": "5586",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 41.8
+    },
+    {
+      "source_station_id": "6257818",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 18.0
+    },
+    {
+      "source_station_id": "10820",
+      "observed_at": "2026-08-28T20:30:00+00:00",
+      "value": 74.5
+    },
+    {
+      "source_station_id": "10820",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 70.3
+    },
+    {
+      "source_station_id": "5627",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 30.2
+    },
+    {
+      "source_station_id": "6957",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 30.0
+    },
+    {
+      "source_station_id": "8917",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 21.5
+    },
+    {
+      "source_station_id": "6254594",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 31.7
+    },
+    {
+      "source_station_id": "6931",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 10.8
+    },
+    {
+      "source_station_id": "6356",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 35.8
+    },
+    {
+      "source_station_id": "8235",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 59.0
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 22.0
+    },
+    {
+      "source_station_id": "5630",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 18.3
+    },
+    {
+      "source_station_id": "6358",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 16.5
+    },
+    {
+      "source_station_id": "6359",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 46.9
+    },
+    {
+      "source_station_id": "6938",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 26.0
+    },
+    {
+      "source_station_id": "6254663",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 32.6
+    },
+    {
+      "source_station_id": "5586",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 38.8
+    },
+    {
+      "source_station_id": "50",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 30.5
+    },
+    {
+      "source_station_id": "5570",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 20.5
+    },
+    {
+      "source_station_id": "6986",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 24.0
+    },
+    {
+      "source_station_id": "10831",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 50.5
+    },
+    {
+      "source_station_id": "17",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 37.5
+    },
+    {
+      "source_station_id": "6929",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 22.5
+    },
+    {
+      "source_station_id": "8239",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 27.8
+    },
+    {
+      "source_station_id": "5665",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 19.0
+    },
+    {
+      "source_station_id": "5634",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 18.0
+    },
+    {
+      "source_station_id": "229252",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 25.1
+    },
+    {
+      "source_station_id": "8365",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 15.5
+    },
+    {
+      "source_station_id": "5541",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 35.3
+    },
+    {
+      "source_station_id": "5616",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 32.5
+    },
+    {
+      "source_station_id": "6932",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 24.3
+    },
+    {
+      "source_station_id": "5622",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 14.8
+    },
+    {
+      "source_station_id": "6254665",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 34.9
+    },
+    {
+      "source_station_id": "8475",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 24.0
+    },
+    {
+      "source_station_id": "6960",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 18.8
+    },
+    {
+      "source_station_id": "7005",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 27.5
+    },
+    {
+      "source_station_id": "6254666",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 13.6
+    },
+    {
+      "source_station_id": "235",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 237.0
+    },
+    {
+      "source_station_id": "6988",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 47.5
+    },
+    {
+      "source_station_id": "5626",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 43.1
+    },
+    {
+      "source_station_id": "6924",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 26.0
+    },
+    {
+      "source_station_id": "10900",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 55.5
+    },
+    {
+      "source_station_id": "5404",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 27.1
+    },
+    {
+      "source_station_id": "6980",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 20.5
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 25.5
+    },
+    {
+      "source_station_id": "234568",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 18.8
+    },
+    {
+      "source_station_id": "10486",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 22.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 39.4
+    },
+    {
+      "source_station_id": "5610",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 29.7
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 30.0
+    },
+    {
+      "source_station_id": "5598",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 13.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 32.8
+    },
+    {
+      "source_station_id": "6934",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 26.3
+    },
+    {
+      "source_station_id": "6299494",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 65.5
+    },
+    {
+      "source_station_id": "5650",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 26.4
+    },
+    {
+      "source_station_id": "6148686",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 26.1
+    },
+    {
+      "source_station_id": "10484",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 28.0
+    },
+    {
+      "source_station_id": "10921",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 36.2
+    },
+    {
+      "source_station_id": "6299678",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 63.0
+    },
+    {
+      "source_station_id": "8915",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 42.8
+    },
+    {
+      "source_station_id": "11603",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 35.7
+    },
+    {
+      "source_station_id": "6257818",
+      "observed_at": "2026-08-28T21:30:00+00:00",
+      "value": 14.8
+    },
+    {
+      "source_station_id": "6988",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 47.0
+    },
+    {
+      "source_station_id": "5598",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 15.0
+    },
+    {
+      "source_station_id": "6299494",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 57.0
+    },
+    {
+      "source_station_id": "6957",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 28.8
+    },
+    {
+      "source_station_id": "229252",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 19.7
+    },
+    {
+      "source_station_id": "6929",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 20.5
+    },
+    {
+      "source_station_id": "8475",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 27.0
+    },
+    {
+      "source_station_id": "5634",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 25.8
+    },
+    {
+      "source_station_id": "5586",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 31.9
+    },
+    {
+      "source_station_id": "6254594",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 29.3
+    },
+    {
+      "source_station_id": "17",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 34.8
+    },
+    {
+      "source_station_id": "10820",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 66.5
+    },
+    {
+      "source_station_id": "6148686",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 29.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 33.4
+    },
+    {
+      "source_station_id": "5610",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 28.1
+    },
+    {
+      "source_station_id": "10486",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 27.0
+    },
+    {
+      "source_station_id": "5650",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 29.0
+    },
+    {
+      "source_station_id": "6299678",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 56.9
+    },
+    {
+      "source_station_id": "11603",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 32.3
+    },
+    {
+      "source_station_id": "6980",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 19.0
+    },
+    {
+      "source_station_id": "6931",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 7.5
+    },
+    {
+      "source_station_id": "5630",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 17.0
+    },
+    {
+      "source_station_id": "6938",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 22.5
+    },
+    {
+      "source_station_id": "5570",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 26.1
+    },
+    {
+      "source_station_id": "6254665",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 31.7
+    },
+    {
+      "source_station_id": "5665",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 9.33
+    },
+    {
+      "source_station_id": "8365",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 49.8
+    },
+    {
+      "source_station_id": "5616",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 29.4
+    },
+    {
+      "source_station_id": "6254666",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 11.2
+    },
+    {
+      "source_station_id": "6960",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 29.8
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 28.6
+    },
+    {
+      "source_station_id": "6257818",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 14.7
+    },
+    {
+      "source_station_id": "5541",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 34.9
+    },
+    {
+      "source_station_id": "10831",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 50.0
+    },
+    {
+      "source_station_id": "6358",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 14.3
+    },
+    {
+      "source_station_id": "8915",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 36.5
+    },
+    {
+      "source_station_id": "6254663",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 30.0
+    },
+    {
+      "source_station_id": "8239",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 24.8
+    },
+    {
+      "source_station_id": "7005",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 20.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 24.5
+    },
+    {
+      "source_station_id": "6356",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 28.5
+    },
+    {
+      "source_station_id": "235",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 223.0
+    },
+    {
+      "source_station_id": "5404",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 17.6
+    },
+    {
+      "source_station_id": "234568",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 13.3
+    },
+    {
+      "source_station_id": "10900",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 54.2
+    },
+    {
+      "source_station_id": "6924",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 24.5
+    },
+    {
+      "source_station_id": "5622",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 14.6
+    },
+    {
+      "source_station_id": "6986",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 20.5
+    },
+    {
+      "source_station_id": "50",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 28.0
+    },
+    {
+      "source_station_id": "8917",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 20.8
+    },
+    {
+      "source_station_id": "5627",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 31.1
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 25.0
+    },
+    {
+      "source_station_id": "10484",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 24.8
+    },
+    {
+      "source_station_id": "6934",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 28.8
+    },
+    {
+      "source_station_id": "6932",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 16.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 39.1
+    },
+    {
+      "source_station_id": "10921",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 24.6
+    },
+    {
+      "source_station_id": "5626",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 36.1
+    },
+    {
+      "source_station_id": "6359",
+      "observed_at": "2026-08-28T22:30:00+00:00",
+      "value": 43.3
+    },
+    {
+      "source_station_id": "6359",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 43.8
+    },
+    {
+      "source_station_id": "5570",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 25.2
+    },
+    {
+      "source_station_id": "6938",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 17.0
+    },
+    {
+      "source_station_id": "7005",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 23.0
+    },
+    {
+      "source_station_id": "5630",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 17.6
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 23.2
+    },
+    {
+      "source_station_id": "6988",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 45.0
+    },
+    {
+      "source_station_id": "6931",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 8.5
+    },
+    {
+      "source_station_id": "5598",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 14.0
+    },
+    {
+      "source_station_id": "6356",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 23.3
+    },
+    {
+      "source_station_id": "6254663",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 31.1
+    },
+    {
+      "source_station_id": "8917",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 23.0
+    },
+    {
+      "source_station_id": "229252",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 18.4
+    },
+    {
+      "source_station_id": "6929",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 18.8
+    },
+    {
+      "source_station_id": "5627",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 25.2
+    },
+    {
+      "source_station_id": "6957",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 31.5
+    },
+    {
+      "source_station_id": "6980",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 17.0
+    },
+    {
+      "source_station_id": "8475",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 34.0
+    },
+    {
+      "source_station_id": "6299678",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 51.0
+    },
+    {
+      "source_station_id": "5586",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 32.6
+    },
+    {
+      "source_station_id": "6358",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 10.3
+    },
+    {
+      "source_station_id": "11603",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 28.9
+    },
+    {
+      "source_station_id": "10900",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 36.4
+    },
+    {
+      "source_station_id": "10921",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 25.9
+    },
+    {
+      "source_station_id": "6148686",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 19.1
+    },
+    {
+      "source_station_id": "5610",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 22.7
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 39.0
+    },
+    {
+      "source_station_id": "5634",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 26.4
+    },
+    {
+      "source_station_id": "10486",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 22.8
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 32.6
+    },
+    {
+      "source_station_id": "6299494",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 57.9
+    },
+    {
+      "source_station_id": "6934",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 22.8
+    },
+    {
+      "source_station_id": "5650",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 23.0
+    },
+    {
+      "source_station_id": "5626",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 38.4
+    },
+    {
+      "source_station_id": "10484",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 30.5
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 25.0
+    },
+    {
+      "source_station_id": "6932",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 18.8
+    },
+    {
+      "source_station_id": "6924",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 22.5
+    },
+    {
+      "source_station_id": "6254594",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 28.1
+    },
+    {
+      "source_station_id": "17",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 31.0
+    },
+    {
+      "source_station_id": "6960",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 12.8
+    },
+    {
+      "source_station_id": "6254666",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 22.0
+    },
+    {
+      "source_station_id": "6257818",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 15.1
+    },
+    {
+      "source_station_id": "5616",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 27.1
+    },
+    {
+      "source_station_id": "8915",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 30.5
+    },
+    {
+      "source_station_id": "5622",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 14.0
+    },
+    {
+      "source_station_id": "8239",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 26.0
+    },
+    {
+      "source_station_id": "8365",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 24.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 27.5
+    },
+    {
+      "source_station_id": "5404",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 14.6
+    },
+    {
+      "source_station_id": "5665",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 11.0
+    },
+    {
+      "source_station_id": "6254665",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 29.2
+    },
+    {
+      "source_station_id": "10831",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 48.3
+    },
+    {
+      "source_station_id": "10820",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 66.5
+    },
+    {
+      "source_station_id": "234568",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 3.94
+    },
+    {
+      "source_station_id": "6986",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 20.0
+    },
+    {
+      "source_station_id": "5541",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 39.4
+    },
+    {
+      "source_station_id": "8235",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 6.33
+    },
+    {
+      "source_station_id": "235",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 210.0
+    },
+    {
+      "source_station_id": "50",
+      "observed_at": "2026-08-28T23:30:00+00:00",
+      "value": 25.5
+    },
+    {
+      "source_station_id": "6929",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 18.0
+    },
+    {
+      "source_station_id": "8239",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 22.0
+    },
+    {
+      "source_station_id": "8915",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 35.0
+    },
+    {
+      "source_station_id": "10831",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 41.0
+    },
+    {
+      "source_station_id": "5541",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 18.4
+    },
+    {
+      "source_station_id": "6960",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 15.0
+    },
+    {
+      "source_station_id": "8235",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 7.67
+    },
+    {
+      "source_station_id": "6257818",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 15.7
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 25.6
+    },
+    {
+      "source_station_id": "5626",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 32.0
+    },
+    {
+      "source_station_id": "234568",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 13.0
+    },
+    {
+      "source_station_id": "6356",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 13.3
+    },
+    {
+      "source_station_id": "10900",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 27.1
+    },
+    {
+      "source_station_id": "6924",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 23.0
+    },
+    {
+      "source_station_id": "6254666",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 33.1
+    },
+    {
+      "source_station_id": "5616",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 37.0
+    },
+    {
+      "source_station_id": "6957",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 31.0
+    },
+    {
+      "source_station_id": "5622",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 24.7
+    },
+    {
+      "source_station_id": "8365",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 2.75
+    },
+    {
+      "source_station_id": "5665",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 9.5
+    },
+    {
+      "source_station_id": "6254665",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 30.0
+    },
+    {
+      "source_station_id": "5598",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 14.5
+    },
+    {
+      "source_station_id": "6986",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 20.5
+    },
+    {
+      "source_station_id": "50",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 27.0
+    },
+    {
+      "source_station_id": "6938",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 21.5
+    },
+    {
+      "source_station_id": "5630",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 18.8
+    },
+    {
+      "source_station_id": "6931",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 8.75
+    },
+    {
+      "source_station_id": "6358",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 5.5
+    },
+    {
+      "source_station_id": "5570",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 21.4
+    },
+    {
+      "source_station_id": "6359",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 41.2
+    },
+    {
+      "source_station_id": "8917",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 22.5
+    },
+    {
+      "source_station_id": "5627",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 26.9
+    },
+    {
+      "source_station_id": "6299678",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 48.0
+    },
+    {
+      "source_station_id": "6980",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 8.5
+    },
+    {
+      "source_station_id": "11603",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 26.4
+    },
+    {
+      "source_station_id": "10484",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 22.3
+    },
+    {
+      "source_station_id": "5650",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 25.4
+    },
+    {
+      "source_station_id": "6934",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 15.5
+    },
+    {
+      "source_station_id": "6299494",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 55.2
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 32.0
+    },
+    {
+      "source_station_id": "10486",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 16.5
+    },
+    {
+      "source_station_id": "6148686",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 22.2
+    },
+    {
+      "source_station_id": "5610",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 26.1
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 37.9
+    },
+    {
+      "source_station_id": "10820",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 62.1
+    },
+    {
+      "source_station_id": "10921",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 20.3
+    },
+    {
+      "source_station_id": "5634",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 18.6
+    },
+    {
+      "source_station_id": "17",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 32.3
+    },
+    {
+      "source_station_id": "6254594",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 26.8
+    },
+    {
+      "source_station_id": "5586",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 32.7
+    },
+    {
+      "source_station_id": "8475",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 36.3
+    },
+    {
+      "source_station_id": "5404",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 18.3
+    },
+    {
+      "source_station_id": "6988",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 43.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 21.4
+    },
+    {
+      "source_station_id": "229252",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 21.7
+    },
+    {
+      "source_station_id": "7005",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 25.0
+    },
+    {
+      "source_station_id": "6254663",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 39.4
+    },
+    {
+      "source_station_id": "235",
+      "observed_at": "2026-08-29T00:30:00+00:00",
+      "value": 234.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-29T01:30:00+00:00",
+      "value": 19.1
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T01:30:00+00:00",
+      "value": 31.1
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T01:30:00+00:00",
+      "value": 25.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T01:30:00+00:00",
+      "value": 40.1
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T01:30:00+00:00",
+      "value": 24.6
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T02:30:00+00:00",
+      "value": 25.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-29T02:30:00+00:00",
+      "value": 18.8
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T02:30:00+00:00",
+      "value": 37.8
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T02:30:00+00:00",
+      "value": 29.9
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T02:30:00+00:00",
+      "value": 23.7
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T03:30:00+00:00",
+      "value": 23.3
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-29T03:30:00+00:00",
+      "value": 21.4
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T03:30:00+00:00",
+      "value": 37.3
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T03:30:00+00:00",
+      "value": 25.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T03:30:00+00:00",
+      "value": 28.1
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T04:30:00+00:00",
+      "value": 26.2
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-29T04:30:00+00:00",
+      "value": 21.3
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T04:30:00+00:00",
+      "value": 27.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T04:30:00+00:00",
+      "value": 21.1
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T04:30:00+00:00",
+      "value": 35.3
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T05:30:00+00:00",
+      "value": 27.3
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T05:30:00+00:00",
+      "value": 20.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T05:30:00+00:00",
+      "value": 35.5
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-29T05:30:00+00:00",
+      "value": 21.1
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T05:30:00+00:00",
+      "value": 11.6
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T06:30:00+00:00",
+      "value": 28.6
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T06:30:00+00:00",
+      "value": 33.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T06:30:00+00:00",
+      "value": 37.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-29T06:30:00+00:00",
+      "value": 19.2
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T06:30:00+00:00",
+      "value": 9.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T07:30:00+00:00",
+      "value": 7.9
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T07:30:00+00:00",
+      "value": 28.1
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T07:30:00+00:00",
+      "value": 36.9
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T07:30:00+00:00",
+      "value": 34.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T08:30:00+00:00",
+      "value": 35.3
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T08:30:00+00:00",
+      "value": 29.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T08:30:00+00:00",
+      "value": 7.5
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T08:30:00+00:00",
+      "value": 30.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T09:30:00+00:00",
+      "value": 35.5
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T09:30:00+00:00",
+      "value": 6.6
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T09:30:00+00:00",
+      "value": 26.9
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T09:30:00+00:00",
+      "value": 27.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T10:30:00+00:00",
+      "value": 23.5
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T10:30:00+00:00",
+      "value": 23.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T10:30:00+00:00",
+      "value": 5.2
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T10:30:00+00:00",
+      "value": 35.1
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T11:30:00+00:00",
+      "value": 23.5
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T11:30:00+00:00",
+      "value": 32.3
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T11:30:00+00:00",
+      "value": 27.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T11:30:00+00:00",
+      "value": 4.4
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T12:30:00+00:00",
+      "value": 28.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T12:30:00+00:00",
+      "value": 24.9
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T12:30:00+00:00",
+      "value": 4.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T12:30:00+00:00",
+      "value": 33.0
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T13:30:00+00:00",
+      "value": 30.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T13:30:00+00:00",
+      "value": 35.2
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T13:30:00+00:00",
+      "value": 29.8
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T13:30:00+00:00",
+      "value": 12.4
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T14:30:00+00:00",
+      "value": 47.5
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T14:30:00+00:00",
+      "value": 24.0
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T14:30:00+00:00",
+      "value": 45.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T14:30:00+00:00",
+      "value": 38.8
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T15:30:00+00:00",
+      "value": 51.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T15:30:00+00:00",
+      "value": 42.7
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T15:30:00+00:00",
+      "value": 45.6
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T15:30:00+00:00",
+      "value": 30.4
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T16:30:00+00:00",
+      "value": 47.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T16:30:00+00:00",
+      "value": 42.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T16:30:00+00:00",
+      "value": 33.2
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T16:30:00+00:00",
+      "value": 44.9
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-29T16:30:00+00:00",
+      "value": 41.4
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T17:30:00+00:00",
+      "value": 45.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T17:30:00+00:00",
+      "value": 40.9
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T17:30:00+00:00",
+      "value": 47.2
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-29T17:30:00+00:00",
+      "value": 38.3
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T17:30:00+00:00",
+      "value": 33.6
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-29T18:30:00+00:00",
+      "value": 36.2
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T18:30:00+00:00",
+      "value": 43.6
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T18:30:00+00:00",
+      "value": 34.2
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T18:30:00+00:00",
+      "value": 48.8
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T18:30:00+00:00",
+      "value": 48.0
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T19:30:00+00:00",
+      "value": 51.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T19:30:00+00:00",
+      "value": 42.4
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T19:30:00+00:00",
+      "value": 34.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T19:30:00+00:00",
+      "value": 35.6
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-29T19:30:00+00:00",
+      "value": 34.2
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T20:30:00+00:00",
+      "value": 41.5
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T20:30:00+00:00",
+      "value": 34.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-29T20:30:00+00:00",
+      "value": 29.0
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T20:30:00+00:00",
+      "value": 31.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T20:30:00+00:00",
+      "value": 34.3
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T21:30:00+00:00",
+      "value": 35.4
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-29T21:30:00+00:00",
+      "value": 22.1
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T21:30:00+00:00",
+      "value": 28.9
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T21:30:00+00:00",
+      "value": 28.5
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T21:30:00+00:00",
+      "value": 20.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-29T22:30:00+00:00",
+      "value": 17.9
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T22:30:00+00:00",
+      "value": 15.0
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T22:30:00+00:00",
+      "value": 23.6
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T22:30:00+00:00",
+      "value": 32.4
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T22:30:00+00:00",
+      "value": 24.1
+    },
+    {
+      "source_station_id": "4712609",
+      "observed_at": "2026-08-29T23:30:00+00:00",
+      "value": 23.7
+    },
+    {
+      "source_station_id": "6105800",
+      "observed_at": "2026-08-29T23:30:00+00:00",
+      "value": 32.7
+    },
+    {
+      "source_station_id": "8118",
+      "observed_at": "2026-08-29T23:30:00+00:00",
+      "value": 19.0
+    },
+    {
+      "source_station_id": "4663956",
+      "observed_at": "2026-08-29T23:30:00+00:00",
+      "value": 17.4
+    },
+    {
+      "source_station_id": "6145551",
+      "observed_at": "2026-08-29T23:30:00+00:00",
+      "value": 21.3
+    }
+  ],
+  "weather": [
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T00:00:00+00:00",
+      "wind_u": 1.5492484030085238,
+      "wind_v": 0.35767217640674576,
+      "temperature_c": 28.3,
+      "relative_humidity_pct": 90.0,
+      "pbl_height_m": 105.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T01:00:00+00:00",
+      "wind_u": 1.6065919900178993,
+      "wind_v": 0.4911844639341983,
+      "temperature_c": 28.1,
+      "relative_humidity_pct": 90.0,
+      "pbl_height_m": 105.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T02:00:00+00:00",
+      "wind_u": 1.8498107253849887,
+      "wind_v": 0.19442294167783525,
+      "temperature_c": 29.0,
+      "relative_humidity_pct": 88.0,
+      "pbl_height_m": 175.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T03:00:00+00:00",
+      "wind_u": 0.8469346675904988,
+      "wind_v": 0.14933743279356007,
+      "temperature_c": 30.0,
+      "relative_humidity_pct": 83.0,
+      "pbl_height_m": 265.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T04:00:00+00:00",
+      "wind_u": -0.6015833502911178,
+      "wind_v": 0.14999157527179402,
+      "temperature_c": 30.6,
+      "relative_humidity_pct": 81.0,
+      "pbl_height_m": 410.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T05:00:00+00:00",
+      "wind_u": -0.09801071766072048,
+      "wind_v": 0.04993895497135014,
+      "temperature_c": 31.9,
+      "relative_humidity_pct": 76.0,
+      "pbl_height_m": 790.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T06:00:00+00:00",
+      "wind_u": 0.30343134066688904,
+      "wind_v": -0.7510189221990978,
+      "temperature_c": 33.8,
+      "relative_humidity_pct": 52.0,
+      "pbl_height_m": 1490.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T07:00:00+00:00",
+      "wind_u": 0.8055301005437925,
+      "wind_v": -0.9947468306649223,
+      "temperature_c": 34.4,
+      "relative_humidity_pct": 50.0,
+      "pbl_height_m": 1635.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T08:00:00+00:00",
+      "wind_u": -2.1564032554232524,
+      "wind_v": -1.2450000000000003,
+      "temperature_c": 32.3,
+      "relative_humidity_pct": 61.0,
+      "pbl_height_m": 455.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T09:00:00+00:00",
+      "wind_u": -1.853216408174661,
+      "wind_v": 0.638113582736027,
+      "temperature_c": 31.8,
+      "relative_humidity_pct": 70.0,
+      "pbl_height_m": 315.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T10:00:00+00:00",
+      "wind_u": -1.3474983886674947,
+      "wind_v": 1.0527811228068757,
+      "temperature_c": 31.8,
+      "relative_humidity_pct": 71.0,
+      "pbl_height_m": 315.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T11:00:00+00:00",
+      "wind_u": -0.5975575286112627,
+      "wind_v": 0.3449999999999998,
+      "temperature_c": 32.3,
+      "relative_humidity_pct": 71.0,
+      "pbl_height_m": 310.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T12:00:00+00:00",
+      "wind_u": 0.5881323516629818,
+      "wind_v": 1.4556786516698563,
+      "temperature_c": 30.4,
+      "relative_humidity_pct": 77.0,
+      "pbl_height_m": 315.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T13:00:00+00:00",
+      "wind_u": 0.25423467985414616,
+      "wind_v": 0.49896365354548605,
+      "temperature_c": 30.0,
+      "relative_humidity_pct": 80.0,
+      "pbl_height_m": 80.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T14:00:00+00:00",
+      "wind_u": 0.29918490227734046,
+      "wind_v": 1.295912186164363,
+      "temperature_c": 29.4,
+      "relative_humidity_pct": 85.0,
+      "pbl_height_m": 90.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T15:00:00+00:00",
+      "wind_u": -0.09417123955456946,
+      "wind_v": 1.3467114678507628,
+      "temperature_c": 29.1,
+      "relative_humidity_pct": 87.0,
+      "pbl_height_m": 100.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T16:00:00+00:00",
+      "wind_u": 0.10463471061618791,
+      "wind_v": 1.4963460753897362,
+      "temperature_c": 28.9,
+      "relative_humidity_pct": 85.0,
+      "pbl_height_m": 105.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T17:00:00+00:00",
+      "wind_u": -0.16210968151064425,
+      "wind_v": 1.852922138450647,
+      "temperature_c": 28.8,
+      "relative_humidity_pct": 84.0,
+      "pbl_height_m": 120.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T18:00:00+00:00",
+      "wind_u": -0.14021051222569228,
+      "wind_v": 2.0051037410222463,
+      "temperature_c": 29.1,
+      "relative_humidity_pct": 86.0,
+      "pbl_height_m": 125.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T19:00:00+00:00",
+      "wind_u": 0.10990550811018149,
+      "wind_v": 2.097122022984605,
+      "temperature_c": 28.4,
+      "relative_humidity_pct": 88.0,
+      "pbl_height_m": 135.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T20:00:00+00:00",
+      "wind_u": 0.15339410723587799,
+      "wind_v": 1.753302668641472,
+      "temperature_c": 28.0,
+      "relative_humidity_pct": 89.0,
+      "pbl_height_m": 135.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T21:00:00+00:00",
+      "wind_u": 0.8557694507026649,
+      "wind_v": 1.0953349475133436,
+      "temperature_c": 27.8,
+      "relative_humidity_pct": 89.0,
+      "pbl_height_m": 105.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T22:00:00+00:00",
+      "wind_u": 1.8070073809607916,
+      "wind_v": 0.5871322893124004,
+      "temperature_c": 27.9,
+      "relative_humidity_pct": 86.0,
+      "pbl_height_m": 165.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-27T23:00:00+00:00",
+      "wind_u": 2.598416150249649,
+      "wind_v": 0.09073869142650198,
+      "temperature_c": 28.3,
+      "relative_humidity_pct": 77.0,
+      "pbl_height_m": 335.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T00:00:00+00:00",
+      "wind_u": 3.700899405576947,
+      "wind_v": 1.1314784972769927,
+      "temperature_c": 26.2,
+      "relative_humidity_pct": 94.0,
+      "pbl_height_m": 260.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T01:00:00+00:00",
+      "wind_u": 2.2005262246998574,
+      "wind_v": -1.5987758862355264,
+      "temperature_c": 27.0,
+      "relative_humidity_pct": 89.0,
+      "pbl_height_m": 290.0,
+      "precipitation_mm": 0.5
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T02:00:00+00:00",
+      "wind_u": 0.4983591049353158,
+      "wind_v": -1.9988091961285528,
+      "temperature_c": 28.1,
+      "relative_humidity_pct": 88.0,
+      "pbl_height_m": 610.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T03:00:00+00:00",
+      "wind_u": 1.2444578545858664,
+      "wind_v": -1.2017589808940652,
+      "temperature_c": 29.5,
+      "relative_humidity_pct": 80.0,
+      "pbl_height_m": 740.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T04:00:00+00:00",
+      "wind_u": 2.745967013791263,
+      "wind_v": -1.4600565602641191,
+      "temperature_c": 30.8,
+      "relative_humidity_pct": 70.0,
+      "pbl_height_m": 825.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T05:00:00+00:00",
+      "wind_u": 2.399976112122686,
+      "wind_v": -1.4996715177799693,
+      "temperature_c": 31.9,
+      "relative_humidity_pct": 65.0,
+      "pbl_height_m": 960.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T06:00:00+00:00",
+      "wind_u": 2.4594116628998406,
+      "wind_v": -1.7868671669691176,
+      "temperature_c": 32.6,
+      "relative_humidity_pct": 60.0,
+      "pbl_height_m": 1075.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T07:00:00+00:00",
+      "wind_u": 2.356152153284098,
+      "wind_v": -1.840827811223719,
+      "temperature_c": 33.4,
+      "relative_humidity_pct": 57.0,
+      "pbl_height_m": 1200.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T08:00:00+00:00",
+      "wind_u": 2.4027804732935945,
+      "wind_v": -1.7457221993086447,
+      "temperature_c": 33.9,
+      "relative_humidity_pct": 54.0,
+      "pbl_height_m": 1295.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T09:00:00+00:00",
+      "wind_u": 2.5368549720184275,
+      "wind_v": -1.7111302846204859,
+      "temperature_c": 34.2,
+      "relative_humidity_pct": 52.0,
+      "pbl_height_m": 1375.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T10:00:00+00:00",
+      "wind_u": 2.9001849185172794,
+      "wind_v": -1.3523784375702388,
+      "temperature_c": 34.1,
+      "relative_humidity_pct": 52.0,
+      "pbl_height_m": 1385.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T11:00:00+00:00",
+      "wind_u": 2.708659833532639,
+      "wind_v": -1.3801311192082217,
+      "temperature_c": 33.8,
+      "relative_humidity_pct": 54.0,
+      "pbl_height_m": 1340.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T12:00:00+00:00",
+      "wind_u": 2.3926525577767555,
+      "wind_v": -1.115712210995447,
+      "temperature_c": 33.5,
+      "relative_humidity_pct": 58.0,
+      "pbl_height_m": 1315.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T13:00:00+00:00",
+      "wind_u": 1.2569373835729536,
+      "wind_v": -0.29018686010358574,
+      "temperature_c": 31.9,
+      "relative_humidity_pct": 67.0,
+      "pbl_height_m": 145.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T14:00:00+00:00",
+      "wind_u": 0.9486980580168451,
+      "wind_v": 0.04971915843079709,
+      "temperature_c": 31.2,
+      "relative_humidity_pct": 71.0,
+      "pbl_height_m": 45.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T15:00:00+00:00",
+      "wind_u": 0.6511377766511312,
+      "wind_v": 0.5463694682335586,
+      "temperature_c": 30.6,
+      "relative_humidity_pct": 73.0,
+      "pbl_height_m": 35.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T16:00:00+00:00",
+      "wind_u": 0.7520615033332508,
+      "wind_v": 0.8962719984492042,
+      "temperature_c": 29.8,
+      "relative_humidity_pct": 77.0,
+      "pbl_height_m": 40.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T17:00:00+00:00",
+      "wind_u": 0.6922524301548214,
+      "wind_v": 0.854860557602668,
+      "temperature_c": 29.3,
+      "relative_humidity_pct": 78.0,
+      "pbl_height_m": 40.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T18:00:00+00:00",
+      "wind_u": 1.0049000034068611,
+      "wind_v": 0.44741030738338017,
+      "temperature_c": 29.4,
+      "relative_humidity_pct": 79.0,
+      "pbl_height_m": 60.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T19:00:00+00:00",
+      "wind_u": 1.1053900037475473,
+      "wind_v": 0.49215133812171813,
+      "temperature_c": 28.7,
+      "relative_humidity_pct": 79.0,
+      "pbl_height_m": 55.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T20:00:00+00:00",
+      "wind_u": 1.455678651669856,
+      "wind_v": 0.5881323516629823,
+      "temperature_c": 28.4,
+      "relative_humidity_pct": 80.0,
+      "pbl_height_m": 85.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T21:00:00+00:00",
+      "wind_u": 1.9451637250268303,
+      "wind_v": 0.7079816966841338,
+      "temperature_c": 28.2,
+      "relative_humidity_pct": 79.0,
+      "pbl_height_m": 200.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T22:00:00+00:00",
+      "wind_u": 2.2479085160433643,
+      "wind_v": 0.31592293917934944,
+      "temperature_c": 27.9,
+      "relative_humidity_pct": 79.0,
+      "pbl_height_m": 315.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-28T23:00:00+00:00",
+      "wind_u": 2.6489073327334705,
+      "wind_v": 0.660446774987093,
+      "temperature_c": 27.8,
+      "relative_humidity_pct": 79.0,
+      "pbl_height_m": 390.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T00:00:00+00:00",
+      "wind_u": 3.3945078386133214,
+      "wind_v": 0.41679315444560333,
+      "temperature_c": 28.2,
+      "relative_humidity_pct": 78.0,
+      "pbl_height_m": 470.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T01:00:00+00:00",
+      "wind_u": 3.3054637600376395,
+      "wind_v": 0.17323201516414566,
+      "temperature_c": 27.9,
+      "relative_humidity_pct": 78.0,
+      "pbl_height_m": 460.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T02:00:00+00:00",
+      "wind_u": 3.2495050092582716,
+      "wind_v": -0.05672032092117017,
+      "temperature_c": 28.5,
+      "relative_humidity_pct": 75.0,
+      "pbl_height_m": 520.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T03:00:00+00:00",
+      "wind_u": 3.4994669330473696,
+      "wind_v": -0.061083422530490955,
+      "temperature_c": 29.5,
+      "relative_humidity_pct": 71.0,
+      "pbl_height_m": 570.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T04:00:00+00:00",
+      "wind_u": 3.44947454828955,
+      "wind_v": -0.060210802208626804,
+      "temperature_c": 30.6,
+      "relative_humidity_pct": 67.0,
+      "pbl_height_m": 660.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T05:00:00+00:00",
+      "wind_u": 3.3970239204928525,
+      "wind_v": -0.2972010827695134,
+      "temperature_c": 31.8,
+      "relative_humidity_pct": 63.0,
+      "pbl_height_m": 780.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T06:00:00+00:00",
+      "wind_u": 2.9540057542160927,
+      "wind_v": -0.6278933062696335,
+      "temperature_c": 33.3,
+      "relative_humidity_pct": 57.0,
+      "pbl_height_m": 1005.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T07:00:00+00:00",
+      "wind_u": 2.8464095181353746,
+      "wind_v": -0.6050230202796799,
+      "temperature_c": 34.1,
+      "relative_humidity_pct": 55.0,
+      "pbl_height_m": 1230.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T08:00:00+00:00",
+      "wind_u": 2.805034887290191,
+      "wind_v": -0.4442738807142551,
+      "temperature_c": 34.7,
+      "relative_humidity_pct": 52.0,
+      "pbl_height_m": 1475.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T09:00:00+00:00",
+      "wind_u": 2.9040039344753583,
+      "wind_v": -0.30522311274154673,
+      "temperature_c": 34.9,
+      "relative_humidity_pct": 50.0,
+      "pbl_height_m": 1555.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T10:00:00+00:00",
+      "wind_u": 2.8542778397069446,
+      "wind_v": -0.29999668957816406,
+      "temperature_c": 34.8,
+      "relative_humidity_pct": 50.0,
+      "pbl_height_m": 1560.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T11:00:00+00:00",
+      "wind_u": 2.8544193043199484,
+      "wind_v": -0.4520956039662667,
+      "temperature_c": 34.5,
+      "relative_humidity_pct": 51.0,
+      "pbl_height_m": 1570.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T12:00:00+00:00",
+      "wind_u": 2.39853798484583,
+      "wind_v": 0.08375879208600183,
+      "temperature_c": 33.8,
+      "relative_humidity_pct": 54.0,
+      "pbl_height_m": 1470.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T13:00:00+00:00",
+      "wind_u": 0.8987665812791165,
+      "wind_v": 0.04710236061864988,
+      "temperature_c": 32.5,
+      "relative_humidity_pct": 65.0,
+      "pbl_height_m": 150.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T14:00:00+00:00",
+      "wind_u": -4.286263797015736e-17,
+      "wind_v": 0.35,
+      "temperature_c": 31.9,
+      "relative_humidity_pct": 70.0,
+      "pbl_height_m": 15.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T15:00:00+00:00",
+      "wind_u": 0.1045284632676535,
+      "wind_v": 0.9945218953682733,
+      "temperature_c": 31.0,
+      "relative_humidity_pct": 74.0,
+      "pbl_height_m": 45.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T16:00:00+00:00",
+      "wind_u": -0.09765906324177573,
+      "wind_v": 1.3965896703637537,
+      "temperature_c": 30.6,
+      "relative_humidity_pct": 74.0,
+      "pbl_height_m": 105.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T17:00:00+00:00",
+      "wind_u": 0.20416562505290287,
+      "wind_v": 1.0503410862890006,
+      "temperature_c": 30.0,
+      "relative_humidity_pct": 75.0,
+      "pbl_height_m": 145.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T18:00:00+00:00",
+      "wind_u": 1.3991673772477091,
+      "wind_v": 0.5939113153036962,
+      "temperature_c": 30.2,
+      "relative_humidity_pct": 74.0,
+      "pbl_height_m": 160.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T19:00:00+00:00",
+      "wind_u": 1.3957139920364412,
+      "wind_v": 0.6508321230806767,
+      "temperature_c": 29.4,
+      "relative_humidity_pct": 77.0,
+      "pbl_height_m": 105.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T20:00:00+00:00",
+      "wind_u": 1.8484892444644592,
+      "wind_v": 0.7095685400996954,
+      "temperature_c": 29.1,
+      "relative_humidity_pct": 77.0,
+      "pbl_height_m": 150.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T21:00:00+00:00",
+      "wind_u": 1.9994664604183712,
+      "wind_v": 0.5357554233622177,
+      "temperature_c": 28.8,
+      "relative_humidity_pct": 76.0,
+      "pbl_height_m": 330.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T22:00:00+00:00",
+      "wind_u": 2.302707071807867,
+      "wind_v": 0.2827368766999414,
+      "temperature_c": 28.4,
+      "relative_humidity_pct": 74.0,
+      "pbl_height_m": 405.0,
+      "precipitation_mm": 0.0
+    },
+    {
+      "h3_cell": "883da11463fffff",
+      "observed_at": "2026-08-29T23:00:00+00:00",
+      "wind_u": 2.3013138335866707,
+      "wind_v": 0.36449230354373835,
+      "temperature_c": 27.9,
+      "relative_humidity_pct": 75.0,
+      "pbl_height_m": 375.0,
+      "precipitation_mm": 0.0
+    }
+  ],
+  "sources": [
+    {
+      "name": "Ghazipur landfill",
+      "source_type": "landfill",
+      "coordinates": [
+        77.326,
+        28.6203
+      ],
+      "emission_prior": 0.9
+    },
+    {
+      "name": "Bhalswa landfill",
+      "source_type": "landfill",
+      "coordinates": [
+        77.16,
+        28.75
+      ],
+      "emission_prior": 0.9
+    },
+    {
+      "name": "Okhla landfill",
+      "source_type": "landfill",
+      "coordinates": [
+        77.2905,
+        28.5045
+      ],
+      "emission_prior": 0.85
+    },
+    {
+      "name": "Wazirpur industrial area",
+      "source_type": "industry",
+      "coordinates": [
+        77.165,
+        28.7
+      ],
+      "emission_prior": 0.7
+    },
+    {
+      "name": "Narela industrial area",
+      "source_type": "industry",
+      "coordinates": [
+        77.09,
+        28.85
+      ],
+      "emission_prior": 0.65
+    },
+    {
+      "name": "Bawana industrial area",
+      "source_type": "industry",
+      "coordinates": [
+        77.04,
+        28.79
+      ],
+      "emission_prior": 0.65
+    },
+    {
+      "name": "Mundka industrial belt",
+      "source_type": "waste_burning",
+      "coordinates": [
+        77.03,
+        28.682
+      ],
+      "emission_prior": 0.75
+    },
+    {
+      "name": "Anand Vihar ISBT and rail terminal",
+      "source_type": "road_segment",
+      "coordinates": [
+        77.3161,
+        28.6469
+      ],
+      "emission_prior": 0.6
+    }
+  ]
+}
