@@ -543,6 +543,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/guide/{screen}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How a screen works, to read or hear
+         * @description The transcript of a screen's spoken guide, with the path to each paragraph's audio.
+         */
+        get: operations["screen_guide_v1_guide__screen__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guide/{screen}/sections/{index}/audio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One paragraph of a screen's guide, spoken
+         * @description The paragraph's speech, generated on first request and stored after.
+         */
+        get: operations["section_audio_v1_guide__screen__sections__index__audio_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1166,6 +1206,66 @@ export interface components {
              * @description CPCB sub-index of the upper bound.
              */
             upper_bound_aqi: number;
+        };
+        /**
+         * GuideLanguage
+         * @description A language the voice guide is written and spoken in.
+         *
+         *     Hindi and Tamil because the pilot cities are Delhi-NCR and Kanpur, and
+         *     Coimbatore; English for everyone else. Values are ISO 639-1 codes.
+         * @enum {string}
+         */
+        GuideLanguage: "en" | "hi" | "ta";
+        /**
+         * GuideResponse
+         * @description The guide for one screen in one language.
+         */
+        GuideResponse: {
+            screen: components["schemas"]["GuideScreen"];
+            language: components["schemas"]["GuideLanguage"];
+            /** Title */
+            title: string;
+            /** Sections */
+            sections: components["schemas"]["GuideSectionResponse"][];
+            /**
+             * Voice Available
+             * @description Whether this deployment can generate speech. When false the transcript is still complete; only paragraphs generated earlier will play.
+             */
+            voice_available: boolean;
+            /**
+             * Voice
+             * @description The speech engine and voice, named rather than implied.
+             */
+            voice: string;
+        };
+        /**
+         * GuideScreen
+         * @description A screen of the web interface that has a spoken guide.
+         *
+         *     Mirrors the frontend's screen keys, so a guide is addressed by the same word
+         *     the address bar shows.
+         * @enum {string}
+         */
+        GuideScreen: "overview" | "map" | "corridor" | "alerts" | "federation" | "citizen";
+        /**
+         * GuideSectionResponse
+         * @description One paragraph: a heading, what is said, and where its speech is.
+         */
+        GuideSectionResponse: {
+            /** Index */
+            index: number;
+            /** Heading */
+            heading: string;
+            /**
+             * Text
+             * @description Exactly what the voice says, for reading along.
+             */
+            text: string;
+            /**
+             * Audio Path
+             * @description Path of this paragraph's MP3 below the API root. It carries a version that changes whenever the words or the voice do, so it may be cached indefinitely.
+             */
+            audio_path: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -3056,6 +3156,77 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OperatorSessionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    screen_guide_v1_guide__screen__get: {
+        parameters: {
+            query?: {
+                /** @description ISO 639-1 code: en, hi (Hindi) or ta (Tamil). */
+                language?: components["schemas"]["GuideLanguage"];
+            };
+            header?: never;
+            path: {
+                screen: components["schemas"]["GuideScreen"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuideResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    section_audio_v1_guide__screen__sections__index__audio_get: {
+        parameters: {
+            query?: {
+                /** @description ISO 639-1 code: en, hi (Hindi) or ta (Tamil). */
+                language?: components["schemas"]["GuideLanguage"];
+                /** @description The version from the transcript; a current one is cached for a year. */
+                v?: string | null;
+            };
+            header?: never;
+            path: {
+                screen: components["schemas"]["GuideScreen"];
+                index: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The paragraph, as MP3. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "audio/mpeg": unknown;
                 };
             };
             /** @description Validation Error */

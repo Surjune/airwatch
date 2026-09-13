@@ -1,6 +1,7 @@
 import { BookOpen } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { VoiceGuide } from '@/components/guide/VoiceGuide';
 import { ApiStatus } from '@/components/layout/ApiStatus';
 import { CityPicker } from '@/components/layout/CityPicker';
 import { Logo } from '@/components/layout/Logo';
@@ -21,7 +22,8 @@ interface AppShellProps {
  * and the connection state. On a phone the screens move to a bottom bar within
  * thumb reach, and the masthead keeps only what must stay visible: which city,
  * and whether the data is live. The city is never tucked behind a menu, because
- * every number on every screen depends on it.
+ * every number on every screen depends on it; nor is the spoken guide, because
+ * the person who most needs it is the one least able to find it in a menu.
  */
 export function AppShell({ active, onNavigate, children }: AppShellProps) {
   const screen = screenFor(active);
@@ -53,7 +55,8 @@ export function AppShell({ active, onNavigate, children }: AppShellProps) {
             <PrimaryNav active={active} onNavigate={onNavigate} variant="bar" />
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-3">
+          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+            <VoiceGuide screen={screen} />
             <CityPicker />
             <ApiStatus />
             <a

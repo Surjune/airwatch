@@ -93,8 +93,19 @@ export interface RequestOptions {
   readonly headers?: Record<string, string>;
 }
 
+/**
+ * The browser-facing address of an API path, for an element that loads it itself.
+ *
+ * An audio element fetches and streams its own source, which is what lets a
+ * phone start speaking before the whole clip has arrived -- so it is given an
+ * address rather than a body, and the base path still lives only here.
+ */
+export function apiUrl(path: string): string {
+  return `${API_BASE}${path}`;
+}
+
 function buildUrl(path: string, searchParams: RequestOptions['searchParams']): string {
-  const url = `${API_BASE}${path}`;
+  const url = apiUrl(path);
   if (!searchParams) {
     return url;
   }
