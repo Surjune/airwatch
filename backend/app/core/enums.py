@@ -8,6 +8,14 @@ from __future__ import annotations
 from enum import StrEnum
 
 
+class PilotCity(StrEnum):
+    """A city this deployment ingests, analyses and can scope a view to."""
+
+    DELHI = "delhi"
+    KANPUR = "kanpur"
+    COIMBATORE = "coimbatore"
+
+
 class Pollutant(StrEnum):
     """Pollutants in the CPCB National AQI.
 

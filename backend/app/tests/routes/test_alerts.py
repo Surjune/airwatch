@@ -89,6 +89,18 @@ class TestInboxEndpoint:
         assert api.get("/v1/alerts", params={"status": "sent"}).json()["alert_count"] >= 1
         assert api.get("/v1/alerts", params={"status": "resolved"}).json()["alert_count"] == 0
 
+    def test_scopes_the_inbox_to_a_city(self, api: TestClient, seeded: None) -> None:
+        # The seeded episode is in Delhi. A Coimbatore operator must see an empty
+        # inbox, not Delhi's alerts under their own city's name.
+        api.post("/v1/alerts/dispatch", params={"window_hours": 720})
+
+        assert api.get("/v1/alerts", params={"city": "delhi"}).json()["alert_count"] >= 1
+        assert api.get("/v1/alerts", params={"city": "coimbatore"}).json()["alert_count"] == 0
+        assert (
+            api.get("/v1/alerts/sla-breaches", params={"city": "coimbatore"}).json()["breach_count"]
+            == 0
+        )
+
     def test_rejects_an_unknown_status(self, api: TestClient) -> None:
         assert api.get("/v1/alerts", params={"status": "ignored"}).status_code == 422
 

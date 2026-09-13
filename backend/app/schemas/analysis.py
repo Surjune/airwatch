@@ -13,7 +13,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.core.enums import Pollutant, SourceType
+from app.core.enums import PilotCity, Pollutant, SourceType
 
 
 class Position(BaseModel):
@@ -35,6 +35,24 @@ class StationReadingResponse(BaseModel):
     unit: str
     aqi: float = Field(description="CPCB sub-index for this pollutant alone.")
     category: str = Field(description="CPCB band name for the sub-index.")
+
+
+class CityResponse(BaseModel):
+    """A city the dashboard can be scoped to."""
+
+    city: PilotCity
+    label: str
+    centre: Position
+    radius_m: float = Field(description="Radius of the area a view of this city covers.")
+    default_pollutant: Pollutant = Field(
+        description="The pollutant this city's monitors actually report, which a view opens on."
+    )
+
+
+class CitiesResponse(BaseModel):
+    """Every city this deployment covers."""
+
+    cities: list[CityResponse]
 
 
 class StationsResponse(BaseModel):
@@ -98,6 +116,13 @@ class HotspotsResponse(BaseModel):
     pollutant: Pollutant
     window_hours: int
     hotspot_count: int
+    min_neighbours: int = Field(
+        description=(
+            "Neighbouring stations a station needs before it can be compared with its "
+            "neighbourhood. A city with fewer reporting stations cannot show a hotspot, "
+            "which is a limit of coverage, not evidence of clean air."
+        )
+    )
     hotspots: list[HotspotResponse]
 
 

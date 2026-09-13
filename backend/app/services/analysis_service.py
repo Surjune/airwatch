@@ -15,12 +15,18 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.orm import Session
 
 from app.core import aqi
+from app.core.cities import in_city
 from app.core.constants import (
+    CITY_VIEW_RADIUS_M,
     EXPOSURE_CANDIDATE_HOURS,
+    FUSION_MIN_NEIGHBOURS,
     HOURS_PER_DAY,
     METRES_PER_KILOMETRE,
+    PILOT_CITY_CENTRES,
+    PILOT_CITY_DEFAULT_POLLUTANT,
+    PILOT_CITY_LABELS,
 )
-from app.core.enums import Pollutant
+from app.core.enums import PilotCity, Pollutant
 from app.core.geo import LonLat
 from app.core.h3_grid import H3Cell
 from app.core.logging import get_logger
@@ -42,6 +48,11 @@ logger = get_logger(__name__)
 #: Default window, in hours, for hotspot detection over recent history.
 DEFAULT_DETECTION_WINDOW_HOURS = 168
 
+#: Neighbouring stations a station needs before it can be judged against its
+#: neighbourhood at all. Published so a city with fewer is told why it shows no
+#: hotspots, rather than left to read an empty list as clean air.
+DETECTION_MIN_NEIGHBOURS = FUSION_MIN_NEIGHBOURS
+
 
 @dataclass(frozen=True, slots=True)
 class StationSnapshot:
@@ -56,6 +67,31 @@ class StationSnapshot:
     unit: str
     aqi: float
     category: str
+
+
+@dataclass(frozen=True, slots=True)
+class CitySummary:
+    """A city a view can be scoped to."""
+
+    city: PilotCity
+    label: str
+    centre: LonLat
+    radius_m: float
+    default_pollutant: Pollutant
+
+
+def pilot_cities() -> list[CitySummary]:
+    """The cities this deployment covers, in the order they are offered."""
+    return [
+        CitySummary(
+            city=city,
+            label=PILOT_CITY_LABELS[city.value],
+            centre=PILOT_CITY_CENTRES[city.value],
+            radius_m=CITY_VIEW_RADIUS_M,
+            default_pollutant=Pollutant(PILOT_CITY_DEFAULT_POLLUTANT[city.value]),
+        )
+        for city in PilotCity
+    ]
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,12 +120,16 @@ class AttributedHotspot:
     trajectory_unavailable: bool
 
 
-def latest_snapshots(session: Session, pollutant: Pollutant) -> list[StationSnapshot]:
-    """Every station's most recent reading, with its sub-index."""
+def latest_snapshots(
+    session: Session, pollutant: Pollutant, city: PilotCity | None = None
+) -> list[StationSnapshot]:
+    """Every station's most recent reading, with its sub-index, optionally in one city."""
     snapshots: list[StationSnapshot] = []
 
     for row in observation_repository.latest_reading_per_station(session, pollutant):
         station_id, name, lon, lat, cell, observed_at, value, unit = row
+        if not in_city((float(lon), float(lat)), city):
+            continue
         sub_index = aqi.sub_index(pollutant, float(value))
         snapshots.append(
             StationSnapshot(
@@ -116,6 +156,7 @@ def detect_and_attribute(
     window_hours: int = DEFAULT_DETECTION_WINDOW_HOURS,
     now: datetime | None = None,
     bounded: bool = False,
+    city: PilotCity | None = None,
 ) -> list[AttributedHotspot]:
     """Detect hotspots over a recent window and rank candidate sources for each.
 
@@ -143,7 +184,11 @@ def detect_and_attribute(
     )
     names = {reading.station_id: reading.station_name for reading in readings}
 
-    hotspots = detect_over_window(readings)
+    # Detection runs over the whole network and only the result is scoped: a
+    # station's neighbours across a city line still set what it should read.
+    hotspots = [
+        hotspot for hotspot in detect_over_window(readings) if in_city(hotspot.coordinates, city)
+    ]
     if not hotspots:
         return []
 

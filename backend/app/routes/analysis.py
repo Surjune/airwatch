@@ -14,12 +14,14 @@ from sqlalchemy.orm import Session
 
 from app.core import aqi
 from app.core.constants import FORECAST_MAX_HORIZON_HOURS, METRES_PER_KILOMETRE
-from app.core.enums import Pollutant
+from app.core.enums import PilotCity, Pollutant
 from app.core.exceptions import ValidationError
 from app.core.geo import LonLat, validate_lon_lat
 from app.repositories.session import get_db_session
 from app.schemas.analysis import (
     AttributionResponse,
+    CitiesResponse,
+    CityResponse,
     CorridorForecastResponse,
     DepartureOptionResponse,
     ExposureAdvisoryResponse,
@@ -48,6 +50,27 @@ def _position(coordinates: LonLat) -> Position:
 
 
 @router.get(
+    "/cities",
+    response_model=CitiesResponse,
+    summary="Cities a view can be scoped to",
+)
+def list_cities() -> CitiesResponse:
+    """Return every pilot city with its centre and the pollutant to open on."""
+    return CitiesResponse(
+        cities=[
+            CityResponse(
+                city=summary.city,
+                label=summary.label,
+                centre=_position(summary.centre),
+                radius_m=summary.radius_m,
+                default_pollutant=summary.default_pollutant,
+            )
+            for summary in analysis_service.pilot_cities()
+        ]
+    )
+
+
+@router.get(
     "/stations",
     response_model=StationsResponse,
     summary="Latest reading at every station",
@@ -55,9 +78,10 @@ def _position(coordinates: LonLat) -> Position:
 def list_stations(
     session: Annotated[Session, Depends(get_db_session)],
     pollutant: Pollutant = Pollutant.PM25,
+    city: PilotCity | None = None,
 ) -> StationsResponse:
-    """Return the most recent reading for each station, worst first."""
-    snapshots = analysis_service.latest_snapshots(session, pollutant)
+    """Return the most recent reading for each station, worst first, optionally in one city."""
+    snapshots = analysis_service.latest_snapshots(session, pollutant, city)
     return StationsResponse(
         pollutant=pollutant,
         station_count=len(snapshots),
@@ -89,14 +113,18 @@ def list_hotspots(
     window_hours: Annotated[
         int, Query(ge=_MIN_WINDOW_HOURS, le=_MAX_WINDOW_HOURS)
     ] = analysis_service.DEFAULT_DETECTION_WINDOW_HOURS,
+    city: PilotCity | None = None,
 ) -> HotspotsResponse:
-    """Detect hotspots over a recent window and rank candidate sources."""
-    detected = analysis_service.detect_and_attribute(session, pollutant, window_hours=window_hours)
+    """Detect hotspots over a recent window and rank candidate sources, optionally in one city."""
+    detected = analysis_service.detect_and_attribute(
+        session, pollutant, window_hours=window_hours, city=city
+    )
 
     return HotspotsResponse(
         pollutant=pollutant,
         window_hours=window_hours,
         hotspot_count=len(detected),
+        min_neighbours=analysis_service.DETECTION_MIN_NEIGHBOURS,
         hotspots=[
             HotspotResponse(
                 station_id=item.hotspot.station_id,

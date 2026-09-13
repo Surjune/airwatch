@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
-from app.core.enums import AlertStatus, Pollutant
+from app.core.enums import AlertStatus, PilotCity, Pollutant
 from app.repositories.alert_repository import AlertDetail
 from app.repositories.session import get_db_session
 from app.schemas.alerts import (
@@ -67,9 +67,10 @@ def _to_response(detail: AlertDetail) -> AlertResponse:
 def list_alerts(
     session: Annotated[Session, Depends(get_db_session)],
     status: AlertStatus | None = None,
+    city: PilotCity | None = None,
 ) -> AlertsResponse:
-    """Alerts routed to authorities, most urgent first."""
-    details = alert_service.list_alerts(session, status=status)
+    """Alerts routed to authorities, most urgent first, optionally for one city."""
+    details = alert_service.list_alerts(session, status=status, city=city)
     return AlertsResponse(
         alert_count=len(details),
         alerts=[_to_response(detail) for detail in details],
@@ -156,9 +157,10 @@ def resolve(
 )
 def sla_breaches(
     session: Annotated[Session, Depends(get_db_session)],
+    city: PilotCity | None = None,
 ) -> SlaBreachesResponse:
-    """Alerts whose response window has elapsed, longest overdue first."""
-    breaches = alert_service.sla_breaches(session)
+    """Alerts whose response window has elapsed, longest overdue first, optionally for one city."""
+    breaches = alert_service.sla_breaches(session, city=city)
     return SlaBreachesResponse(
         breach_count=len(breaches),
         breaches=[

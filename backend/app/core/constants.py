@@ -828,6 +828,28 @@ PILOT_CITY_FIRE_BOXES: Final[dict[str, tuple[float, float, float, float]]] = {
 #: Radius, in metres, within which a station counts as belonging to a city.
 PILOT_CITY_RADIUS_M: Final[int] = 25_000
 
+#: Radius, in metres, of the area a city view shows. Wider than the coverage
+#: radius because an airshed does not stop at a municipal line: Delhi's view has
+#: to include the Noida, Ghaziabad and Gurugram stations its air mixes with.
+CITY_VIEW_RADIUS_M: Final[float] = 40_000.0
+
+#: How each pilot city is named to a reader.
+PILOT_CITY_LABELS: Final[dict[str, str]] = {
+    "delhi": "Delhi-NCR",
+    "kanpur": "Kanpur",
+    "coimbatore": "Coimbatore",
+}
+
+#: The pollutant each city's view opens on, chosen by what its monitors actually
+#: report. Coimbatore's reference PM2.5 sensor reported nothing across the
+#: ingested fortnight while its PM10 sensor did, so opening it on PM2.5 would
+#: show an empty map, which reads as clean air.
+PILOT_CITY_DEFAULT_POLLUTANT: Final[dict[str, str]] = {
+    "delhi": "pm25",
+    "kanpur": "pm25",
+    "coimbatore": "pm10",
+}
+
 #: How recently a station must have reported a pollutant to count as reporting
 #: it. Deliberately separate from a station being "active": a site whose PM2.5
 #: sensor died months ago still reports as active if its thermometer works, and

@@ -28,7 +28,8 @@ from app.core.alerting import (
     resolve,
     should_suppress,
 )
-from app.core.enums import AlertStatus, Pollutant
+from app.core.cities import in_city
+from app.core.enums import AlertStatus, PilotCity, Pollutant
 from app.core.exceptions import NotFoundError
 from app.core.logging import get_logger
 from app.ml.hotspot_detection import Hotspot, detect_over_window
@@ -144,9 +145,15 @@ def _hotspot_row(hotspot: Hotspot, pollutant: Pollutant) -> HotspotRow:
     )
 
 
-def list_alerts(session: Session, *, status: AlertStatus | None = None) -> list[AlertDetail]:
-    """The alert inbox, most urgent first."""
-    return alert_repository.list_alert_details(session, status=status)
+def list_alerts(
+    session: Session, *, status: AlertStatus | None = None, city: PilotCity | None = None
+) -> list[AlertDetail]:
+    """The alert inbox, most urgent first, optionally for one city."""
+    return [
+        detail
+        for detail in alert_repository.list_alert_details(session, status=status)
+        if in_city(detail.coordinates, city)
+    ]
 
 
 def acknowledge_alert(
@@ -184,7 +191,9 @@ def resolve_alert(
     return _detail(session, alert_id)
 
 
-def sla_breaches(session: Session, *, now: datetime | None = None) -> list[SlaBreach]:
+def sla_breaches(
+    session: Session, *, now: datetime | None = None, city: PilotCity | None = None
+) -> list[SlaBreach]:
     """Alerts whose response window has elapsed, longest overdue first.
 
     This is the output that makes non-response visible. Without it an ignored
@@ -202,6 +211,7 @@ def sla_breaches(session: Session, *, now: datetime | None = None) -> list[SlaBr
             resolved_at=detail.resolved_at,
         )
         for detail in alert_repository.list_alert_details(session)
+        if in_city(detail.coordinates, city)
     ]
     return find_sla_breaches(open_alerts, now)
 

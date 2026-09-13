@@ -87,8 +87,54 @@ class TestStations:
         response = api.get("/v1/stations", params={"pollutant": "radon"})
         assert response.status_code == 422
 
+    def test_scopes_to_a_city(self, api: TestClient) -> None:
+        # Every planted station is in Delhi, so Delhi sees them all and a city
+        # 2,000 km south sees none -- rather than being shown Delhi's air.
+        everything = api.get("/v1/stations").json()["station_count"]
+
+        delhi = api.get("/v1/stations", params={"city": "delhi"}).json()
+        coimbatore = api.get("/v1/stations", params={"city": "coimbatore"}).json()
+
+        assert delhi["station_count"] == everything > 0
+        assert coimbatore["station_count"] == 0
+        assert coimbatore["readings"] == []
+
+    def test_rejects_a_city_this_deployment_does_not_cover(self, api: TestClient) -> None:
+        assert api.get("/v1/stations", params={"city": "mumbai"}).status_code == 422
+
+
+class TestCities:
+    def test_lists_every_pilot_city_with_where_to_centre_it(self, api: TestClient) -> None:
+        cities = {city["city"]: city for city in api.get("/v1/cities").json()["cities"]}
+
+        assert set(cities) == {"delhi", "kanpur", "coimbatore"}
+        coimbatore = cities["coimbatore"]
+        assert coimbatore["label"] == "Coimbatore"
+        assert coimbatore["centre"]["longitude"] == pytest.approx(76.9558)
+        assert coimbatore["centre"]["latitude"] == pytest.approx(11.0168)
+        assert coimbatore["radius_m"] > 0
+
+    def test_opens_each_city_on_a_pollutant_its_monitors_report(self, api: TestClient) -> None:
+        cities = {city["city"]: city for city in api.get("/v1/cities").json()["cities"]}
+
+        assert cities["delhi"]["default_pollutant"] == "pm25"
+        assert cities["coimbatore"]["default_pollutant"] == "pm10"
+
 
 class TestHotspots:
+    def test_a_hotspot_outside_the_city_is_not_shown_there(self, api: TestClient) -> None:
+        delhi = api.get("/v1/hotspots", params={"window_hours": 72, "city": "delhi"}).json()
+        coimbatore = api.get(
+            "/v1/hotspots", params={"window_hours": 72, "city": "coimbatore"}
+        ).json()
+
+        assert delhi["hotspot_count"] >= 1
+        assert coimbatore["hotspot_count"] == 0
+
+    def test_states_how_many_neighbours_detection_needs(self, api: TestClient) -> None:
+        body = api.get("/v1/hotspots", params={"window_hours": 72}).json()
+        assert body["min_neighbours"] >= 1
+
     def test_returns_the_planted_hotspot_with_its_excess(self, api: TestClient) -> None:
         body = api.get("/v1/hotspots", params={"window_hours": 72}).json()
 
