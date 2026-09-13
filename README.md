@@ -578,11 +578,15 @@ Deferred deliberately, and tracked here rather than as TODOs in the code.
   lost; see the validation table above.
 - **The fusion model is inverse-distance weighting, not machine learning.** That
   is an empirical decision recorded above, not an unfinished one.
-- **Jurisdiction polygons are illustrative bounding boxes.** `infra/seed/delhi_authorities.json`
-  stands in for authoritative administrative boundaries, which were unavailable. Routing works and
-  is spatially correct at city-zone granularity, but a deployment must load the real geometry: an
-  alert delivered to the wrong body is worse than one never sent, because it creates a record of
-  notification that nobody could act on.
+- **Jurisdiction boundaries are real; who answers inside them is an assumption.**
+  `infra/seed/authorities.json` holds OpenStreetMap outlines for the 13 Delhi districts, Gautam
+  Buddha Nagar, Ghaziabad, Gurugram, Faridabad, Kanpur Nagar and Coimbatore, plus the four state
+  pollution bodies (© OpenStreetMap contributors, ODbL), built by `tools/fetch_osm_jurisdictions.py`.
+  Alerts go to the district administration first and the state body second. That assignment is an
+  explicit table in the script, not something the map can say, and a deployment must confirm it with
+  those bodies -- an alert delivered to the wrong office creates a record of notification nobody
+  could act on. Placeholder authorities from earlier seeds are retired, not deleted, so alerts already
+  sent to them stay attributed.
 - **No model weights are published for exchange.** `GET /v1/interop/models` serves model cards with
   measured performance and withholds weights, because both learned models lost to their baselines.
   The envelope supports weights; there is nothing this node would honestly recommend adopting.

@@ -17,7 +17,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import Row, func, select
+from sqlalchemy import Row, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -122,6 +122,7 @@ def upsert_authority(
                 "jurisdiction": _polygon_wkt(jurisdiction),
                 "contact_email": contact_email,
                 "escalation_tier": escalation_tier,
+                "is_active": True,
             },
         )
         .returning(Authority.id)
@@ -137,9 +138,32 @@ def authorities_containing(session: Session, point: LonLat) -> list[tuple[int, i
     ``core/alerting``, not in SQL.
     """
     statement = select(Authority.id, Authority.escalation_tier).where(
-        func.ST_Contains(Authority.jurisdiction, func.ST_GeomFromEWKT(_point_wkt(point)))
+        Authority.is_active.is_(True),
+        func.ST_Contains(Authority.jurisdiction, func.ST_GeomFromEWKT(_point_wkt(point))),
     )
     return [(int(row[0]), int(row[1])) for row in session.execute(statement).all()]
+
+
+def retire_authorities_except(session: Session, names: Sequence[str]) -> int:
+    """Stop routing to every authority not named, keeping its row and its alerts.
+
+    Returns:
+        How many authorities were retired by this call.
+    """
+    stale = (Authority.name.not_in(list(names)), Authority.is_active.is_(True))
+    retiring = int(
+        session.execute(select(func.count()).select_from(Authority).where(*stale)).scalar_one()
+    )
+    session.execute(update(Authority).where(*stale).values(is_active=False))
+    return retiring
+
+
+def authority_names(session: Session) -> dict[int, str]:
+    """Every authority's name by id, for presenting routing results."""
+    return {
+        int(authority_id): str(name)
+        for authority_id, name in session.execute(select(Authority.id, Authority.name)).all()
+    }
 
 
 def count_authorities(session: Session) -> int:

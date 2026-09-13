@@ -32,7 +32,7 @@ logger = get_logger(__name__)
 SEED_DIRECTORY = Path(__file__).resolve().parents[3] / "infra" / "seed"
 
 SOURCES_FILE = SEED_DIRECTORY / "delhi_sources.json"
-AUTHORITIES_FILE = SEED_DIRECTORY / "delhi_authorities.json"
+AUTHORITIES_FILE = SEED_DIRECTORY / "authorities.json"
 
 #: Fewest vertices a jurisdiction ring needs to enclose any area at all.
 _MIN_RING_VERTICES = 3
@@ -96,6 +96,7 @@ def load_authorities(session: Session, path: Path = AUTHORITIES_FILE) -> int:
     """Load the authority registry. Returns the number stored."""
     document = _read(path)
     loaded = 0
+    names: list[str] = []
 
     for entry in document.get("authorities", []):
         name = str(entry["name"])
@@ -115,9 +116,13 @@ def load_authorities(session: Session, path: Path = AUTHORITIES_FILE) -> int:
             contact_email=entry.get("contact_email"),
             escalation_tier=int(entry.get("escalation_tier", 1)),
         )
+        names.append(name)
         loaded += 1
 
-    logger.info("seed.authorities_loaded", count=loaded, path=str(path))
+    # Authorities no longer in the registry stop receiving alerts, but keep the
+    # alerts they were already sent: that trail is the point of the system.
+    retired = alert_repository.retire_authorities_except(session, names)
+    logger.info("seed.authorities_loaded", count=loaded, retired=retired, path=str(path))
     return loaded
 
 

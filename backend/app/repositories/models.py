@@ -411,6 +411,12 @@ class Authority(Base):
     #: state board rather than both being alerted for the same event.
     escalation_tier: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
+    #: Whether new alerts may be routed here. An authority dropped from the
+    #: registry is retired rather than deleted, because alerts already routed to
+    #: it are part of the accountability trail and must keep pointing at the body
+    #: that actually received them.
+    is_active: Mapped[bool] = mapped_column(nullable=False, default=True, server_default="true")
+
     __table_args__ = (
         Index("ix_authorities_jurisdiction", "jurisdiction", postgresql_using="gist"),
     )

@@ -57,10 +57,10 @@ jobs:
           pip install -e ".[dev,federated]"
 
       - name: Lint
-        run: ruff check app ../federated ../ml
+        run: ruff check app ../federated ../ml ../tools
 
       - name: Format check
-        run: ruff format --check app ../federated ../ml
+        run: ruff format --check app ../federated ../ml ../tools
 
       - name: Types
         run: mypy app ../federated
