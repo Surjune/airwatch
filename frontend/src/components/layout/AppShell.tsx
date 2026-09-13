@@ -1,9 +1,12 @@
-import { Menu, X } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { BookOpen } from 'lucide-react';
+import type { ReactNode } from 'react';
 
+import { ApiStatus } from '@/components/layout/ApiStatus';
+import { CityPicker } from '@/components/layout/CityPicker';
 import { Logo } from '@/components/layout/Logo';
-import { SCREENS, type ScreenKey } from '@/components/layout/navigation';
-import { Sidebar } from '@/components/layout/Sidebar';
+import { screenFor, type ScreenKey } from '@/components/layout/navigation';
+import { PrimaryNav } from '@/components/layout/PrimaryNav';
+import { BandRule } from '@/components/ui/BandRule';
 
 interface AppShellProps {
   readonly active: ScreenKey;
@@ -12,85 +15,67 @@ interface AppShellProps {
 }
 
 /**
- * The frame every screen sits in: a fixed sidebar on wide screens, and a top
- * bar with a slide-over menu on narrow ones, where a sidebar would take the
- * width the map needs.
+ * The frame every screen sits in.
+ *
+ * On a desktop, one masthead carries the wordmark, the screens as tabs, the city
+ * and the connection state. On a phone the screens move to a bottom bar within
+ * thumb reach, and the masthead keeps only what must stay visible: which city,
+ * and whether the data is live. The city is never tucked behind a menu, because
+ * every number on every screen depends on it.
  */
 export function AppShell({ active, onNavigate, children }: AppShellProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const label = SCREENS.find((candidate) => candidate.key === active)?.label ?? 'AirWatch';
-
-  useEffect(() => {
-    if (!isMenuOpen) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsMenuOpen(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [isMenuOpen]);
-
-  const navigate = (key: ScreenKey) => {
-    setIsMenuOpen(false);
-    onNavigate(key);
-  };
+  const screen = screenFor(active);
 
   return (
-    <div className="flex h-dvh bg-surface-sunken">
+    <div className="flex h-dvh flex-col bg-paper text-ink">
       <a
         href="#main"
-        className="sr-only z-50 rounded-md bg-accent px-3 py-2 text-sm text-white focus:not-sr-only focus:absolute focus:left-3 focus:top-3"
+        className="sr-only z-[1300] rounded-sm bg-ink px-3 py-2 text-sm text-paper focus:not-sr-only focus:absolute focus:left-3 focus:top-3"
       >
         Skip to content
       </a>
 
-      <aside className="hidden w-64 shrink-0 lg:block">
-        <Sidebar active={active} onNavigate={navigate} />
-      </aside>
-
-      {isMenuOpen && (
-        <div
-          className="fixed inset-0 z-[1100] lg:hidden"
-          role="dialog"
-          aria-modal
-          aria-label="Menu"
-        >
-          <button
-            type="button"
-            aria-label="Close menu"
-            className="absolute inset-0 bg-black/40"
-            onClick={() => {
-              setIsMenuOpen(false);
+      <header className="relative z-[1100] shrink-0 bg-surface">
+        <div className="flex h-14 items-stretch gap-3 border-b border-border px-3 sm:px-5">
+          <a
+            href="#/overview"
+            onClick={(event) => {
+              event.preventDefault();
+              onNavigate('overview');
             }}
-          />
-          <div className="absolute inset-y-0 left-0 w-72 max-w-[85vw] shadow-overlay">
-            <Sidebar active={active} onNavigate={navigate} />
+            className="flex shrink-0 items-center gap-2 text-ink"
+          >
+            <Logo className="size-6" />
+            <span className="text-[17px] font-semibold tracking-tight">AirWatch</span>
+          </a>
+
+          <div className="hidden min-w-0 flex-1 items-stretch pl-4 lg:flex">
+            <PrimaryNav active={active} onNavigate={onNavigate} variant="bar" />
+          </div>
+
+          <div className="ml-auto flex shrink-0 items-center gap-3">
+            <CityPicker />
+            <ApiStatus />
+            <a
+              href="/docs"
+              target="_blank"
+              rel="noreferrer"
+              className="hidden items-center gap-1 text-xs font-medium text-ink-muted hover:text-ink xl:inline-flex"
+            >
+              <BookOpen aria-hidden className="size-3.5" />
+              API
+            </a>
           </div>
         </div>
-      )}
+        <BandRule />
+      </header>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-chrome-border bg-chrome px-3 text-chrome-ink lg:hidden">
-          <button
-            type="button"
-            aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={isMenuOpen}
-            onClick={() => {
-              setIsMenuOpen((open) => !open);
-            }}
-            className="rounded-md p-2 hover:bg-white/10"
-          >
-            {isMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-          </button>
-          <Logo className="size-7" />
-          <span className="text-sm font-semibold">AirWatch</span>
-          <span className="truncate text-sm text-chrome-muted">/ {label}</span>
-        </header>
+      <main id="main" className="min-h-0 flex-1 overflow-hidden" aria-label={screen.label}>
+        {children}
+      </main>
 
-        <main id="main" className="min-h-0 flex-1 overflow-hidden" aria-label={label}>
-          {children}
-        </main>
+      <div className="relative z-[1100] shrink-0 lg:hidden">
+        <PrimaryNav active={active} onNavigate={onNavigate} variant="dock" />
       </div>
     </div>
   );

@@ -1,42 +1,45 @@
-import { useState } from 'react';
-
 import { Card } from '@/components/ui/Card';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StatusMessage } from '@/components/ui/StatusMessage';
-import { useSatellite, type SatelliteProduct } from '@/hooks/useSources';
-import type { CityKey } from '@/lib/scope';
+import type { Resource } from '@/hooks/useAnalysis';
+import type { Satellite, SatelliteProduct } from '@/hooks/useSources';
 import { formatColumn, SATELLITE_PRODUCTS } from '@/lib/satellite';
 
-const DAYS = 14;
+/** Sparkline drawing box, in SVG units; the drawn size comes from CSS. */
 const WIDTH = 320;
 const HEIGHT = 72;
 const PAD = 4;
+
+interface SatelliteCardProps {
+  readonly satellite: Resource<Satellite>;
+  readonly product: SatelliteProduct;
+  readonly onProductChange: (product: SatelliteProduct) => void;
+}
 
 /**
  * Sentinel-5P over the city: a two-week daily series for one column product.
  *
  * Presented as what it is -- the gas in the whole atmospheric column over
- * ~36 km² cells -- beside, not instead of, the ground readings. It is most useful
- * where monitors are fewest, which is why it sits on the overview for every city.
+ * ~36 km² cells -- beside, not instead of, the ground readings. It matters most
+ * where monitors are fewest.
  */
-export function SatelliteCard({ city }: { readonly city: CityKey }) {
-  const [product, setProduct] = useState<SatelliteProduct>('no2');
-  const { data, error, isLoading } = useSatellite(city, product, DAYS);
+export function SatelliteCard({ satellite, product, onProductChange }: SatelliteCardProps) {
+  const { data, error, isLoading } = satellite;
   const series = data?.series ?? [];
   const latest = series.at(-1);
   const option = SATELLITE_PRODUCTS.find((item) => item.key === product) ?? SATELLITE_PRODUCTS[0];
 
   return (
     <Card
-      title="From orbit · Sentinel-5P"
-      description={`${option.description} · daily mean over the city`}
+      eyebrow="From orbit · Sentinel-5P TROPOMI"
+      title={option.description}
       aside={
         <SegmentedControl
           label="Satellite product"
           options={SATELLITE_PRODUCTS}
           value={product}
-          onChange={setProduct}
+          onChange={onProductChange}
         />
       }
     >
@@ -52,14 +55,14 @@ export function SatelliteCard({ city }: { readonly city: CityKey }) {
         />
       ) : (
         <div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-semibold text-ink">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="figure text-2xl font-medium text-ink">
               {formatColumn(product, latest.value)}
             </span>
             <span className="text-xs text-ink-muted">
-              on{' '}
+              city mean on{' '}
               {new Date(latest.observed_on).toLocaleDateString('en-IN', {
-                day: '2-digit',
+                day: 'numeric',
                 month: 'short',
               })}{' '}
               · {latest.cells} of {data?.total_cells ?? '?'} cells observed
@@ -67,8 +70,9 @@ export function SatelliteCard({ city }: { readonly city: CityKey }) {
           </div>
           <Sparkline values={series.map((day) => day.value)} />
           <p className="mt-2 text-xs leading-relaxed text-ink-subtle">
-            A column over roughly 36 km² cells, not what anyone breathes at street level. Days with
-            no overpass or full cloud cover are left out rather than drawn as zero.
+            {series.length} observed days of the last 14. A column over the whole atmosphere, not
+            what anyone breathes at street level; cloudy days are left out rather than drawn as
+            zero.
           </p>
         </div>
       )}
@@ -101,16 +105,16 @@ function Sparkline({ values }: { readonly values: readonly number[] }) {
     >
       <path
         d={`${path} L${String(WIDTH - PAD)},${String(HEIGHT)} L${String(PAD)},${String(HEIGHT)} Z`}
-        fill="var(--color-accent-subtle)"
+        fill="var(--color-surface-sunken)"
       />
       <path
         d={path}
         fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth={2}
+        stroke="var(--color-ink)"
+        strokeWidth={1.5}
         vectorEffect="non-scaling-stroke"
       />
-      {last && <circle cx={last[0]} cy={last[1]} r={3} fill="var(--color-accent)" />}
+      {last && <circle cx={last[0]} cy={last[1]} r={3} fill="var(--color-signal)" />}
     </svg>
   );
 }

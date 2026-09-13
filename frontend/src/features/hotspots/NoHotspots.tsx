@@ -28,7 +28,7 @@ export function NoHotspots({
       <StatusMessage
         kind="empty"
         title={`Too few monitors in ${cityLabel} to detect hotspots`}
-        detail={`${cityLabel} has ${String(stationCount)} station${stationCount === 1 ? '' : 's'} reporting ${pollutantLabel}. A hotspot is a station reading above what its neighbours predict, which needs at least ${String(minNeighbours)} neighbours — so no hotspot here means no comparison was possible, not that the air holds no surprises. Citizen photographs are how this gap gets filled.`}
+        detail={`${cityLabel} has ${String(stationCount)} station${stationCount === 1 ? '' : 's'} reporting ${pollutantLabel}. A hotspot is a station reading above what its neighbours predict, which needs at least ${String(minNeighbours)} neighbours — so no hotspot here means no comparison was possible, not that the air holds no surprises. Residents' photographs and sensor readings are how this gap starts to fill.`}
       />
     );
   }

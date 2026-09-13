@@ -10,18 +10,20 @@ interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'cla
   /** Shown in place of the label while a request is in flight. */
   readonly busyLabel?: string;
   readonly isBusy?: boolean;
+  /** Stretch to the container's width, for a phone-width form. */
+  readonly block?: boolean;
 }
 
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-accent text-white hover:bg-accent-hover',
-  secondary: 'border border-border-strong bg-surface text-ink hover:bg-surface-sunken',
-  ghost: 'text-ink-muted hover:bg-surface-sunken hover:text-ink',
+  primary: 'border border-ink bg-ink text-paper hover:bg-ink/85',
+  secondary: 'border border-border-strong bg-surface text-ink hover:border-ink/40 hover:bg-paper',
+  ghost: 'border border-transparent text-ink-muted hover:bg-surface-sunken hover:text-ink',
   danger: 'border border-danger/30 bg-danger-subtle text-danger hover:bg-danger/10',
 };
 
 const SIZES: Record<Size, string> = {
-  sm: 'px-2.5 py-1 text-xs',
-  md: 'px-3.5 py-2 text-sm',
+  sm: 'min-h-8 px-2.5 text-[13px]',
+  md: 'min-h-10 px-4 text-sm',
 };
 
 /**
@@ -37,6 +39,7 @@ export function Button({
   size = 'sm',
   isBusy = false,
   busyLabel,
+  block = false,
   disabled,
   type = 'button',
   ...rest
@@ -46,9 +49,9 @@ export function Button({
       type={type}
       disabled={disabled ?? isBusy}
       aria-busy={isBusy}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-md font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
+      className={`inline-flex items-center justify-center gap-1.5 rounded-[4px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
         VARIANTS[variant]
-      } ${SIZES[size]}`}
+      } ${SIZES[size]} ${block ? 'w-full' : ''}`}
       {...rest}
     >
       {isBusy && busyLabel ? busyLabel : children}

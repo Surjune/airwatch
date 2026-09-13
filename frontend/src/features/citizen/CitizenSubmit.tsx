@@ -1,134 +1,152 @@
-import { Send } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { Camera, Gauge } from 'lucide-react';
+import { useState } from 'react';
 
-import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusMessage } from '@/components/ui/StatusMessage';
-import { LocationPicker, type PickedPosition } from '@/features/citizen/LocationPicker';
-import { PhotoDropzone } from '@/features/citizen/PhotoDropzone';
+import { PhotoForm } from '@/features/citizen/PhotoForm';
+import { RecentReadings } from '@/features/citizen/RecentReadings';
 import { RecentSubmissions } from '@/features/citizen/RecentSubmissions';
-import { SubmissionResult } from '@/features/citizen/SubmissionResult';
-import type { SubmissionOutcome } from '@/hooks/useCitizen';
+import { SensorReadingForm } from '@/features/citizen/SensorReadingForm';
+import { SensorReadingResult } from '@/features/citizen/SensorReadingResult';
 import { useCitizen } from '@/hooks/useCitizen';
+import { useCitizenSensors, type SensorReadingAccepted } from '@/hooks/useCitizenSensors';
+import { useScope } from '@/lib/scope';
+
+type Mode = 'photo' | 'sensor';
 
 /**
- * The citizen submission screen.
+ * The citizen contribution screen: a photograph, or a household sensor reading.
  *
- * The design problem here is not the upload. It is that a number produced from a
- * phone photograph looks exactly like a number produced from a ~1 crore
- * instrument once both are on a map, and this screen is where that confusion
- * would start. So the hierarchy is deliberate: the haze index is presented as
- * the measurement, a derived concentration appears only when one can be derived,
- * and the calibration state is stated on the screen rather than buried.
- *
- * A refusal is treated as a useful answer and shown with the reason, because
- * every condition that gets a photo refused -- darkness, blur, over-exposure --
- * would otherwise have made clean air look dirty.
+ * The design problem is not the upload. It is that a number from a phone or a
+ * ₹5,000 sensor looks exactly like a number from a ~₹1 crore monitor once both are
+ * on a map, and this screen is where that confusion would start. So each form
+ * says what its input can establish, results lead with the comparison against a
+ * real monitor, and the calibration state is on the screen rather than buried.
  */
 export function CitizenSubmit() {
-  const { reports, calibration, error, isLoading, isSubmitting, submit } = useCitizen();
-
-  const [file, setFile] = useState<File | null>(null);
-  const [position, setPosition] = useState<PickedPosition | null>(null);
-  const [outcome, setOutcome] = useState<SubmissionOutcome | null>(null);
-
-  const canSubmit = file !== null && position !== null && !isSubmitting;
-
-  const send = useCallback(() => {
-    if (file === null || position === null) return;
-    void submit({
-      file,
-      longitude: position.longitude,
-      latitude: position.latitude,
-      // The file's own modified time is the closest thing a browser exposes to
-      // a capture time without parsing EXIF, and for a photo taken to be
-      // submitted the two are the same moment.
-      capturedAt: new Date(file.lastModified),
-    }).then((result) => {
-      setOutcome(result);
-      if (result?.kind === 'accepted') setFile(null);
-    });
-  }, [file, position, submit]);
+  const { city, pollutant, current } = useScope();
+  const cityLabel = current?.label ?? '…';
+  const [mode, setMode] = useState<Mode>('photo');
+  const [accepted, setAccepted] = useState<SensorReadingAccepted | null>(null);
+  const photos = useCitizen();
+  const sensors = useCitizenSensors(pollutant, city);
+  const failure = mode === 'photo' ? photos.error : sensors.error;
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto flex max-w-3xl flex-col gap-5 p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-5xl space-y-6 px-4 pb-16 pt-6 sm:px-6 lg:pt-8">
         <PageHeader
-          title="Contribute a photograph"
-          description="A photograph cannot measure PM2.5. It can measure how much contrast the atmosphere has removed, and that is what this returns. Photographs taken near a reference monitor also build the relation that lets photographs taken far from one mean something."
+          eyebrow={`Join in · ${cityLabel}`}
+          title="Add what you can see"
+          description="Monitors are expensive and few; residents are everywhere. A photograph measures how hazy the air is. A household sensor gives a number the network compares with the nearest monitor. Neither is used as ground truth — both build the evidence that lets this tier be trusted."
         />
 
-        {calibration && (
-          <StatusMessage
-            kind={calibration.is_calibrated ? 'success' : 'empty'}
-            title={
-              calibration.is_calibrated
-                ? `Calibrated from ${String(calibration.pairs)} co-located submissions`
-                : `Not yet calibrated — ${String(calibration.pairs)} of ${String(calibration.pairs_needed)} pairs`
-            }
-            detail={calibration.explanation}
-          />
-        )}
+        <div className="grid gap-6 lg:grid-cols-[1.35fr_1fr]">
+          <div className="space-y-4">
+            <div role="tablist" aria-label="What to contribute" className="grid grid-cols-2 gap-2">
+              <ModeTab
+                icon={<Camera aria-hidden className="size-4" />}
+                title="A photograph"
+                detail="Haze, measured from the image"
+                isActive={mode === 'photo'}
+                onSelect={() => {
+                  setMode('photo');
+                }}
+              />
+              <ModeTab
+                icon={<Gauge aria-hidden className="size-4" />}
+                title="A sensor reading"
+                detail="PM2.5 or PM10 from your device"
+                isActive={mode === 'sensor'}
+                onSelect={() => {
+                  setMode('sensor');
+                }}
+              />
+            </div>
 
-        <Card
-          title="1. Photograph"
-          description="An outdoor daylight scene with something distant in it. Blurred, dark or over-exposed frames are refused — each makes clean air look dirty."
-        >
-          <PhotoDropzone
-            file={file}
-            onChange={(next) => {
-              setFile(next);
-              setOutcome(null);
-            }}
-          />
-        </Card>
+            <Card>
+              {mode === 'photo' ? (
+                <PhotoForm tier={photos} />
+              ) : (
+                <SensorReadingForm
+                  isSubmitting={sensors.isSubmitting}
+                  onSubmit={(input) => {
+                    void sensors.submit(input).then(setAccepted);
+                  }}
+                />
+              )}
+            </Card>
 
-        <Card
-          title="2. Where it was taken"
-          description="Used to compare against the nearest monitor"
-        >
-          <LocationPicker position={position} onChange={setPosition} />
-        </Card>
+            {failure && (
+              <StatusMessage
+                kind="error"
+                title={
+                  mode === 'photo'
+                    ? 'Could not reach the submission service'
+                    : 'The reading was not accepted'
+                }
+                detail={failure.message}
+                {...(failure.requestId ? { requestId: failure.requestId } : {})}
+              />
+            )}
+            {mode === 'sensor' && accepted && <SensorReadingResult accepted={accepted} />}
+          </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            variant="primary"
-            size="md"
-            onClick={send}
-            disabled={!canSubmit}
-            isBusy={isSubmitting}
-            busyLabel="Measuring…"
-          >
-            <Send aria-hidden className="size-4" />
-            Submit photograph
-          </Button>
-          {!canSubmit && !isSubmitting && (
-            <p className="text-xs text-ink-subtle">Add a photograph and a position to submit.</p>
-          )}
+          <div className="space-y-4">
+            {photos.calibration && (
+              <StatusMessage
+                kind={photos.calibration.is_calibrated ? 'success' : 'empty'}
+                title={
+                  photos.calibration.is_calibrated
+                    ? `Photographs calibrated from ${String(photos.calibration.pairs)} pairs`
+                    : `Photographs not yet calibrated — ${String(photos.calibration.pairs)} of ${String(photos.calibration.pairs_needed)} pairs`
+                }
+                detail={photos.calibration.explanation}
+              />
+            )}
+            {mode === 'photo' ? (
+              <RecentSubmissions reports={photos.reports} isLoading={photos.isLoading} />
+            ) : (
+              <RecentReadings tier={sensors} cityLabel={cityLabel} />
+            )}
+          </div>
         </div>
-
-        {outcome?.kind === 'rejected' && (
-          <StatusMessage
-            kind="empty"
-            title="This photograph could not be measured"
-            detail={outcome.rejection.detail}
-          />
-        )}
-
-        {outcome?.kind === 'accepted' && <SubmissionResult outcome={outcome} />}
-
-        {error && (
-          <StatusMessage
-            kind="error"
-            title="Could not reach the submission service"
-            detail={error.message}
-            {...(error.requestId ? { requestId: error.requestId } : {})}
-          />
-        )}
-
-        <RecentSubmissions reports={reports} isLoading={isLoading} />
       </div>
     </div>
+  );
+}
+
+function ModeTab({
+  icon,
+  title,
+  detail,
+  isActive,
+  onSelect,
+}: {
+  readonly icon: React.ReactNode;
+  readonly title: string;
+  readonly detail: string;
+  readonly isActive: boolean;
+  readonly onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={isActive}
+      onClick={onSelect}
+      className={`rounded-card border p-3 text-left transition-colors ${
+        isActive ? 'border-ink bg-surface' : 'border-border bg-surface/50 hover:border-ink/40'
+      }`}
+    >
+      <span
+        className={`flex items-center gap-2 text-sm font-semibold ${isActive ? 'text-ink' : 'text-ink-muted'}`}
+      >
+        {icon}
+        {title}
+      </span>
+      <span className="mt-0.5 block text-xs text-ink-subtle">{detail}</span>
+    </button>
   );
 }

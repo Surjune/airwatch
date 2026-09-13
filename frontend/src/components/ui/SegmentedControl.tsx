@@ -21,7 +21,7 @@ export function SegmentedControl<K extends string>({
     <div
       role="group"
       aria-label={label}
-      className="inline-flex rounded-lg border border-border bg-surface-sunken p-0.5"
+      className="inline-flex shrink-0 rounded-[4px] border border-border-strong bg-surface p-0.5"
     >
       {options.map((option) => {
         const isActive = option.key === value;
@@ -33,8 +33,8 @@ export function SegmentedControl<K extends string>({
             onClick={() => {
               onChange(option.key);
             }}
-            className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-              isActive ? 'bg-surface text-ink shadow-card' : 'text-ink-muted hover:text-ink'
+            className={`min-h-7 whitespace-nowrap rounded-[3px] px-2.5 text-xs font-medium transition-colors ${
+              isActive ? 'bg-ink text-paper' : 'text-ink-muted hover:text-ink'
             }`}
           >
             {option.label}

@@ -43,6 +43,29 @@ export function polygonToLeaflet(coordinates: readonly (readonly LonLat[])[]): L
   return coordinates.map(ringToLeaflet);
 }
 
+/** Mean Earth radius in metres, the sphere the backend's distances also use. */
+const EARTH_RADIUS_M = 6_371_008.8;
+
+/** Degrees to radians. */
+const RADIANS_PER_DEGREE = Math.PI / 180;
+
+/**
+ * Great-circle distance between two API positions, in metres.
+ *
+ * Used only to decide whether a citizen submission falls inside the city in
+ * view; the backend owns every distance that feeds an estimate.
+ */
+export function distanceM([lonA, latA]: LonLat, [lonB, latB]: LonLat): number {
+  const dLat = (latB - latA) * RADIANS_PER_DEGREE;
+  const dLon = (lonB - lonA) * RADIANS_PER_DEGREE;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(latA * RADIANS_PER_DEGREE) *
+      Math.cos(latB * RADIANS_PER_DEGREE) *
+      Math.sin(dLon / 2) ** 2;
+  return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(a));
+}
+
 /** Longitude and latitude bounds of mainland India plus its island territories. */
 const INDIA_BOUNDS = {
   minLon: 68.0,

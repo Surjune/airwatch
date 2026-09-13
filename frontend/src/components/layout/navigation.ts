@@ -1,66 +1,79 @@
 import { BellRing, Camera, LayoutDashboard, Map, Network, Route } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
+export type ScreenKey = 'overview' | 'map' | 'corridor' | 'alerts' | 'federation' | 'citizen';
+
 export interface Screen {
   readonly key: ScreenKey;
   readonly label: string;
-  /** One line under the label in the sidebar, and the page's accessible name. */
+  /** The label on a phone's bottom bar, where there is room for one short word. */
+  readonly shortLabel: string;
+  /** One line describing the screen, used as its accessible description. */
   readonly hint: string;
+  /** Where the screen sits in the chain from measurement to action. */
+  readonly stage: string;
   readonly icon: LucideIcon;
-  readonly group: 'Monitor' | 'Act' | 'Network';
 }
 
-export type ScreenKey = 'overview' | 'map' | 'corridor' | 'alerts' | 'federation' | 'citizen';
-
 /**
- * The screens, grouped by what someone arrives to do: understand the air, act
- * on it, or extend the network that measures it.
+ * The screens, in the order the work happens: see the city, find what is
+ * unexpected, look ahead, get someone to act, share with other cities, and add
+ * to what the network can see.
  */
 export const SCREENS: readonly Screen[] = [
   {
     key: 'overview',
     label: 'Overview',
-    hint: 'The network at a glance',
+    shortLabel: 'Today',
+    hint: 'The city right now, and what the network can see',
+    stage: 'Start here',
     icon: LayoutDashboard,
-    group: 'Monitor',
   },
   {
     key: 'map',
     label: 'Live map',
-    hint: 'Stations and detected hotspots',
+    shortLabel: 'Map',
+    hint: 'Stations, sensors and detected hotspots',
+    stage: 'Step 1 · Detect',
     icon: Map,
-    group: 'Monitor',
   },
   {
     key: 'corridor',
-    label: 'Corridor outlook',
-    hint: 'Forecast along a route',
+    label: 'Forecast',
+    shortLabel: 'Forecast',
+    hint: 'The next 72 hours along economic corridors',
+    stage: 'Step 2 · Forecast',
     icon: Route,
-    group: 'Monitor',
   },
   {
     key: 'alerts',
     label: 'Authority console',
-    hint: 'Acknowledge and resolve alerts',
+    shortLabel: 'Alerts',
+    hint: 'Alerts routed to the responsible authority',
+    stage: 'Step 3 · Act',
     icon: BellRing,
-    group: 'Act',
   },
   {
     key: 'federation',
     label: 'Federation',
-    hint: 'Coverage and model transfer',
+    shortLabel: 'Network',
+    hint: 'Cities sharing models, not raw data',
+    stage: 'Step 4 · Share',
     icon: Network,
-    group: 'Network',
   },
   {
     key: 'citizen',
     label: 'Contribute',
-    hint: 'Submit a photograph',
+    shortLabel: 'Contribute',
+    hint: 'Add a photograph or a sensor reading',
+    stage: 'Join in',
     icon: Camera,
-    group: 'Network',
   },
 ];
 
 export const SCREEN_KEYS: readonly ScreenKey[] = SCREENS.map((screen) => screen.key);
 
-export const SCREEN_GROUPS = ['Monitor', 'Act', 'Network'] as const;
+/** The screen record for a key. Every key is in the list, so this never misses. */
+export function screenFor(key: ScreenKey): Screen {
+  return SCREENS.find((screen) => screen.key === key) ?? (SCREENS[0] as Screen);
+}

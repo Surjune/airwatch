@@ -8,6 +8,9 @@ import { formatColumn } from '@/lib/satellite';
 const MIN_OPACITY = 0.08;
 const MAX_OPACITY = 0.55;
 
+/** One hue, the interaction accent, well away from every CPCB band colour. */
+const SATELLITE_HUE = '#28457a';
+
 interface SatelliteLayerProps {
   readonly cells: Satellite['cells'];
   readonly product: SatelliteProduct;
@@ -37,10 +40,10 @@ export function SatelliteLayer({ cells, product }: SatelliteLayerProps) {
               toLeaflet([vertex.longitude, vertex.latitude]),
             )}
             pathOptions={{
-              color: '#7c3aed',
+              color: SATELLITE_HUE,
               weight: 0.5,
               opacity: 0.35,
-              fillColor: '#7c3aed',
+              fillColor: SATELLITE_HUE,
               fillOpacity: MIN_OPACITY + share * (MAX_OPACITY - MIN_OPACITY),
             }}
           >

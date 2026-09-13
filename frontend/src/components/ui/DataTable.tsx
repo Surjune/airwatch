@@ -4,7 +4,7 @@ interface DataTableProps {
   readonly caption: string;
   readonly columns: readonly string[];
   readonly children: ReactNode;
-  /** Columns whose values are numbers, right-aligned and given tabular figures. */
+  /** Columns whose values are numbers, right-aligned and set as figures. */
   readonly numericColumns?: readonly number[];
 }
 
@@ -12,8 +12,8 @@ interface DataTableProps {
  * The single table.
  *
  * Wide tables scroll inside their own container rather than pushing the page
- * sideways, and the caption is real rather than visually hidden decoration: a
- * screen reader reaching a grid of numbers needs to be told what the grid is.
+ * sideways on a phone, and the caption is real rather than decoration: a screen
+ * reader reaching a grid of numbers needs to be told what the grid is.
  */
 export function DataTable({ caption, columns, children, numericColumns = [] }: DataTableProps) {
   return (
@@ -26,7 +26,7 @@ export function DataTable({ caption, columns, children, numericColumns = [] }: D
               <th
                 key={column}
                 scope="col"
-                className={`px-4 py-2 text-xs font-medium text-ink-subtle ${
+                className={`eyebrow whitespace-nowrap px-4 py-2 font-normal ${
                   numericColumns.includes(index) ? 'text-right' : ''
                 }`}
               >
@@ -51,7 +51,9 @@ interface CellProps {
 export function Cell({ children, numeric = false, muted = false }: CellProps) {
   return (
     <td
-      className={`px-4 py-2 ${numeric ? 'text-right' : ''} ${muted ? 'text-ink-muted' : 'text-ink'}`}
+      className={`whitespace-nowrap px-4 py-2.5 ${numeric ? 'figure text-right text-[13px]' : ''} ${
+        muted ? 'text-ink-muted' : 'text-ink'
+      }`}
     >
       {children}
     </td>

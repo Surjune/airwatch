@@ -1,186 +1,96 @@
 import { useMemo, useState } from 'react';
 
 import { PollutantToggle } from '@/components/layout/PollutantToggle';
-import { Button } from '@/components/ui/Button';
+import { AqiChip } from '@/components/ui/AqiChip';
+import { Card } from '@/components/ui/Card';
+import { Cell, DataTable } from '@/components/ui/DataTable';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { StatusMessage } from '@/components/ui/StatusMessage';
-import type { ExposureAdvisory } from '@/hooks/useAnalysis';
+import { CorridorStrip } from '@/features/corridor/CorridorStrip';
+import { CORRIDORS, HORIZONS, type HorizonKey } from '@/features/corridor/corridors';
+import { ExposurePanel } from '@/features/corridor/ExposurePanel';
+import { markGaps } from '@/features/corridor/segments';
 import { useCorridorForecast, useExposureAdvisory } from '@/hooks/useAnalysis';
-import { aqiBand, aqiColour } from '@/lib/aqi';
-import { useScope, type CityKey } from '@/lib/scope';
+import { useScope } from '@/lib/scope';
 
-interface Corridor {
-  readonly key: string;
-  readonly name: string;
-  readonly note: string;
-  /** `lon,lat` vertices separated by `;`. */
-  readonly points: string;
-}
-
-/**
- * Economic corridors worth forecasting in each city, as `lon,lat` polylines.
- *
- * Chosen because pollution follows these rather than administrative lines:
- * freight moves along them, industry clusters beside them, and a person
- * commuting one of them accumulates most of their daily dose on it. Vertices are
- * approximate waypoints along each road, not a surveyed centreline.
- */
-const CORRIDORS: Record<CityKey, readonly Corridor[]> = {
-  delhi: [
-    {
-      key: 'dwarka-anand-vihar',
-      name: 'Dwarka → Anand Vihar',
-      note: 'West to east across Delhi, ending at the bus terminal and rail yard.',
-      points: '77.03,28.59;77.21,28.61;77.32,28.65',
-    },
-    {
-      key: 'nh48',
-      name: 'NH-48 industrial belt',
-      note: 'Delhi south-west into the Gurugram manufacturing corridor.',
-      points: '77.21,28.61;77.10,28.50;77.03,28.42',
-    },
-    {
-      key: 'ghaziabad',
-      name: 'Delhi → Ghaziabad',
-      note: 'Eastward into the Indo-Gangetic industrial belt.',
-      points: '77.21,28.63;77.32,28.66;77.45,28.67',
-    },
-  ],
-  kanpur: [
-    {
-      key: 'gt-road',
-      name: 'Panki → Jajmau (GT Road)',
-      note: 'Across the city from the Panki power station to the Jajmau tannery cluster.',
-      points: '80.27,26.47;80.33,26.45;80.40,26.43',
-    },
-  ],
-  coimbatore: [
-    {
-      key: 'trichy-road-sidco',
-      name: 'Ukkadam → SIDCO Kurichi',
-      note: 'South from Ukkadam past the Kurichi industrial estate, ending at the city’s reporting monitor.',
-      points: '76.961,10.989;76.970,10.960;76.979,10.942',
-    },
-    {
-      key: 'avinashi-road',
-      name: 'Gandhipuram → Airport (Avinashi Rd)',
-      note: 'East along Avinashi Road through Peelamedu to the airport.',
-      points: '76.963,11.017;77.001,11.026;77.043,11.030',
-    },
-    {
-      key: 'mettupalayam-road',
-      name: 'Gandhipuram → Thudiyalur',
-      note: 'North-west along Mettupalayam Road through Saibaba Colony.',
-      points: '76.963,11.017;76.943,11.030;76.940,11.080',
-    },
-  ],
-};
-
-/** Horizons the forecast was validated at. */
-const HORIZONS = [24, 48, 72] as const;
-
-/** A gap wider than this multiple of the median step is unsupported ground. */
-const GAP_MULTIPLE = 1.5;
+/** Unforecast length, in km, worth warning about rather than rounding away. */
+const UNCOVERED_WARNING_KM = 1;
 
 /**
  * Corridor forecast screen.
  *
- * Two things drive the design, and both come from what validation measured.
+ * The forecast is a diurnal climatology, because climatology beat every learned
+ * model on a temporal holdout. It resolves the daily cycle and the spatial
+ * gradient but has no day-to-day skill, so the screen says where along a route
+ * the air turns rather than implying it knows tomorrow will be worse than today.
  *
- * The forecast is a diurnal climatology because climatology beat every learned
- * model on a temporal holdout. That means it resolves the daily cycle and the
- * spatial gradient but has no day-to-day skill, so the screen says where along
- * a route the air turns rather than implying it knows tomorrow will be worse
- * than today.
- *
- * Uncertainty is frequently larger than the signal — 18 ± 28 µg/m³ at the clean
- * end of a real run. Drawing the value alone would be a lie of omission, so the
- * precautionary upper bound is drawn beside it and unsupported stretches are
- * drawn as unknown rather than left to look continuous.
+ * Uncertainty is often larger than the signal, so the precautionary upper bound
+ * is drawn beside the value and unsupported stretches are drawn as unknown.
  */
 export function CorridorView() {
   const { city, pollutant, current } = useScope();
   const corridors = CORRIDORS[city];
   const [corridorKey, setCorridorKey] = useState<string | null>(null);
-  const [horizon, setHorizon] = useState<number>(24);
+  const [horizon, setHorizon] = useState<HorizonKey>('24');
 
-  // A key from the previous city matches nothing here, so the first corridor of
-  // the new city is shown rather than a stale selection.
+  // A key from the previous city matches nothing here, so the new city's first
+  // corridor is shown rather than a stale selection.
   const corridor = corridors.find((item) => item.key === corridorKey) ?? corridors[0];
   const points = corridor?.points ?? '';
-  const { data, error, isLoading } = useCorridorForecast(points, horizon, pollutant);
+  const { data, error, isLoading } = useCorridorForecast(points, Number(horizon), pollutant);
   const advisory = useExposureAdvisory(points, pollutant);
 
-  const segments = useMemo(() => {
-    const points = data?.points ?? [];
-    if (points.length === 0) return [];
-
-    const steps: number[] = [];
-    for (let index = 1; index < points.length; index += 1) {
-      const current = points[index];
-      const previous = points[index - 1];
-      if (current && previous) {
-        steps.push(current.distance_along_km - previous.distance_along_km);
-      }
-    }
-    steps.sort((a, b) => a - b);
-    const median = steps[Math.floor(steps.length / 2)] ?? 1;
-
-    return points.map((point, index) => {
-      const previous = index > 0 ? points[index - 1] : undefined;
-      return {
-        point,
-        // A jump wider than the sampling step means the network supported
-        // nothing in between, which has to read as unknown rather than as
-        // continuity.
-        gapBefore:
-          previous !== undefined &&
-          point.distance_along_km - previous.distance_along_km > median * GAP_MULTIPLE,
-      };
-    });
-  }, [data]);
-
+  const segments = useMemo(() => markGaps(data?.points ?? []), [data]);
   const uncoveredKm = data ? data.corridor_length_km - data.covered_length_km : 0;
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto flex max-w-4xl flex-col gap-5 p-4 sm:p-6">
+      <div className="mx-auto max-w-5xl space-y-6 px-4 pb-16 pt-6 sm:px-6 lg:pt-8">
         <PageHeader
-          title={`Corridor outlook · ${current?.label ?? '…'}`}
-          description={`Where along a route the air changes, ${String(horizon)} hours ahead. The estimator is a diurnal climatology, because it beat every learned model on a temporal holdout — so it resolves the daily cycle and the spatial gradient, and cannot say that tomorrow will be worse than today.`}
+          eyebrow={`Step 2 · Forecast · ${current?.label ?? '…'}`}
+          title="Corridor forecast"
+          description={`Where along a route the air changes, ${horizon} hours ahead. The estimator is a diurnal climatology because it beat every learned model on a temporal holdout — it resolves the daily cycle and the gradient along the road, and cannot say that tomorrow will be worse than today.`}
         />
 
-        <div className="flex flex-wrap gap-2">
-          {corridors.map((option) => (
-            <Button
-              key={option.key}
-              variant={corridor?.key === option.key ? 'primary' : 'secondary'}
-              aria-pressed={corridor?.key === option.key}
-              onClick={() => {
-                setCorridorKey(option.key);
-              }}
-            >
-              {option.name}
-            </Button>
-          ))}
-          <span aria-hidden className="mx-1 w-px self-stretch bg-border-strong" />
-          {HORIZONS.map((option) => (
-            <Button
-              key={option}
-              variant={horizon === option ? 'primary' : 'secondary'}
-              aria-pressed={horizon === option}
-              onClick={() => {
-                setHorizon(option);
-              }}
-            >
-              {option}h
-            </Button>
-          ))}
-          <span aria-hidden className="mx-1 w-px self-stretch bg-border-strong" />
-          <PollutantToggle />
+        <div className="space-y-3">
+          <p className="eyebrow">Choose a corridor</p>
+          <div className="scroll-row -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0">
+            {corridors.map((option) => {
+              const isActive = corridor?.key === option.key;
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  aria-pressed={isActive}
+                  onClick={() => {
+                    setCorridorKey(option.key);
+                  }}
+                  className={`w-64 shrink-0 rounded-card border p-3 text-left transition-colors sm:w-auto ${
+                    isActive
+                      ? 'border-ink bg-surface'
+                      : 'border-border bg-surface/60 hover:border-ink/40'
+                  }`}
+                >
+                  <span className="block text-sm font-semibold text-ink">{option.name}</span>
+                  <span className="mt-1 block text-xs leading-snug text-ink-muted">
+                    {option.note}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <SegmentedControl
+              label="Forecast horizon"
+              options={HORIZONS}
+              value={horizon}
+              onChange={setHorizon}
+            />
+            <PollutantToggle />
+          </div>
         </div>
-
-        <p className="text-xs text-ink-muted">{corridor?.note}</p>
 
         {error ? (
           <StatusMessage
@@ -190,209 +100,83 @@ export function CorridorView() {
             {...(error.requestId ? { requestId: error.requestId } : {})}
           />
         ) : isLoading ? (
-          <StatusMessage kind="loading" title="Forecasting along the route…" />
+          <Card>
+            <Skeleton label="Forecasting along the route" rows={4} />
+          </Card>
         ) : !data || data.point_count === 0 ? (
           <StatusMessage
             kind="empty"
             title="Too few monitors to forecast this route"
-            detail="Every point on a route is estimated from several nearby monitors combined, and no point on this one has enough of them in range. A route beside a single monitor is not enough. That is unknown ground, not clean air."
+            detail="Each point on a route is estimated from several nearby monitors combined, and no point on this one has enough of them in range. A route beside a single monitor is not enough. That is unknown ground, not clean air."
           />
         ) : (
           <>
-            <section className="rounded-card border border-border bg-surface p-4">
-              <div className="flex items-baseline justify-between">
-                <h3 className="text-sm font-semibold">Forecast</h3>
-                <span className="text-xs text-ink-muted">
+            <Card
+              eyebrow={`${horizon}-hour outlook`}
+              title={corridor?.name ?? 'Route'}
+              aside={
+                <span className="figure">
                   {data.covered_length_km.toFixed(1)} of {data.corridor_length_km.toFixed(1)} km
-                  covered
+                  forecast
                 </span>
+              }
+            >
+              <div className="space-y-4">
+                <CorridorStrip label="Forecast" segments={segments} bound="value" />
+                <CorridorStrip
+                  label="Upper bound — value plus uncertainty, what a precautionary decision uses"
+                  segments={segments}
+                  bound="upper"
+                />
+                <div className="figure flex justify-between text-[11px] text-ink-subtle">
+                  <span>start · {segments[0]?.point.distance_along_km.toFixed(1)} km</span>
+                  <span>end · {segments.at(-1)?.point.distance_along_km.toFixed(1)} km</span>
+                </div>
               </div>
-
-              <Strip label="Forecast" segments={segments} valueOf={(point) => point.value} />
-              <Strip
-                label="With uncertainty"
-                segments={segments}
-                valueOf={(point) => point.upper_bound}
-              />
-
-              <p className="mt-3 text-xs text-ink-muted">
-                The second strip is the value plus its uncertainty, which is what a precautionary
-                decision uses. On this route the uncertainty is often larger than the value itself —
-                the forecast is more useful for <em>where</em> the air turns than for the absolute
-                level.
-              </p>
-
-              {uncoveredKm > 1 && (
-                <p className="mt-2 rounded bg-warn-subtle px-2 py-1 text-xs text-warn">
-                  {uncoveredKm.toFixed(1)} km of this route returned no forecast at all, because no
-                  station lies within range. That stretch is unknown, not clean.
+              {uncoveredKm > UNCOVERED_WARNING_KM && (
+                <p className="mt-4 rounded-sm bg-warn-subtle px-3 py-2 text-xs text-warn">
+                  {uncoveredKm.toFixed(1)} km of this route returned no forecast, because no station
+                  lies within range. That stretch is unknown, not clean.
                 </p>
               )}
-            </section>
+            </Card>
 
-            <ExposurePanel advisory={advisory.data} isLoading={advisory.isLoading} />
-
-            <section className="rounded-card border border-border bg-surface">
-              <table className="w-full text-sm">
-                <thead className="border-b border-border text-left text-xs text-ink-muted">
-                  <tr>
-                    <th className="px-3 py-2 font-medium">km</th>
-                    <th className="px-3 py-2 font-medium">Forecast</th>
-                    <th className="px-3 py-2 font-medium">Upper bound</th>
-                    <th className="px-3 py-2 font-medium">Band</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <ExposurePanel advisory={advisory.data} isLoading={advisory.isLoading} />
+              <Card eyebrow="Samples" title="Along the route" flush>
+                <DataTable
+                  caption="Forecast samples along the corridor"
+                  columns={['km', 'Forecast', 'Upper', 'Band']}
+                  numericColumns={[0, 1, 2]}
+                >
                   {segments.map(({ point, gapBefore }) => (
-                    <tr key={point.distance_along_km} className="border-b border-border">
-                      <td className="px-3 py-1.5 tabular-nums">
+                    <tr key={point.distance_along_km}>
+                      <Cell numeric>
+                        {gapBefore && <span className="mr-2 text-[11px] text-warn">gap ·</span>}
                         {point.distance_along_km.toFixed(1)}
-                        {gapBefore && <span className="ml-2 text-xs text-warn">after a gap</span>}
-                      </td>
-                      <td className="px-3 py-1.5 tabular-nums">
+                      </Cell>
+                      <Cell numeric>
                         {point.value.toFixed(0)} ± {point.uncertainty.toFixed(0)}
-                      </td>
-                      <td className="px-3 py-1.5 tabular-nums">{point.upper_bound.toFixed(0)}</td>
-                      <td className="px-3 py-1.5">{point.category}</td>
+                      </Cell>
+                      <Cell numeric muted>
+                        {point.upper_bound.toFixed(0)}
+                      </Cell>
+                      <Cell>
+                        <span className="inline-flex items-center gap-2">
+                          <AqiChip aqi={point.aqi} />
+                          <span className="hidden text-xs text-ink-muted sm:inline">
+                            {point.category}
+                          </span>
+                        </span>
+                      </Cell>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-            </section>
+                </DataTable>
+              </Card>
+            </div>
           </>
         )}
       </div>
     </div>
-  );
-}
-
-interface StripSegment {
-  readonly point: {
-    readonly distance_along_km: number;
-    readonly value: number;
-    readonly uncertainty: number;
-    readonly upper_bound: number;
-    readonly category: string;
-  };
-  readonly gapBefore: boolean;
-}
-
-/** One band of colour per sample, with unsupported stretches drawn as unknown. */
-function Strip({
-  label,
-  segments,
-  valueOf,
-}: {
-  readonly label: string;
-  readonly segments: readonly StripSegment[];
-  readonly valueOf: (point: StripSegment['point']) => number;
-}) {
-  return (
-    <div className="mt-3">
-      <p className="mb-1 text-xs text-ink-muted">{label}</p>
-      <div className="flex h-8 overflow-hidden rounded border border-border-strong">
-        {segments.map(({ point, gapBefore }) => {
-          const value = valueOf(point);
-          return (
-            <div key={point.distance_along_km} className="flex h-full flex-1">
-              {gapBefore && (
-                <div
-                  className="h-full w-3 bg-surface-sunken"
-                  title="No station in range — unknown, not clean"
-                />
-              )}
-              <div
-                className="h-full flex-1"
-                style={{ backgroundColor: aqiColour(value) }}
-                title={`${point.distance_along_km.toFixed(1)} km · ${value.toFixed(0)} µg/m³ · ${aqiBand(value)}`}
-              />
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/**
- * When to travel, if the day's shape supports an answer.
- *
- * This is the one decision the forecast is genuinely equipped to inform.
- * Climatology has no day-to-day skill, so it cannot say whether tomorrow will be
- * bad — but it does resolve the shape of an average day, and "is the evening
- * usually better than the afternoon on this route" is exactly a question about
- * that shape.
- *
- * When the day is flat, no hour is named. Naming one on a difference smaller
- * than the forecast's own error would dress noise as advice, and advice gets
- * acted on.
- */
-function ExposurePanel({
-  advisory,
-  isLoading,
-}: {
-  readonly advisory: ExposureAdvisory | null;
-  readonly isLoading: boolean;
-}) {
-  if (isLoading) {
-    return (
-      <div className="rounded-card border border-border bg-surface p-4">
-        <StatusMessage kind="loading" title="Comparing departure times…" />
-      </div>
-    );
-  }
-  if (!advisory) return null;
-
-  const peak = Math.max(...advisory.options.map((option) => option.exposure), 1);
-
-  return (
-    <section className="rounded-card border border-border bg-surface p-4">
-      <h3 className="text-sm font-semibold">When to travel</h3>
-
-      <p
-        className={`mt-2 rounded px-2 py-1.5 text-sm ${
-          advisory.is_actionable ? 'bg-ok-subtle text-ok' : 'bg-surface-sunken text-ink'
-        }`}
-      >
-        {advisory.explanation}
-      </p>
-
-      <div className="mt-3 space-y-1">
-        {advisory.options.map((option) => {
-          const isBest = advisory.is_actionable && option.hour === advisory.best_hour;
-          const isWorst = advisory.is_actionable && option.hour === advisory.worst_hour;
-          return (
-            <div key={option.hour} className="flex items-center gap-2">
-              <span className="w-12 shrink-0 text-xs tabular-nums text-ink-muted">
-                {String(option.hour).padStart(2, '0')}:00
-              </span>
-              <div className="h-4 flex-1 overflow-hidden rounded bg-surface-sunken">
-                <div
-                  className={`h-full ${
-                    isBest ? 'bg-ok-subtle0' : isWorst ? 'bg-danger' : 'bg-ink-subtle'
-                  }`}
-                  style={{
-                    width: `${String((option.exposure / peak) * 100)}%`,
-                  }}
-                  title={`${option.mean_concentration.toFixed(0)} µg/m³ average over ${option.travel_minutes.toFixed(0)} minutes`}
-                />
-              </div>
-              <span className="w-28 shrink-0 text-right text-xs tabular-nums text-ink-muted">
-                {option.mean_concentration.toFixed(0)} µg/m³ avg
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      <p className="mt-3 text-xs text-ink-muted">
-        Bars are exposure: concentration multiplied by the time spent in it, assuming a{' '}
-        {advisory.options[0]
-          ? `${advisory.options[0].travel_minutes.toFixed(0)}-minute`
-          : 'typical'}{' '}
-        journey. Not micrograms inhaled — that needs a breathing rate which depends on the person,
-        and inventing one would add a made-up factor to a number that is useful without it.
-      </p>
-    </section>
   );
 }

@@ -399,6 +399,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/citizen/sensor-readings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent readings from household sensors
+         * @description Readings over a recent window, newest first, with the tier's bias so far.
+         */
+        get: operations["list_readings_v1_citizen_sensor_readings_get"];
+        put?: never;
+        /**
+         * Submit a reading from a household air-quality sensor
+         * @description Store a reading as reported and compare it with the nearest reference monitor.
+         */
+        post: operations["submit_reading_v1_citizen_sensor_readings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/federation/status": {
         parameters: {
             query?: never;
@@ -459,10 +483,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/operator/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check an operator key
+         * @description Return 200 for a valid key; 401 or 403 otherwise, from the dependency.
+         */
+        get: operations["operator_session_v1_operator_session_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AlertKind
+         * @description Why an authority received an alert.
+         *
+         *     ``local``: the hotspot is on its ground. ``coordination``: the hotspot is on
+         *     someone else's ground, but the likeliest upwind source is on this one, so the
+         *     body able to inspect the source is asked to act for a neighbour. Pollution
+         *     does not stop at a district line, and neither can the response.
+         * @enum {string}
+         */
+        AlertKind: "local" | "coordination";
         /**
          * AlertResponse
          * @description One alert with the context needed to act on it.
@@ -536,6 +591,21 @@ export interface components {
             resolved_at?: string | null;
             /** Resolution Note */
             resolution_note?: string | null;
+            /**
+             * @description local: the hotspot is on this authority's ground. coordination: the hotspot is on a neighbour's ground, and this authority holds its likeliest upwind source.
+             * @default local
+             */
+            kind: components["schemas"]["AlertKind"];
+            /**
+             * Source Name
+             * @description For a coordination request, the source to inspect.
+             */
+            source_name?: string | null;
+            /**
+             * Source Confidence
+             * @description How plausible attribution judged that source, in [0, 1). A ranked candidate, never an established cause.
+             */
+            source_confidence?: number | null;
         };
         /**
          * AlertStatus
@@ -728,6 +798,30 @@ export interface components {
             default_pollutant: components["schemas"]["Pollutant"];
         };
         /**
+         * ColocationResponse
+         * @description What the tier's co-located pairs say about its bias so far.
+         */
+        ColocationResponse: {
+            /** Pairs */
+            pairs: number;
+            /** Pairs Needed */
+            pairs_needed: number;
+            /**
+             * Median Ratio
+             * @description Median sensor / reference. Above 1 means sensors read high.
+             */
+            median_ratio?: number | null;
+            /**
+             * Median Difference
+             * @description Median sensor - reference, in ug/m3.
+             */
+            median_difference?: number | null;
+            /** Is Established */
+            is_established: boolean;
+            /** Explanation */
+            explanation: string;
+        };
+        /**
          * CorridorForecastResponse
          * @description A corridor outlook.
          */
@@ -827,6 +921,12 @@ export interface components {
              * @description Hotspots inside no registered jurisdiction. Reported rather than dropped: an incomplete authority registry must not read as a quiet day.
              */
             unrouted: number;
+            /**
+             * Coordination Requests
+             * @description Of the alerts raised, how many ask a neighbouring jurisdiction to act on a source on its ground.
+             * @default 0
+             */
+            coordination_requests: number;
         };
         /**
          * ExchangeMetadata
@@ -952,6 +1052,16 @@ export interface components {
             upper_bound: number;
             /** Category */
             category: string;
+            /**
+             * Aqi
+             * @description CPCB sub-index of the forecast value. A concentration is not an index: a client colouring by band must use this, not the value in ug/m3.
+             */
+            aqi: number;
+            /**
+             * Upper Bound Aqi
+             * @description CPCB sub-index of the upper bound.
+             */
+            upper_bound_aqi: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1454,6 +1564,14 @@ export interface components {
             dominant_pollutant: components["schemas"]["Pollutant"] | null;
         };
         /**
+         * OperatorSessionResponse
+         * @description Confirmation that the presented key is valid.
+         */
+        OperatorSessionResponse: {
+            /** Authorised */
+            authorised: boolean;
+        };
+        /**
          * PilotCity
          * @description A city this deployment ingests, analyses and can scope a view to.
          * @enum {string}
@@ -1541,6 +1659,28 @@ export interface components {
              * @description Null when no comparison was possible -- either no calibration exists or the monitor reported nothing usable. An uncomparable submission is not a disagreement.
              */
             agrees?: boolean | null;
+        };
+        /**
+         * ReferencePairResponse
+         * @description The reference reading a citizen sensor reading was compared with.
+         */
+        ReferencePairResponse: {
+            /** Station Name */
+            station_name: string;
+            /** Value */
+            value: number;
+            /**
+             * Observed At
+             * Format: date-time
+             */
+            observed_at: string;
+            /** Distance M */
+            distance_m: number;
+            /**
+             * Relative Difference
+             * @description (sensor - reference) / reference. Null when the monitor read zero, where a ratio is undefined rather than enormous.
+             */
+            relative_difference?: number | null;
         };
         /**
          * RejectionResponse
@@ -1638,6 +1778,128 @@ export interface components {
             series: components["schemas"]["SatelliteDayResponse"][];
             /** Cells */
             cells: components["schemas"]["SatelliteCellResponse"][];
+        };
+        /**
+         * SensorReadingAccepted
+         * @description What happened to a submitted reading.
+         */
+        SensorReadingAccepted: {
+            /** Reading Id */
+            reading_id: number;
+            /** H3 Cell */
+            h3_cell: string;
+            /**
+             * Observed At
+             * Format: date-time
+             */
+            observed_at: string;
+            pollutant: components["schemas"]["Pollutant"];
+            /** Value Ugm3 */
+            value_ugm3: number;
+            /**
+             * Raw Aqi
+             * @description The CPCB sub-index this raw value would carry, before any correction.
+             */
+            raw_aqi: number;
+            /**
+             * Is Calibrated
+             * @default false
+             * @constant
+             */
+            is_calibrated: false;
+            /** @description Null when no reference monitor reported within range and time. */
+            reference?: components["schemas"]["ReferencePairResponse"] | null;
+            colocation: components["schemas"]["ColocationResponse"];
+        };
+        /**
+         * SensorReadingRequest
+         * @description One reading from a household particulate sensor.
+         */
+        SensorReadingRequest: {
+            /** Longitude */
+            longitude: number;
+            /** Latitude */
+            latitude: number;
+            /**
+             * Pollutant
+             * @description Household sensors count particles, so only PM2.5 and PM10 are accepted.
+             * @enum {string}
+             */
+            pollutant: "pm25" | "pm10";
+            /**
+             * Value Ugm3
+             * @description The reading as displayed, in ug/m3.
+             */
+            value_ugm3: number;
+            /**
+             * Observed At
+             * Format: date-time
+             * @description When the sensor measured, timezone-aware. Not the upload time.
+             */
+            observed_at: string;
+            /** Device Id */
+            device_id: string;
+            /**
+             * Sensor Model
+             * @description What the instrument is, for example 'AirGradient ONE'.
+             */
+            sensor_model: string;
+        };
+        /**
+         * SensorReadingSummary
+         * @description One reading in the public list.
+         */
+        SensorReadingSummary: {
+            /** Reading Id */
+            reading_id: number;
+            position: components["schemas"]["Position"];
+            /** H3 Cell */
+            h3_cell: string;
+            /**
+             * Observed At
+             * Format: date-time
+             */
+            observed_at: string;
+            /** Sensor Model */
+            sensor_model: string;
+            /** Value Ugm3 */
+            value_ugm3: number;
+            /** Raw Aqi */
+            raw_aqi: number;
+            /** Raw Category */
+            raw_category: string;
+            /**
+             * Is Calibrated
+             * @default false
+             * @constant
+             */
+            is_calibrated: false;
+            /** Reference Station Name */
+            reference_station_name: string | null;
+            /** Reference Value */
+            reference_value: number | null;
+            /** Reference Distance M */
+            reference_distance_m: number | null;
+        };
+        /**
+         * SensorReadingsResponse
+         * @description Recent citizen sensor readings, with the tier's measured bias.
+         */
+        SensorReadingsResponse: {
+            pollutant: components["schemas"]["Pollutant"];
+            city: components["schemas"]["PilotCity"] | null;
+            /** Window Hours */
+            window_hours: number;
+            /** Reading Count */
+            reading_count: number;
+            /** Readings */
+            readings: components["schemas"]["SensorReadingSummary"][];
+            colocation: components["schemas"]["ColocationResponse"];
+            /**
+             * Note
+             * @description Why these readings are shown but excluded from every estimate.
+             */
+            note: string;
         };
         /**
          * SlaBreachResponse
@@ -2074,7 +2336,9 @@ export interface operations {
                 pollutant?: components["schemas"]["Pollutant"];
                 window_hours?: number;
             };
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2103,7 +2367,9 @@ export interface operations {
     deliver_v1_alerts_deliver_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2118,12 +2384,23 @@ export interface operations {
                     "application/json": components["schemas"]["DeliveryResponse"];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     acknowledge_v1_alerts__alert_id__acknowledge_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path: {
                 alert_id: number;
             };
@@ -2154,7 +2431,9 @@ export interface operations {
     resolve_v1_alerts__alert_id__resolve_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path: {
                 alert_id: number;
             };
@@ -2405,6 +2684,72 @@ export interface operations {
             };
         };
     };
+    list_readings_v1_citizen_sensor_readings_get: {
+        parameters: {
+            query?: {
+                pollutant?: components["schemas"]["Pollutant"];
+                window_hours?: number;
+                city?: components["schemas"]["PilotCity"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SensorReadingsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_reading_v1_citizen_sensor_readings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SensorReadingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SensorReadingAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     status_v1_federation_status_get: {
         parameters: {
             query?: {
@@ -2487,6 +2832,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OfficialAqiResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    operator_session_v1_operator_session_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorSessionResponse"];
                 };
             };
             /** @description Validation Error */

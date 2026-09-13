@@ -1,64 +1,75 @@
 @import 'tailwindcss';
 @import 'leaflet/dist/leaflet.css';
-@import '@fontsource-variable/inter';
+@import '@fontsource-variable/instrument-sans';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
 
 /*
  * Design tokens.
  *
- * Defined here rather than scattered through components so a colour has one
- * definition. The CPCB band colours are the exception worth calling out: they
- * are duplicated in `lib/aqi.ts` because Leaflet markers need them as
- * JavaScript values, and they are the same six hex codes in both places on
- * purpose -- the band a reading falls in must look identical wherever it is
- * drawn, or two views of the same number appear to disagree.
+ * The interface is meant to read like a field notebook kept by a monitoring
+ * desk rather than a product dashboard: warm paper, hairline rules, figures set
+ * in a monospace so columns of concentrations line up, and almost no colour of
+ * its own. The only saturated colours on screen are the six CPCB bands, because
+ * those are the colours that carry meaning -- anything else competing with them
+ * makes a "Poor" reading harder to see.
  *
- * The palette is deliberately restrained. This is a tool someone uses to decide
- * whether to send an inspector somewhere, and the only colours that should pull
- * the eye are the ones carrying air-quality meaning.
+ * The band colours are duplicated in `lib/aqi.ts`, because Leaflet markers need
+ * them as JavaScript values. They are the same six hex codes on purpose: a band
+ * must look identical wherever it is drawn.
  */
 @theme {
-  /* Neutral scale: cool grey, so the warm AQI bands stay visually separate. */
-  --color-surface: #ffffff;
-  --color-surface-sunken: #f6f7f9;
-  --color-surface-raised: #ffffff;
-  --color-border: #e3e6ea;
-  --color-border-strong: #cbd1d8;
+  /* Paper and panels. Warm rather than cool grey, so the bands stay the only
+     colour on the page and the page does not look like a stock admin template. */
+  --color-paper: #f4f1ea;
+  --color-surface: #fffdf8;
+  --color-surface-raised: #fffdf8;
+  --color-surface-sunken: #ebe7dd;
+  --color-border: #dcd6c8;
+  --color-border-strong: #bfb8a6;
 
-  --color-ink: #14181d;
-  --color-ink-muted: #5b646f;
-  --color-ink-subtle: #869099;
+  --color-ink: #1c1b17;
+  --color-ink-muted: #57544a;
+  --color-ink-subtle: #8a8577;
 
-  /* One accent, used for interaction only -- never to encode data. */
-  --color-accent: #0f5c6e;
-  --color-accent-hover: #0c4a59;
-  --color-accent-subtle: #e6f1f4;
+  /* One accent, for interaction only -- links, focus, the selected control.
+     Never used to encode a measurement. */
+  --color-accent: #28457a;
+  --color-accent-hover: #1d3560;
+  --color-accent-subtle: #e4e8f0;
 
-  /* Navigation chrome: a deep teal-slate, so the shell recedes and the data
-     surfaces -- white, with the AQI colours on them -- carry the eye. */
-  --color-chrome: #0b2530;
-  --color-chrome-raised: #12333f;
-  --color-chrome-border: #1d4250;
-  --color-chrome-ink: #e8f1f3;
-  --color-chrome-muted: #93acb4;
+  /* The mark colour: a hotspot, and the brand. Kept apart from "danger" so a
+     detected anomaly is not visually identical to a failed request. */
+  --color-signal: #c24a1c;
+  --color-signal-subtle: #f7e6dc;
 
-  /* State colours, for the three outcomes that must never look alike. */
-  --color-danger: #b3261e;
-  --color-danger-subtle: #fdecea;
-  --color-warn: #8a5300;
-  --color-warn-subtle: #fdf3e3;
-  --color-ok: #1f6b4a;
-  --color-ok-subtle: #e8f5ee;
+  /* State colours, for the outcomes that must never look alike. */
+  --color-danger: #a8261d;
+  --color-danger-subtle: #f6e1dc;
+  --color-warn: #86560a;
+  --color-warn-subtle: #f5ead3;
+  --color-ok: #2d6440;
+  --color-ok-subtle: #e2eee2;
+
+  /* CPCB bands, matching lib/aqi.ts. */
+  --color-band-good: #3ba272;
+  --color-band-satisfactory: #8bc34a;
+  --color-band-moderate: #e2b93b;
+  --color-band-poor: #e07b39;
+  --color-band-very-poor: #d1495b;
+  --color-band-severe: #8b2635;
 
   --font-sans:
-    'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
-    Arial, sans-serif;
-  --font-mono: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Menlo, Consolas, monospace;
+    'Instrument Sans Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono:
+    'IBM Plex Mono', ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Menlo, Consolas, monospace;
 
-  --radius-card: 0.75rem;
+  --radius-card: 0.375rem;
 
-  --shadow-card: 0 1px 2px rgb(16 24 32 / 0.04), 0 1px 3px rgb(16 24 32 / 0.06);
-  --shadow-raised: 0 4px 12px rgb(16 24 32 / 0.08), 0 1px 3px rgb(16 24 32 / 0.06);
-  --shadow-overlay: 0 12px 32px rgb(16 24 32 / 0.16);
+  --shadow-card: 0 1px 0 rgb(28 27 23 / 0.04);
+  --shadow-raised: 0 2px 8px rgb(28 27 23 / 0.08);
+  --shadow-overlay: 0 10px 30px rgb(28 27 23 / 0.16);
 }
 
 /* The map fills its container; Leaflet needs an explicit height to render. */
@@ -69,15 +80,29 @@
   background: var(--color-surface-sunken);
 }
 
-/* Leaflet's default popup chrome is heavier than the rest of the interface. */
+/* Muted tiles, so the band-coloured markers are what the eye finds first. */
+.leaflet-tile-pane {
+  filter: saturate(0.55) contrast(0.95) brightness(1.02);
+}
+
 .leaflet-popup-content-wrapper {
   border-radius: var(--radius-card);
-  box-shadow: 0 6px 24px rgb(20 24 29 / 0.14);
+  box-shadow: var(--shadow-overlay);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.leaflet-popup-tip {
+  background: var(--color-surface);
 }
 
 .leaflet-popup-content {
   margin: 0.75rem 0.875rem;
   line-height: 1.45;
+}
+
+.leaflet-control-zoom a {
+  color: var(--color-ink);
 }
 
 @layer base {
@@ -86,21 +111,17 @@
   }
 
   body {
-    background: var(--color-surface-sunken);
+    background: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-sans);
-    /* Tabular figures everywhere: columns of concentrations are read by
-       comparing digits in place, and proportional numerals make that harder. */
-    font-variant-numeric: tabular-nums;
-    font-feature-settings: 'cv11', 'ss01';
+    font-feature-settings: 'ss01';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   /*
    * A visible focus ring on every interactive element. Keyboard operation is
-   * not optional for a console an official may use all day, and the browser
-   * default ring disappears against the accent colour.
+   * not optional for a console an official may use all day.
    */
   :where(a, button, input, select, textarea, [tabindex]):focus-visible {
     outline: 2px solid var(--color-accent);
@@ -108,7 +129,6 @@
     border-radius: 0.25rem;
   }
 
-  /* Respect a stated preference for less motion. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -117,5 +137,38 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
+  }
+}
+
+@layer utilities {
+  /* Figures: monospace with tabular digits, so values line up in columns. */
+  .figure {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  /* The small uppercase label that opens a section, like a report's running head. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-subtle);
+  }
+
+  /* A row that scrolls sideways on a phone without drawing a scrollbar under it. */
+  .scroll-row {
+    scrollbar-width: none;
+  }
+
+  .scroll-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Room for the phone's home indicator below the bottom navigation. */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }

@@ -21,9 +21,11 @@ export function OperatorSignIn() {
 
   if (isOperator) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-ok/30 bg-ok-subtle px-3 py-2 text-sm text-ok">
-        <KeyRound aria-hidden className="size-4" />
-        <span className="font-medium">Signed in as operator</span>
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-card border border-ok/30 bg-ok-subtle px-3 py-2 text-sm text-ok">
+        <span className="inline-flex items-center gap-2 font-medium">
+          <KeyRound aria-hidden className="size-4" />
+          Signed in as operator
+        </span>
         <Button variant="ghost" onClick={signOut}>
           <LogOut aria-hidden className="size-3.5" />
           Sign out
@@ -33,10 +35,10 @@ export function OperatorSignIn() {
   }
 
   return (
-    <div className="rounded-lg border border-border bg-surface-sunken px-3 py-2.5">
+    <div className="rounded-card border border-border bg-surface px-3 py-2.5 sm:px-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-ink-muted">
-          Read-only. Operators sign in to acknowledge, resolve and run detection.
+        <p className="text-[13px] text-ink-muted">
+          You are reading the trail. Operators sign in to acknowledge, resolve and run detection.
         </p>
         {!isOpen && (
           <Button
@@ -52,7 +54,7 @@ export function OperatorSignIn() {
 
       {isOpen && (
         <form
-          className="mt-2.5 flex flex-wrap items-end gap-2"
+          className="mt-3 flex flex-wrap items-end gap-2 border-t border-border pt-3"
           onSubmit={(event) => {
             event.preventDefault();
             setIsChecking(true);
@@ -74,7 +76,7 @@ export function OperatorSignIn() {
               });
           }}
         >
-          <label className="min-w-64 flex-1" htmlFor={fieldId}>
+          <label className="min-w-0 flex-1 basis-56" htmlFor={fieldId}>
             <span className="text-xs font-medium text-ink-muted">Operator key</span>
             <input
               id={fieldId}
@@ -84,7 +86,7 @@ export function OperatorSignIn() {
               onChange={(event) => {
                 setKey(event.target.value);
               }}
-              className="mt-1 w-full rounded-md border border-border-strong bg-surface px-2.5 py-1.5 text-sm text-ink"
+              className="figure mt-1 min-h-10 w-full rounded-sm border border-border-strong bg-paper px-2.5 text-sm text-ink"
             />
           </label>
           <Button

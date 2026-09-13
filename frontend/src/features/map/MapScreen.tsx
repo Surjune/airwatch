@@ -1,35 +1,43 @@
-import { PollutantToggle } from '@/components/layout/PollutantToggle';
+import { useState } from 'react';
+
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { HotspotPanel } from '@/features/hotspots/HotspotPanel';
 import { NoHotspots } from '@/features/hotspots/NoHotspots';
+import { HotspotSheet } from '@/features/map/HotspotSheet';
+import { MapToolbar, type MapLayers } from '@/features/map/MapToolbar';
 import { MapView } from '@/features/map/MapView';
-import { useState } from 'react';
-
 import { useHotspots, useStations } from '@/hooks/useAnalysis';
+import { useCitizenSensors } from '@/hooks/useCitizenSensors';
 import { useLowCostSensors, useSatellite } from '@/hooks/useSources';
 import { pollutantLabel, useScope } from '@/lib/scope';
 
 /** Detection window, in hours. Two weeks, matching the ingested history. */
 const DETECTION_WINDOW_HOURS = 336;
+const HOURS_PER_DAY = 24;
 
 /**
  * The live map screen.
  *
- * The map and the hotspot list are one screen rather than two because they
- * answer one question between them: the map says where, the list says how far
- * above what was predicted, and neither is much use alone.
+ * The map and the hotspot list are one screen because they answer one question
+ * between them: the map says where, the list says how far above what was
+ * predicted, and neither is much use alone.
  *
- * Three states are kept visibly distinct. An API failure that renders as a
- * blank map would read as clean air, which is precisely the misreading this
- * system exists to prevent.
+ * A request failure is never drawn as an empty map, which would read as clean
+ * air -- the exact misreading this system exists to prevent.
  */
 export function MapScreen() {
   const { city, pollutant, current } = useScope();
+  const [layers, setLayers] = useState<MapLayers>({
+    sensors: true,
+    residents: true,
+    satellite: false,
+  });
+
   const stations = useStations(pollutant, city);
   const hotspots = useHotspots(DETECTION_WINDOW_HOURS, pollutant, city);
   const sensors = useLowCostSensors(pollutant, city);
-  const [showSatellite, setShowSatellite] = useState(false);
+  const residents = useCitizenSensors(pollutant, city);
   const satellite = useSatellite(city, 'no2');
 
   const failure = stations.error ?? hotspots.error;
@@ -39,42 +47,22 @@ export function MapScreen() {
   const cityLabel = current?.label ?? '…';
 
   return (
-    <div className="flex h-full min-h-0 flex-col lg:flex-row">
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-border bg-surface px-4 py-3 sm:px-6">
-          <div>
-            <h1 className="text-lg font-semibold tracking-tight text-ink">
-              Live map · {cityLabel}
-            </h1>
-            <p className="text-xs text-ink-muted">
-              Latest {label} at each station · hotspots over the last{' '}
-              {String(Math.round(DETECTION_WINDOW_HOURS / 24))} days
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <PollutantToggle />
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface-sunken px-3 py-1.5 text-xs font-medium text-ink-muted">
-              <input
-                type="checkbox"
-                checked={showSatellite}
-                onChange={(event) => {
-                  setShowSatellite(event.target.checked);
-                }}
-                className="accent-violet-600"
-              />
-              Satellite NO₂
-            </label>
-            <Pill label="Stations reporting" value={stations.data?.station_count} />
-            <Pill label="Low-cost sensors" value={sensors.data?.sensor_count} />
-            <Pill
-              label="Hotspots"
-              value={hotspots.data?.hotspot_count}
-              danger={detected.length > 0}
-            />
-          </div>
-        </div>
+    <div className="flex h-full min-h-0 flex-col">
+      <MapToolbar
+        cityLabel={cityLabel}
+        pollutantLabel={label}
+        windowDays={Math.round(DETECTION_WINDOW_HOURS / HOURS_PER_DAY)}
+        layers={layers}
+        onLayersChange={setLayers}
+        counts={{
+          monitors: stations.data?.station_count,
+          sensors: sensors.data?.sensor_count,
+          residents: residents.data?.reading_count,
+        }}
+      />
 
-        <div className="min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1">
+        <div className="min-h-0 min-w-0 flex-1">
           {failure ? (
             <div className="p-4 sm:p-6">
               <StatusMessage
@@ -99,30 +87,18 @@ export function MapScreen() {
               centre={[current.centre.longitude, current.centre.latitude]}
               radiusM={current.radius_m}
               pollutantLabel={label}
-              sensors={sensors.data?.readings ?? []}
+              sensors={layers.sensors ? (sensors.data?.readings ?? []) : []}
+              residents={layers.residents ? (residents.data?.readings ?? []) : []}
               satellite={
-                showSatellite && satellite.data
+                layers.satellite && satellite.data
                   ? { cells: satellite.data.cells, product: 'no2' }
                   : null
               }
             />
           )}
         </div>
-      </div>
 
-      <aside
-        aria-label="Detected hotspots"
-        className="flex max-h-[45vh] min-h-0 shrink-0 flex-col border-t border-border bg-surface lg:max-h-none lg:w-[26rem] lg:border-l lg:border-t-0"
-      >
-        <div className="shrink-0 border-b border-border px-4 py-3">
-          <h2 className="text-sm font-semibold text-ink">Detected hotspots</h2>
-          <p className="mt-0.5 text-xs text-ink-muted">
-            Ranked by how far above the surrounding network&rsquo;s prediction each sits, not by
-            concentration
-          </p>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <HotspotSheet count={hotspots.data?.hotspot_count}>
           {failure ? (
             <div className="p-4">
               <StatusMessage kind="error" title="Hotspot detection unavailable" />
@@ -143,28 +119,8 @@ export function MapScreen() {
           ) : (
             <HotspotPanel hotspots={detected} />
           )}
-        </div>
-      </aside>
+        </HotspotSheet>
+      </div>
     </div>
-  );
-}
-
-/** A compact figure for the map toolbar, where a full stat block would cost map height. */
-function Pill({
-  label,
-  value,
-  danger = false,
-}: {
-  readonly label: string;
-  readonly value: number | undefined;
-  readonly danger?: boolean;
-}) {
-  return (
-    <span className="inline-flex items-baseline gap-2 rounded-lg border border-border bg-surface-sunken px-3 py-1.5">
-      <span className={`text-base font-semibold ${danger ? 'text-danger' : 'text-ink'}`}>
-        {value ?? '—'}
-      </span>
-      <span className="text-xs text-ink-muted">{label}</span>
-    </span>
   );
 }

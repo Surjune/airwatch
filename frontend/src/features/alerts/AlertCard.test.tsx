@@ -27,6 +27,9 @@ function makeAlert(overrides: Partial<Alert> = {}): Alert {
     acknowledged_at: null,
     resolved_at: null,
     resolution_note: null,
+    kind: 'local',
+    source_name: null,
+    source_confidence: null,
     ...overrides,
   };
 }
@@ -52,6 +55,26 @@ describe('AlertCard', () => {
     expect(screen.getByText('381 µg/m³')).toBeInTheDocument();
     expect(screen.getByText('40')).toBeInTheDocument();
     expect(screen.getByText('341 µg/m³')).toBeInTheDocument();
+  });
+
+  it('says when it is asking a neighbour to act on a source on its ground', () => {
+    renderCard(
+      makeAlert({
+        kind: 'coordination',
+        authority_name: 'Ghaziabad District',
+        source_name: 'Brick kiln cluster',
+        source_confidence: 0.72,
+      }),
+    );
+    expect(screen.getByText(/coordination request/i)).toBeInTheDocument();
+    expect(screen.getByText('Brick kiln cluster')).toBeInTheDocument();
+    expect(screen.getByText(/72% plausible/)).toBeInTheDocument();
+    expect(screen.getByText(/not an established cause/i)).toBeInTheDocument();
+  });
+
+  it('does not describe a local alert as a coordination request', () => {
+    renderCard(makeAlert());
+    expect(screen.queryByText(/coordination request/i)).not.toBeInTheDocument();
   });
 
   it('names ground no station covers instead of leaving the title blank', () => {

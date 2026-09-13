@@ -15,6 +15,23 @@ export function istDateTime(iso: string): string {
   });
 }
 
+/** The running head on the overview: "Sun 13 Sep · 18:45 IST". */
+export function istDateline(now: Date = new Date()): string {
+  const day = now.toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+  const time = now.toLocaleTimeString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  return `${day.replace(',', '')} · ${time} IST`;
+}
+
 /** How long ago an instant was, coarsely, for "updated 3 h ago" labels. */
 export function timeAgo(iso: string, now: Date = new Date()): string {
   const minutes = Math.round((now.getTime() - new Date(iso).getTime()) / 60_000);

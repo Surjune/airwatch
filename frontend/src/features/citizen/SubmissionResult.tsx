@@ -13,7 +13,7 @@ export function SubmissionResult({ outcome }: { readonly outcome: SubmissionOutc
   const { report } = outcome;
 
   return (
-    <section className="rounded-card border border-ok/30 bg-surface p-5 shadow-card">
+    <section className="rounded-card border border-ok/30 bg-surface p-4 sm:p-5" aria-live="polite">
       <h2 className="flex items-center gap-2 text-sm font-semibold text-ok">
         <CircleCheck aria-hidden className="size-4" />
         Photograph measured
@@ -22,14 +22,16 @@ export function SubmissionResult({ outcome }: { readonly outcome: SubmissionOutc
       <dl className="mt-4 grid gap-4 sm:grid-cols-2">
         <div>
           <dt className="text-xs font-medium text-ink-subtle">Atmospheric haze</dt>
-          <dd className="mt-0.5 text-2xl font-semibold text-ink">{report.haze_index.toFixed(2)}</dd>
+          <dd className="figure mt-0.5 text-2xl font-medium text-ink">
+            {report.haze_index.toFixed(2)}
+          </dd>
           <p className="text-xs text-ink-muted">0 is perfectly clear air, 1 fully obscured</p>
         </div>
         <div>
           <dt className="text-xs font-medium text-ink-subtle">Estimated PM2.5</dt>
           {report.estimate ? (
             <>
-              <dd className="mt-0.5 text-2xl font-semibold text-ink">
+              <dd className="figure mt-0.5 text-2xl font-medium text-ink">
                 {report.estimate.value.toFixed(0)}
                 <span className="ml-1 text-sm font-normal text-ink-muted">
                   ± {report.estimate.uncertainty.toFixed(0)} µg/m³
@@ -43,7 +45,7 @@ export function SubmissionResult({ outcome }: { readonly outcome: SubmissionOutc
             </>
           ) : (
             <>
-              <dd className="mt-0.5 text-2xl font-semibold text-ink-subtle">—</dd>
+              <dd className="figure mt-0.5 text-2xl font-medium text-ink-subtle">—</dd>
               <p className="text-xs text-ink-muted">
                 Not derivable yet. This submission is one of the pairs that will make it possible.
               </p>

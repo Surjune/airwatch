@@ -32,7 +32,7 @@ export function PhotoDropzone({ file, onChange }: PhotoDropzoneProps) {
 
   if (file && preview) {
     return (
-      <div className="relative overflow-hidden rounded-lg border border-border bg-surface-sunken">
+      <div className="relative overflow-hidden rounded-sm border border-border bg-surface-sunken">
         <img
           src={preview}
           alt="The photograph to submit"
@@ -73,17 +73,19 @@ export function PhotoDropzone({ file, onChange }: PhotoDropzoneProps) {
         const dropped = event.dataTransfer.files[0];
         if (dropped?.type.startsWith('image/')) onChange(dropped);
       }}
-      className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 text-center transition-colors ${
+      className={`flex cursor-pointer flex-col items-center justify-center rounded-sm border border-dashed px-6 py-9 text-center transition-colors ${
         isDragging
-          ? 'border-accent bg-accent-subtle'
-          : 'border-border-strong bg-surface-sunken hover:border-accent hover:bg-accent-subtle/60'
+          ? 'border-ink bg-surface-sunken'
+          : 'border-border-strong bg-paper hover:border-ink/60'
       }`}
     >
-      <span className="flex size-11 items-center justify-center rounded-full bg-surface text-accent shadow-card">
-        <ImageUp aria-hidden className="size-5" />
-      </span>
+      <ImageUp aria-hidden className="size-6 text-ink-muted" strokeWidth={1.6} />
       <span className="mt-3 text-sm font-medium text-ink">
-        Drop a photograph here, or <span className="text-accent">browse</span>
+        <span className="sm:hidden">Take or choose a photograph</span>
+        <span className="hidden sm:inline">
+          Drop a photograph here, or{' '}
+          <span className="underline decoration-ink/30 underline-offset-4">browse</span>
+        </span>
       </span>
       <span className="mt-1 text-xs text-ink-subtle">JPEG or PNG, up to 10 MB</span>
       <input

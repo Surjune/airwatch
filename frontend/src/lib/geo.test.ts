@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  distanceM,
   fromLeaflet,
   isWithinIndia,
   polygonToLeaflet,
@@ -38,6 +39,22 @@ describe('coordinate order', () => {
     expect(polygon).toHaveLength(1);
     expect(polygon[0]).toHaveLength(3);
     expect(polygon[0]?.[0]).toEqual([28.6139, 77.209]);
+  });
+});
+
+describe('distanceM', () => {
+  it('is zero from a point to itself', () => {
+    expect(distanceM(COIMBATORE, COIMBATORE)).toBe(0);
+  });
+
+  it('measures Delhi to Coimbatore at about 1,960 km', () => {
+    // The published great-circle distance is ~1,960 km; a swapped coordinate
+    // pair would put it thousands of kilometres out.
+    expect(distanceM(DELHI, COIMBATORE) / 1000).toBeCloseTo(1960, -2);
+  });
+
+  it('is symmetric', () => {
+    expect(distanceM(DELHI, COIMBATORE)).toBeCloseTo(distanceM(COIMBATORE, DELHI), 6);
   });
 });
 

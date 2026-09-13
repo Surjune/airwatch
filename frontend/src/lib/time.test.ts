@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import { istDateTime, timeAgo } from './time';
+import { istDateline, istDateTime, timeAgo } from './time';
 
 describe('istDateTime', () => {
   it('shifts UTC to India Standard Time', () => {
     // 18:30 UTC is midnight the next day in IST (UTC+05:30).
     expect(istDateTime('2026-09-12T18:30:00Z')).toMatch(/13 Sept?.*12:00\s?am/i);
+  });
+});
+
+describe('istDateline', () => {
+  it('writes the day and the 24-hour time in IST', () => {
+    // 13:15 UTC on a Sunday is 18:45 IST the same day.
+    expect(istDateline(new Date('2026-09-13T13:15:00Z'))).toMatch(/^Sun 13 Sept? · 18:45 IST$/);
   });
 });
 

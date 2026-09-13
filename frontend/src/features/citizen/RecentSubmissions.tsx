@@ -3,18 +3,19 @@ import { Card } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import type { CitizenReport } from '@/hooks/useCitizen';
+import { timeAgo } from '@/lib/time';
 
-const SHOWN = 12;
+const SHOWN = 10;
 
 interface RecentSubmissionsProps {
   readonly reports: readonly CitizenReport[];
   readonly isLoading: boolean;
 }
 
-/** The last day's submissions, and which of them also shape the calibration. */
+/** The last day's photographs, and which of them also shape the calibration. */
 export function RecentSubmissions({ reports, isLoading }: RecentSubmissionsProps) {
   return (
-    <Card title="Recent submissions" description="The last 24 hours" flush>
+    <Card eyebrow="Last 24 hours" title="Photographs submitted" flush>
       {isLoading ? (
         <div className="p-4">
           <Skeleton label="Loading submissions" rows={3} />
@@ -32,14 +33,14 @@ export function RecentSubmissions({ reports, isLoading }: RecentSubmissionsProps
           {reports.slice(0, SHOWN).map((report) => (
             <li
               key={report.report_id}
-              className="flex items-center justify-between gap-3 px-4 py-2.5"
+              className="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5"
             >
-              <span className="flex items-center gap-2 text-sm text-ink">
-                Haze {report.haze_index.toFixed(2)}
+              <span className="flex min-w-0 items-center gap-2 text-[13px] text-ink">
+                Haze <span className="figure">{report.haze_index.toFixed(2)}</span>
                 {report.had_reference && <Badge tone="ok">also calibrates</Badge>}
               </span>
-              <span className="text-xs text-ink-subtle">
-                {report.position.latitude.toFixed(3)}, {report.position.longitude.toFixed(3)}
+              <span className="figure shrink-0 text-[11px] text-ink-subtle">
+                {timeAgo(report.captured_at)}
               </span>
             </li>
           ))}
