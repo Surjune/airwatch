@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.core.enums import Pollutant
 from app.repositories.session import get_db_session
 from app.schemas.federation import (
+    CandidateResultResponse,
     FederationStatusResponse,
     NodeCoverageResponse,
     TransferResultResponse,
@@ -55,12 +56,20 @@ def status(
             TransferResultResponse(
                 node=result.node,
                 local_mae=result.local_mae,
-                global_mae=result.global_mae,
-                improvement=result.improvement,
-                is_harmed=result.is_harmed,
-                recommendation=result.recommendation,
                 train_rows=result.train_rows,
                 test_rows=result.test_rows,
+                recommendation=result.recommendation,
+                candidates=[
+                    CandidateResultResponse(
+                        candidate=candidate.candidate,
+                        mae=candidate.mae,
+                        gain=candidate.estimate.gain,
+                        interval_low=candidate.estimate.low,
+                        interval_high=candidate.estimate.high,
+                        verdict=candidate.effect.value,
+                    )
+                    for candidate in result.candidates
+                ],
             )
             for result in current.transfer
         ],

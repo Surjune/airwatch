@@ -540,6 +540,39 @@ export interface components {
             explanation: string;
         };
         /**
+         * CandidateResultResponse
+         * @description One federated model against a node's own model, as measured.
+         */
+        CandidateResultResponse: {
+            /**
+             * Candidate
+             * @description global, fine-tuned, or local head.
+             */
+            candidate: string;
+            /**
+             * Mae
+             * @description Error of this model on the node's holdout, in ug/m3.
+             */
+            mae: number;
+            /**
+             * Gain
+             * @description How much better than the node's own model, in ug/m3. Negative is worse.
+             */
+            gain: number;
+            /** Interval Low */
+            interval_low: number;
+            /**
+             * Interval High
+             * @description 95% paired bootstrap interval on the gain. An interval that includes zero means the holdout cannot distinguish this from no effect.
+             */
+            interval_high: number;
+            /**
+             * Verdict
+             * @description helped or harmed only when the interval excludes zero and the effect is large enough to act on; otherwise inconclusive or no_practical_difference.
+             */
+            verdict: string;
+        };
+        /**
          * Capability
          * @description One exchange endpoint this node offers.
          */
@@ -1476,7 +1509,7 @@ export interface components {
         };
         /**
          * TransferResultResponse
-         * @description Whether the federated model helped one node, as measured.
+         * @description Every federated candidate for one node.
          */
         TransferResultResponse: {
             /** Node */
@@ -1486,27 +1519,17 @@ export interface components {
              * @description Error of the node's own model, in ug/m3.
              */
             local_mae: number;
-            /**
-             * Global Mae
-             * @description Error of the federated model on the same holdout.
-             */
-            global_mae: number;
-            /**
-             * Improvement
-             * @description Relative change from adopting the global model. Negative means worse.
-             */
-            improvement: number;
-            /** Is Harmed */
-            is_harmed: boolean;
-            /** Recommendation */
-            recommendation: string;
             /** Train Rows */
             train_rows: number;
             /**
              * Test Rows
-             * @description Published so a reader can weigh the result. A holdout of a few dozen rows is a signal, not a settled fact.
+             * @description Published so a reader can weigh every verdict. A holdout of a few dozen rows produces intervals too wide to establish most effects.
              */
             test_rows: number;
+            /** Recommendation */
+            recommendation: string;
+            /** Candidates */
+            candidates: components["schemas"]["CandidateResultResponse"][];
         };
         /**
          * UnitOfMeasurement

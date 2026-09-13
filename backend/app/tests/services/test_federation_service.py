@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.core.constants import PILOT_CITY_CENTRES, PILOT_REPORTING_WINDOW_HOURS
 from app.core.enums import Pollutant, StationTier
+from app.core.evidence import Effect
 from app.repositories import observation_repository, station_repository
 from app.repositories.observation_repository import MeasurementRow
 from app.services import federation_service
@@ -143,33 +144,57 @@ class TestSummary:
         assert "ingestion falling behind" in summary
         assert "rather than a gap in their network" in summary
 
-    def test_reports_the_harm_without_softening_it(self, session: Session) -> None:
-        # The measured result says federation hurt the sparse node. A dashboard
-        # that phrased that as provisional would be advertising a design rather
-        # than reporting a measurement.
+    def test_does_not_claim_an_effect_the_intervals_do_not_support(self, session: Session) -> None:
+        # An earlier summary read "federated averaging measurably harmed Kanpur",
+        # on 23 held-out rows whose interval spans zero. The summary now states
+        # only what the intervals establish, which is nothing either way.
         summary = federation_service.status(session).summary
 
-        assert "measurably harmed" in summary
-        assert "Kanpur" in summary
+        assert "measurably harmed" not in summary
+        assert "is established as helping or harming" in summary
 
 
 class TestTransferResults:
-    def test_the_sparse_node_is_flagged_as_harmed(self) -> None:
-        kanpur = next(r for r in federation_service.transfer_results() if r.node == "kanpur")
+    @staticmethod
+    def _node(name: str) -> federation_service.TransferResult:
+        return next(r for r in federation_service.transfer_results() if r.node == name)
 
-        assert kanpur.improvement < 0
-        assert kanpur.is_harmed is True
-        assert kanpur.recommendation == "keep the local model"
+    def test_kanpurs_plain_averaging_result_is_inconclusive(self) -> None:
+        # The corrected finding. The point estimate is worse, but the interval
+        # includes zero, so it is not evidence of harm.
+        plain = next(c for c in self._node("kanpur").candidates if c.candidate == "global")
 
-    def test_a_change_inside_the_noise_is_not_called_harm(self) -> None:
-        delhi = next(r for r in federation_service.transfer_results() if r.node == "delhi")
+        assert plain.estimate.gain < 0
+        assert plain.estimate.low < 0 < plain.estimate.high
+        assert plain.effect is Effect.INCONCLUSIVE
 
-        assert delhi.is_harmed is False
-        assert "noise" in delhi.recommendation
+    def test_every_kanpur_candidate_is_inconclusive(self) -> None:
+        # Including the local head, whose point estimate beats the local model.
+        # A better number on 23 rows is not an established improvement either.
+        assert all(
+            candidate.effect is Effect.INCONCLUSIVE for candidate in self._node("kanpur").candidates
+        )
+
+    def test_a_certain_but_tiny_difference_is_not_called_an_effect(self) -> None:
+        # Delhi's local head: 493 rows make the gain certain and still negligible.
+        head = next(c for c in self._node("delhi").candidates if c.candidate == "local head")
+
+        assert head.estimate.low > 0
+        assert head.effect is Effect.NO_PRACTICAL_DIFFERENCE
+
+    def test_without_evidence_the_node_keeps_its_own_model(self) -> None:
+        for name in ("delhi", "kanpur"):
+            assert "no evidence either way" in self._node(name).recommendation
+
+    def test_every_candidate_carries_an_interval(self) -> None:
+        for result in federation_service.transfer_results():
+            assert [c.candidate for c in result.candidates] == list(
+                federation_service.CANDIDATE_ORDER
+            )
+            for candidate in result.candidates:
+                assert candidate.estimate.low <= candidate.estimate.gain <= candidate.estimate.high
 
     def test_every_result_publishes_the_sample_it_rests_on(self) -> None:
-        # A holdout of a few dozen rows is a signal, not a settled fact, and a
-        # reader has to be able to see which they are being shown.
         for result in federation_service.transfer_results():
             assert result.train_rows > 0
             assert result.test_rows > 0

@@ -17,7 +17,6 @@ from app.core import aqi
 from app.core.config import Settings
 from app.core.constants import (
     H3_RESOLUTION,
-    PUBLISHED_FEDERATED_SPARSE_NODE_CHANGE,
     PUBLISHED_FORECAST_LEARNED_MAE_UGM3,
     PUBLISHED_FORECAST_MAE_UGM3,
     PUBLISHED_FORECAST_PERSISTENCE_MAE_UGM3,
@@ -338,10 +337,11 @@ def models(settings: Settings) -> ModelCatalogue:
                 ],
                 weights_withheld_because=(
                     "Climatology has no weight vector. The learned model that would have "
-                    "had one lost to it at every horizon, and federated averaging of that "
-                    "model measurably harmed the sparse node "
-                    f"({PUBLISHED_FEDERATED_SPARSE_NODE_CHANGE:+.1%} on its own holdout), "
-                    "so adopting it is not recommended on this evidence."
+                    "had one lost to it at every horizon. Federated averaging of that model, "
+                    "and two personalised variants of it, were each compared with the sparse "
+                    "node's own model; none is established as better or worse, because its "
+                    "23-row holdout gives intervals that span zero. With no evidence of "
+                    "benefit, adopting it is not recommended."
                 ),
                 limitations=[
                     "No day-to-day skill: the same value is predicted for a given hour on "

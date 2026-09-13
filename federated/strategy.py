@@ -174,6 +174,81 @@ def train_local(
     return weights
 
 
+def fine_tune(
+    global_weights: np.ndarray,
+    features: np.ndarray,
+    targets: np.ndarray,
+    *,
+    epochs: int,
+    learning_rate: float = 0.05,
+    l2: float = 0.01,
+    proximal_mu: float = 0.0,
+) -> np.ndarray:
+    """Personalise the global model to one node by continuing training locally.
+
+    The node starts from what the federation learned and takes a few steps on its
+    own data. This is the standard answer to non-IID harm: the shared model
+    supplies a starting point a sparse node could not reach alone, and the local
+    steps move it back toward the regime the node actually lives in. With a
+    non-zero ``proximal_mu`` the steps are anchored to the global model, so a
+    node with very little data cannot simply overfit its way back to local-only.
+
+    Args:
+        global_weights: The federated model, the starting point.
+        features: This node's standardised training features, with a bias column.
+        targets: This node's training targets. Never its held-out data.
+        epochs: Local steps.
+        learning_rate: Step size.
+        l2: Ridge penalty.
+        proximal_mu: Pull back toward the global model.
+
+    Returns:
+        The node's personalised weights. The global model is not modified.
+    """
+    return train_local(
+        features,
+        targets,
+        initial_weights=global_weights,
+        global_weights=global_weights,
+        epochs=epochs,
+        learning_rate=learning_rate,
+        l2=l2,
+        proximal_mu=proximal_mu,
+    )
+
+
+def refit_intercept(
+    global_weights: np.ndarray, features: np.ndarray, targets: np.ndarray
+) -> np.ndarray:
+    """Keep the shared slopes, and give the node its own baseline level.
+
+    A shared representation with a local head, in its simplest linear form. The
+    federation's feature weights -- how lags, time of day and climatology relate
+    to the next day's value -- are kept, because that relationship is what many
+    cities' data can estimate better than one city's. Only the intercept is refit,
+    in closed form, to the node's own mean residual, because the level of
+    pollution is exactly what differs most between a clean city and a dirty one.
+
+    Kanpur's harm under plain averaging came from being pulled toward Delhi's
+    harder, dirtier regime, which is largely a difference of level; this is the
+    cheapest change that could undo that.
+
+    Args:
+        global_weights: The federated model, whose last weight is the intercept.
+        features: This node's standardised training features, with a bias column.
+        targets: This node's training targets.
+
+    Returns:
+        A copy of the global weights with the intercept replaced.
+    """
+    weights = global_weights.copy()
+    residual = targets - features @ global_weights
+    # The bias column is constant 1, so shifting its weight by the mean residual
+    # is the least-squares intercept for fixed slopes.
+    weights[-1] = global_weights[-1] + float(np.mean(residual))
+    return weights
+
+
 def add_bias_column(features: np.ndarray) -> np.ndarray:
     """Append a constant column so the model can fit an intercept."""
     return np.hstack([features, np.ones((len(features), 1))])
@@ -182,29 +257,3 @@ def add_bias_column(features: np.ndarray) -> np.ndarray:
 def mean_absolute_error(features: np.ndarray, targets: np.ndarray, weights: np.ndarray) -> float:
     """Mean absolute error of a linear model."""
     return float(np.mean(np.abs(features @ weights - targets)))
-
-
-@dataclass(frozen=True, slots=True)
-class TransferOutcome:
-    """Whether federation helped or harmed one node."""
-
-    node: str
-    local_mae: float
-    global_mae: float
-
-    @property
-    def improvement(self) -> float:
-        """Fractional reduction in error. Negative means federation hurt."""
-        if self.local_mae == 0:
-            return 0.0
-        return (self.local_mae - self.global_mae) / self.local_mae
-
-    def is_harmed(self, tolerance: float) -> bool:
-        """Whether the global model is worse than local by more than tolerance.
-
-        The check the federation claim has to survive. Sharing weights is
-        asserted to help a city with three monitors; if the measurement says
-        otherwise for that city, the honest response is to say so and let it
-        keep its local model, not to average the finding away.
-        """
-        return self.improvement < -tolerance

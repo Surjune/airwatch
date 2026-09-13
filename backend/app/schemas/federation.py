@@ -46,24 +46,43 @@ class NodeCoverageResponse(BaseModel):
     )
 
 
+class CandidateResultResponse(BaseModel):
+    """One federated model against a node's own model, as measured."""
+
+    candidate: str = Field(description="global, fine-tuned, or local head.")
+    mae: float = Field(description="Error of this model on the node's holdout, in ug/m3.")
+    gain: float = Field(
+        description="How much better than the node's own model, in ug/m3. Negative is worse."
+    )
+    interval_low: float
+    interval_high: float = Field(
+        description=(
+            "95% paired bootstrap interval on the gain. An interval that includes "
+            "zero means the holdout cannot distinguish this from no effect."
+        )
+    )
+    verdict: str = Field(
+        description=(
+            "helped or harmed only when the interval excludes zero and the effect is "
+            "large enough to act on; otherwise inconclusive or no_practical_difference."
+        )
+    )
+
+
 class TransferResultResponse(BaseModel):
-    """Whether the federated model helped one node, as measured."""
+    """Every federated candidate for one node."""
 
     node: str
     local_mae: float = Field(description="Error of the node's own model, in ug/m3.")
-    global_mae: float = Field(description="Error of the federated model on the same holdout.")
-    improvement: float = Field(
-        description="Relative change from adopting the global model. Negative means worse."
-    )
-    is_harmed: bool
-    recommendation: str
     train_rows: int
     test_rows: int = Field(
         description=(
-            "Published so a reader can weigh the result. A holdout of a few dozen "
-            "rows is a signal, not a settled fact."
+            "Published so a reader can weigh every verdict. A holdout of a few dozen "
+            "rows produces intervals too wide to establish most effects."
         )
     )
+    recommendation: str
+    candidates: list[CandidateResultResponse]
 
 
 class FederationStatusResponse(BaseModel):

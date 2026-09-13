@@ -5,7 +5,6 @@ import { Card } from '@/components/ui/Card';
 import { Cell, DataTable } from '@/components/ui/DataTable';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { Stat, StatRow } from '@/components/ui/Stat';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import type { components } from '@/lib/api-types';
 import { ApiError, get } from '@/lib/api-client';
@@ -20,16 +19,16 @@ const THIN_HOLDOUT_ROWS = 100;
 /**
  * Federation dashboard.
  *
- * This screen exists to show a result that did not go the way the design hoped,
- * which is the reason it is worth showing at all. Federated averaging was meant
- * to let a data-poor city borrow a data-rich one's model; measured, it made the
- * sparse node worse and the negative-transfer check recommended it keep its own.
- * A dashboard that buried that would be advertising an architecture rather than
- * reporting a measurement.
+ * This screen reports whether federation helps, and the honest answer is that the
+ * data cannot yet say. An earlier version of it declared that averaging "harmed"
+ * Kanpur, on 23 held-out rows whose bootstrap interval spans zero; the claim was
+ * stated with a certainty the evidence never had. Every comparison is now shown
+ * with its interval, and a verdict of helped or harmed appears only when the
+ * interval excludes zero and the effect is large enough to act on.
  *
  * Coverage and transfer are separated on purpose. Coverage is counted from the
- * database on each request; the transfer result came from a training run and is
- * shown with the sample it rests on.
+ * database on each request; the transfer results came from a training run and
+ * are shown with the sample they rest on.
  */
 export function FederationView() {
   const [data, setData] = useState<FederationStatus | null>(null);
@@ -100,7 +99,7 @@ export function FederationView() {
 
             <Card
               title="Did federating help?"
-              description="Each node compares the federated global model against its own, on its own held-out data. Measured once by a training run, not recomputed here."
+              description="Each node compares three federated models against its own, on its own held-out data: plain averaging, and two personalised variants. Measured once by a training run, not recomputed here."
             >
               <div className="space-y-3">
                 {data.transfer.map((result) => (
@@ -109,14 +108,15 @@ export function FederationView() {
               </div>
             </Card>
 
-            <Card title="Why it went that way">
+            <Card title="What would settle it">
               <p className="text-sm leading-relaxed text-ink-muted">
-                The mechanism is legible rather than mysterious. Kanpur&rsquo;s own model is better
-                than Delhi&rsquo;s because its air is cleaner and less variable, so its forecasting
-                task is easier. Averaging weights by sample count makes the global model roughly 97%
-                Delhi, and that drags Kanpur toward a harder regime it does not inhabit — textbook
-                non-IID harm. Personalisation, a shared representation with a local head, is the
-                standard answer and is the honest next thing to try.
+                The point estimates suggest a mechanism — Kanpur&rsquo;s cleaner, less variable air
+                is an easier forecasting task, and a global model that is roughly 97% Delhi would
+                pull it toward a harder regime, which a local intercept undoes. That story is
+                plausible and matches the direction of every number above. It is not established:
+                on 23 held-out rows the intervals are wide enough to include no effect at all. What
+                would settle it is more Kanpur history, not a different model — a holdout several
+                times larger would narrow those intervals enough to tell the options apart.
               </p>
             </Card>
           </>
@@ -161,42 +161,60 @@ function CoverageRow({ node }: { readonly node: NodeCoverage }) {
   );
 }
 
+/** Human wording and tone per verdict. Tone carries meaning, never decoration. */
+const VERDICTS: Record<string, { label: string; tone: 'danger' | 'ok' | 'neutral' | 'warn' }> = {
+  helped: { label: 'helped', tone: 'ok' },
+  harmed: { label: 'harmed', tone: 'danger' },
+  no_practical_difference: { label: 'no practical difference', tone: 'neutral' },
+  inconclusive: { label: 'inconclusive', tone: 'warn' },
+};
+
+const FALLBACK_VERDICT = { label: 'unknown', tone: 'neutral' } as const;
+
 function TransferCard({ result }: { readonly result: TransferResult }) {
-  const percent = (result.improvement * 100).toFixed(1);
-
   return (
-    <div
-      className={`rounded-[--radius-card] border p-3.5 ${
-        result.is_harmed ? 'border-danger/30 bg-danger-subtle' : 'border-border bg-surface'
-      }`}
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="rounded-[--radius-card] border border-border bg-surface p-3.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-sm font-semibold capitalize text-ink">{result.node}</h3>
-        <Badge tone={result.is_harmed ? 'danger' : 'neutral'}>
-          {result.improvement >= 0 ? '+' : ''}
-          {percent}%
-        </Badge>
+        <span className="text-xs text-ink-muted">
+          own model {result.local_mae.toFixed(2)} µg/m³ · tested on {result.test_rows} rows
+        </span>
       </div>
 
-      <div className="mt-3">
-        <StatRow>
-          <Stat label="Its own model" value={result.local_mae.toFixed(2)} note="µg/m³ MAE" />
-          <Stat
-            label="Federated model"
-            value={result.global_mae.toFixed(2)}
-            note="µg/m³ MAE, same holdout"
-            tone={result.is_harmed ? 'danger' : 'neutral'}
-          />
-        </StatRow>
-      </div>
+      <DataTable
+        caption={`Federated models compared with ${result.node}'s own model`}
+        columns={['Model', 'Error', 'Gain vs own', '95% interval', 'Verdict']}
+        numericColumns={[1, 2, 3]}
+      >
+        {result.candidates.map((candidate) => {
+          const verdict = VERDICTS[candidate.verdict] ?? FALLBACK_VERDICT;
+          return (
+            <tr key={candidate.candidate}>
+              <Cell>{candidate.candidate}</Cell>
+              <Cell numeric>{candidate.mae.toFixed(2)}</Cell>
+              <Cell numeric>
+                {candidate.gain >= 0 ? '+' : ''}
+                {candidate.gain.toFixed(3)}
+              </Cell>
+              <Cell numeric muted>
+                {candidate.interval_low.toFixed(3)} to {candidate.interval_high.toFixed(3)}
+              </Cell>
+              <Cell>
+                <Badge tone={verdict.tone}>{verdict.label}</Badge>
+              </Cell>
+            </tr>
+          );
+        })}
+      </DataTable>
 
       <p className="mt-3 text-sm font-medium text-ink">Recommendation: {result.recommendation}.</p>
-      <p className="mt-1 text-xs leading-relaxed text-ink-muted">
-        Fitted on {result.train_rows.toLocaleString()} rows, tested on{' '}
-        {result.test_rows.toLocaleString()}.
-        {result.test_rows < THIN_HOLDOUT_ROWS &&
-          ' A holdout this small makes the figure a signal rather than a settled fact.'}
-      </p>
+      {result.test_rows < THIN_HOLDOUT_ROWS && (
+        <p className="mt-1 text-xs leading-relaxed text-ink-muted">
+          A holdout of {result.test_rows} rows gives intervals wide enough to include zero for every
+          model here, so none of these differences can be told apart from no effect — however they
+          look as point estimates.
+        </p>
+      )}
     </div>
   );
 }

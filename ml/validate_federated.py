@@ -39,16 +39,19 @@ for path in (str(BACKEND), str(ROOT)):
 
 from federated.strategy import (  # noqa: E402
     LocalUpdate,
-    TransferOutcome,
     add_bias_column,
     aggregate_statistics,
     compute_statistics,
     federated_average,
-    mean_absolute_error,
+    fine_tune,
+    refit_intercept,
     train_local,
 )
 
 from app.core.constants import (  # noqa: E402
+    BOOTSTRAP_CONFIDENCE,
+    BOOTSTRAP_RESAMPLES,
+    FL_FINE_TUNE_EPOCHS,
     FL_MIN_AVAILABLE_CLIENTS,
     FL_NEGATIVE_TRANSFER_TOLERANCE,
     FL_NUM_ROUNDS,
@@ -59,6 +62,7 @@ from app.core.constants import (  # noqa: E402
 )
 from app.core.enums import Pollutant  # noqa: E402
 from app.core.geo import haversine_distance_m  # noqa: E402
+from app.core.evidence import Effect, EffectEstimate, classify, paired_bootstrap  # noqa: E402
 from app.core.logging import configure_logging  # noqa: E402
 from app.ml.forecast_features import (  # noqa: E402
     FEDERATED_EXCLUDED_PREFIXES,
@@ -320,57 +324,89 @@ def main() -> int:
     global_weights = run_federation(nodes, args.rounds, args.proximal_mu)
     scaler = aggregate_statistics([compute_statistics(node.x_train) for node in nodes])
 
-    print("\n" + "=" * 78)
+    print()
+    print("=" * 78)
     print(
         f"FEDERATED TRANSFER  (pm25, +{_HORIZON_HOURS}h, "
-        f"{args.rounds} rounds, mu={args.proximal_mu})"
+        f"{args.rounds} rounds, mu={args.proximal_mu}, fine-tune {FL_FINE_TUNE_EPOCHS} epochs)"
     )
     print("=" * 78)
     print(
         f"{'node':<12} {'stations':>9} {'train':>7} {'test':>6} "
-        f"{'local MAE':>10} {'global MAE':>11} {'change':>9}"
+        f"{'local':>8} {'global':>8} {'fine-tuned':>11} {'local head':>11}"
     )
     print("-" * 78)
 
-    outcomes: list[TransferOutcome] = []
+    comparisons: list[tuple[str, str, float, float, EffectEstimate, Effect]] = []
     for node in nodes:
-        local_weights = train_local_only(node, nodes)
+        train_features = add_bias_column(scaler.transform(node.x_train))
         test_features = add_bias_column(scaler.transform(node.x_test))
 
-        outcome = TransferOutcome(
-            node=node.name,
-            local_mae=mean_absolute_error(test_features, node.y_test, local_weights),
-            global_mae=mean_absolute_error(test_features, node.y_test, global_weights),
-        )
-        outcomes.append(outcome)
+        candidates = {
+            "local": train_local_only(node, nodes),
+            "global": global_weights,
+            "fine-tuned": fine_tune(
+                global_weights,
+                train_features,
+                node.y_train,
+                epochs=FL_FINE_TUNE_EPOCHS,
+                learning_rate=_LEARNING_RATE,
+                l2=_L2,
+                proximal_mu=args.proximal_mu,
+            ),
+            "local head": refit_intercept(global_weights, train_features, node.y_train),
+        }
+        errors = {
+            name: np.abs(test_features @ weights - node.y_test)
+            for name, weights in candidates.items()
+        }
+        local_mae = float(errors["local"].mean())
+
         print(
             f"{node.name:<12} {node.stations:>9} {len(node.y_train):>7} {len(node.y_test):>6} "
-            f"{outcome.local_mae:>10.2f} {outcome.global_mae:>11.2f} "
-            f"{outcome.improvement * 100:>8.1f}%"
+            f"{local_mae:>8.2f} {errors['global'].mean():>8.2f} "
+            f"{errors['fine-tuned'].mean():>11.2f} {errors['local head'].mean():>11.2f}"
         )
 
-    print()
-    harmed = [o for o in outcomes if o.is_harmed(FL_NEGATIVE_TRANSFER_TOLERANCE)]
-    helped = [o for o in outcomes if o.improvement > 0]
+        for name in ("global", "fine-tuned", "local head"):
+            estimate = paired_bootstrap(errors["local"], errors[name], seed=RANDOM_SEED)
+            effect = classify(
+                estimate, baseline_error=local_mae, tolerance=FL_NEGATIVE_TRANSFER_TOLERANCE
+            )
+            comparisons.append(
+                (node.name, name, local_mae, float(errors[name].mean()), estimate, effect)
+            )
 
-    for outcome in outcomes:
-        verdict = (
-            "harmed by federation"
-            if outcome.is_harmed(FL_NEGATIVE_TRANSFER_TOLERANCE)
-            else ("helped" if outcome.improvement > 0 else "unchanged within tolerance")
-        )
-        print(f"  {outcome.node:<12} {verdict}")
-
+    # Every candidate against the node's own model, with a paired bootstrap
+    # interval over the held-out rows. A verdict of helped or harmed requires the
+    # interval to exclude zero and the effect to clear the practical tolerance;
+    # anything else is reported as what it is.
     print()
-    if harmed:
+    print("=" * 78)
+    print(
+        f"AGAINST EACH NODE'S OWN MODEL  (paired bootstrap, "
+        f"{BOOTSTRAP_RESAMPLES} resamples, {BOOTSTRAP_CONFIDENCE:.0%} interval)"
+    )
+    print("=" * 78)
+    print(f"{'node':<10} {'candidate':<11} {'gain ug/m3':>11} {'interval':>19}  verdict")
+    print("-" * 78)
+    for node_name, name, _, _, estimate, effect in comparisons:
         print(
-            f"NEGATIVE TRANSFER: {len(harmed)} node(s) are worse off federated "
-            f"({', '.join(o.node for o in harmed)}). They should keep their local model."
+            f"{node_name:<10} {name:<11} {estimate.gain:>+11.3f} "
+            f"[{estimate.low:>+7.3f}, {estimate.high:>+7.3f}]  {effect.value}"
         )
-    elif helped:
-        print(f"Federation helped {len(helped)} of {len(outcomes)} nodes without harming any.")
+
+    print()
+    established = [c for c in comparisons if c[5] in (Effect.HELPED, Effect.HARMED)]
+    if established:
+        for node_name, name, _, _, _, effect in established:
+            print(f"ESTABLISHED: {name} {effect.value} {node_name}.")
     else:
-        print("Federation neither helped nor harmed any node measurably.")
+        print(
+            "No candidate is established as helping or harming any node. The differences "
+            "above are point estimates the held-out data cannot distinguish from zero, or "
+            "real differences too small to act on."
+        )
 
     return 0
 

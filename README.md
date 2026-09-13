@@ -69,9 +69,11 @@ Four things follow that current systems do not do:
   "this plume traces to a fire detected 40 minutes ago at these coordinates."
 - **Forecast before exposure**, 24–72h along economic corridors, so the alert arrives in time to
   matter.
-- **Federated by necessity.** Cities exchange model weights, not raw data. A model trained in Delhi
-  and Kanpur gives Coimbatore — which has almost no stations — a working forecast on day one.
-  This is the only architecture that survives Indian data-governance reality.
+- **Federated by necessity.** Cities exchange model weights, not raw data, because that is the
+  only arrangement that survives Indian data-governance reality. The hope is that a model trained
+  in Delhi and Kanpur gives a city like Coimbatore — which has almost no stations — a working
+  forecast from the start. That is a claim, not a result: the measurements below have not yet
+  established that sharing helps any node.
 
 Software cannot stop the burning. What it can do is collapse detection-to-response from days to
 minutes, make enforcement surgical instead of collective, cut an individual's actual inhaled dose
@@ -197,36 +199,61 @@ value five weeks earlier. The site is alive because its thermometer is. A city
 of millions has no current particulate monitoring at all, while every count of
 "active stations" includes it.
 
-**The result: federation harmed the sparse node.**
+**The result: nothing is established either way — and an earlier version of
+this README said otherwise.**
 
-| Node | Stations | Train | Test | Local MAE | Global MAE | Change |
-| --- | --- | --- | --- | --- | --- | --- |
-| Delhi | 61 | 1,719 | 493 | 16.82 | 16.84 | −0.1% |
-| Kanpur | 3 | 55 | 23 | **9.21** | **9.85** | **−6.8%** |
+Every federated model was compared with each city's own model on that city's
+held-out rows, with a paired bootstrap interval on the difference. A verdict of
+*helped* or *harmed* requires the interval to exclude zero **and** the effect to
+be large enough to act on (2%); anything else is reported as what it is.
 
-The negative-transfer check fired and recommended Kanpur keep its local model.
+| Node | Test rows | Own model | Plain averaging | Fine-tuned | Local head |
+| --- | --- | --- | --- | --- | --- |
+| Delhi | 493 | 16.82 | 16.84 | 16.84 | 16.79 |
+| Kanpur | 23 | 9.21 | 9.85 | 9.63 | 8.91 |
 
-The mechanism is legible. Kanpur's local model is *better* than Delhi's (9.21
-against 16.82) because its air is cleaner and less variable, so its forecasting
-task is easier. FedAvg weights by sample count, so the global model is roughly
-97% Delhi, and averaging drags Kanpur toward a harder regime it does not
-inhabit. This is textbook non-IID harm.
+| Node | Candidate | Gain vs own model (µg/m³) | 95% interval | Verdict |
+| --- | --- | --- | --- | --- |
+| Delhi | plain averaging | −0.013 | [−0.036, +0.010] | inconclusive |
+| Delhi | fine-tuned | −0.013 | [−0.021, −0.004] | no practical difference |
+| Delhi | local head | +0.030 | [+0.007, +0.053] | no practical difference |
+| Kanpur | plain averaging | −0.631 | [−3.441, +2.203] | inconclusive |
+| Kanpur | fine-tuned | −0.417 | [−1.875, +1.112] | inconclusive |
+| Kanpur | local head | +0.303 | [−1.606, +2.115] | inconclusive |
 
-FedProx was built for exactly this and was swept to test it. It mitigates
-without rescuing: at mu=2.0 Kanpur's harm falls from 6.9% to 4.0%, but Delhi
-begins degrading too. There is no setting at which both nodes benefit.
+**A correction.** This section previously read *"federation harmed the sparse
+node"*, and the dashboard called that *"the measurement, not a provisional
+result."* It was a point estimate — Kanpur's error rising from 9.21 to 9.85 —
+on 23 held-out rows, and its interval, [−3.44, +2.20] µg/m³, shows those rows
+cannot tell it apart from no effect at all. The claim was stated with a certainty
+the evidence never had. It is corrected here, on the dashboard, and in the
+interop model card, and the rule that caught it (`app/core/evidence.py`) now
+decides every published verdict, so the experiment and the API cannot disagree.
 
-**Caveats that matter.** Kanpur's test set is 23 rows, so the estimate is noisy.
-There are two participating nodes, not the intended three, and fourteen days of
-history. The task is forecasting, where climatology already beat every learned
-model — so federation is being asked to improve something that is weak to begin
-with.
+**Personalisation was then tried**, because it is the standard answer to the
+non-IID harm the point estimates suggested: fine-tuning the global model locally,
+and keeping the shared slopes while refitting each city's intercept (a local
+head). The local head gives Kanpur its best point estimate, 8.91 — better than
+its own model — and that holds across every combination of rounds and proximal
+strength tried. It is **also inconclusive**: its interval spans zero too. A
+number that looks better on 23 rows is no more a finding than one that looks
+worse.
 
-What this does *not* show is that federated learning is a bad idea for air
-quality. It shows that on this pairing, this task and this much data, averaging
-two dissimilar cities into one model helps neither, and that the check built to
-detect that works. Personalisation — a shared representation with a local head —
-is the standard answer to non-IID harm and is the honest next thing to try.
+On Delhi's 493 rows the intervals are narrow enough to exclude zero, but the
+differences are a few hundredths of a microgram — real, and far too small to
+matter. That is why significance alone is not enough to call an effect.
+
+**What the evidence supports**, then, is modest: federating did not demonstrably
+help or hurt either city, so each keeps its own model. The plausible mechanism —
+Kanpur's cleaner, less variable air is an easier task, and a global model that
+is roughly 97% Delhi pulls it toward a harder regime — matches the direction of
+every point estimate and is not established by any of them. **What would settle
+it is more Kanpur history, not a different model:** a holdout several times
+larger would narrow those intervals enough to tell the options apart.
+
+There are also two participating nodes, not the intended three, and fourteen
+days of history, and the task is forecasting, where climatology already beat
+every learned model.
 
 **A federation constraint worth recording**: the shared feature schema is 17
 features, not the forecast model's full set. Meteorology is ingested only for
@@ -358,9 +385,10 @@ on every payload.
 `GET /v1/interop/models` publishes the measured performance of every estimator,
 including the two that lost, and offers **no weight vector**. That is deliberate
 rather than unfinished: the learned models were trained, validated and beaten by
-their baselines, and federated averaging of the forecast model measurably harmed
-the sparse node. Publishing those weights would invite a data-poor city to adopt
-something this node measured to be worse. The reason is stated in the card.
+their baselines, and neither federated averaging nor its personalised variants
+is established as improving on a node's own model. Publishing weights without
+evidence of benefit would invite a data-poor city to adopt something nobody can
+show is better. The reason is stated in the card.
 
 ## Running it
 
@@ -456,15 +484,14 @@ Deferred deliberately, and tracked here rather than as TODOs in the code.
   routinely stripped, so absence cannot be treated as fraud: an unverifiable submission is accepted,
   marked, and held below the trust a pair needs to shape the calibration. A determined spoofer can
   still write matching metadata; this raises the cost, it does not close the hole.
-- **Federated averaging harmed the sparse node** on the two cities available;
-  see the table above. The aggregation, FedProx and negative-transfer check are
-  implemented and tested, but the measured recommendation is that Kanpur keeps
-  its local model. `GET /v1/federation/status` publishes that result rather than
-  hiding it, alongside live node coverage.
+- **No federated model is established as helping or harming either node.**
+  Plain averaging and two personalised variants are implemented, tested and
+  published with bootstrap intervals; Kanpur's 23-row holdout leaves every one of
+  them inconclusive. The limiting factor is the size of that holdout, which only
+  more history can fix.
 - **Nodes are not separate deployables.** Aggregation runs in one process against
   one database. Flower would make each city an independent participant, which is
-  what the design calls for; until the measured result stops saying "keep your
-  local model" there is little to gain from the extra machinery.
+  what the design calls for.
 - **Station-level activity is not pollutant-level activity.** A site whose
   PM2.5 sensor is dead still reports as active if any other sensor is live.
   Confirming a pollutant is reporting requires querying its sensor history.

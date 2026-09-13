@@ -14,12 +14,13 @@ import pytest
 from federated.strategy import (
     FeatureStats,
     LocalUpdate,
-    TransferOutcome,
     add_bias_column,
     aggregate_statistics,
     compute_statistics,
     federated_average,
+    fine_tune,
     mean_absolute_error,
+    refit_intercept,
     train_local,
 )
 
@@ -182,25 +183,73 @@ class TestLocalTraining:
         assert without == pytest.approx(with_zero_mu)
 
 
-class TestNegativeTransfer:
-    def test_detects_a_node_made_worse(self) -> None:
-        # The check that lets the federation claim be refuted. Measured on real
-        # data, Kanpur was harmed by 6.8% and kept its local model.
-        harmed = TransferOutcome(node="kanpur", local_mae=9.21, global_mae=9.85)
+class TestPersonalisation:
+    """The two standard answers to non-IID harm.
 
-        assert harmed.improvement < 0
-        assert harmed.is_harmed(tolerance=0.02) is True
+    Each is tested on a node whose relationship matches the federation's but
+    whose level does not -- the shape of Kanpur against Delhi -- since that is
+    the case personalisation exists for.
+    """
 
-    def test_a_small_degradation_is_within_tolerance(self) -> None:
-        noise = TransferOutcome(node="delhi", local_mae=16.82, global_mae=16.84)
-        assert noise.is_harmed(tolerance=0.02) is False
+    @staticmethod
+    def _shifted_node(offset: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        features = add_bias_column(RNG.normal(size=(200, 2)))
+        shared = np.array([2.0, -1.0, 50.0])
+        targets = features @ shared - offset
+        return features, targets, shared
 
-    def test_recognises_a_genuine_improvement(self) -> None:
-        helped = TransferOutcome(node="sparse", local_mae=20.0, global_mae=15.0)
+    def test_refitting_the_intercept_recovers_a_shifted_level(self) -> None:
+        features, targets, shared = self._shifted_node(offset=30.0)
 
-        assert helped.improvement == pytest.approx(0.25)
-        assert helped.is_harmed(tolerance=0.02) is False
+        personal = refit_intercept(shared, features, targets)
 
-    def test_a_perfect_local_model_is_not_a_division_by_zero(self) -> None:
-        degenerate = TransferOutcome(node="a", local_mae=0.0, global_mae=1.0)
-        assert degenerate.improvement == 0.0
+        assert personal[-1] == pytest.approx(shared[-1] - 30.0)
+        assert mean_absolute_error(features, targets, personal) < mean_absolute_error(
+            features, targets, shared
+        )
+
+    def test_refitting_the_intercept_keeps_the_shared_slopes(self) -> None:
+        # The slopes are what many cities estimate better than one; only the
+        # level is the node's own.
+        features, targets, shared = self._shifted_node(offset=30.0)
+
+        personal = refit_intercept(shared, features, targets)
+
+        assert personal[:-1] == pytest.approx(shared[:-1])
+
+    def test_refitting_does_not_modify_the_global_model(self) -> None:
+        features, targets, shared = self._shifted_node(offset=10.0)
+        before = shared.copy()
+
+        refit_intercept(shared, features, targets)
+
+        assert shared == pytest.approx(before)
+
+    def test_a_node_already_at_the_federated_level_is_unchanged(self) -> None:
+        features, targets, shared = self._shifted_node(offset=0.0)
+
+        assert refit_intercept(shared, features, targets) == pytest.approx(shared)
+
+    def test_fine_tuning_moves_toward_the_node(self) -> None:
+        features, targets, shared = self._shifted_node(offset=30.0)
+
+        personal = fine_tune(shared, features, targets, epochs=200, learning_rate=0.1, l2=0.0)
+
+        assert mean_absolute_error(features, targets, personal) < mean_absolute_error(
+            features, targets, shared
+        )
+
+    def test_the_proximal_term_limits_how_far_fine_tuning_drifts(self) -> None:
+        # A node with a few dozen rows must not be able to retrain its way all
+        # the way back to a local-only model.
+        features, targets, shared = self._shifted_node(offset=30.0)
+
+        free = fine_tune(shared, features, targets, epochs=200, l2=0.0)
+        anchored = fine_tune(shared, features, targets, epochs=200, l2=0.0, proximal_mu=5.0)
+
+        assert np.linalg.norm(anchored - shared) < np.linalg.norm(free - shared)
+
+    def test_zero_epochs_returns_the_global_model(self) -> None:
+        features, targets, shared = self._shifted_node(offset=30.0)
+
+        assert fine_tune(shared, features, targets, epochs=0) == pytest.approx(shared)

@@ -456,6 +456,20 @@ FL_DP_NOISE_MULTIPLIER: Final[float] = 0.0
 #: negative transfer, so the federation claim stays honest.
 FL_NEGATIVE_TRANSFER_TOLERANCE: Final[float] = 0.02
 
+#: Resamples for a bootstrap interval on a model comparison. Ten thousand keeps
+#: the interval endpoints stable to about two decimal places, finer than any
+#: difference worth reporting.
+BOOTSTRAP_RESAMPLES: Final[int] = 10_000
+
+#: Two-sided coverage of a reported bootstrap interval.
+BOOTSTRAP_CONFIDENCE: Final[float] = 0.95
+
+#: Local steps a node takes when personalising the global model. Equal to one
+#: round of local training: enough to move toward the node's own regime, few
+#: enough that a node with a few dozen rows is not simply retraining from the
+#: federated start point into a local-only model.
+FL_FINE_TUNE_EPOCHS: Final[int] = 30
+
 
 # ---------------------------------------------------------------------------
 # External clients
@@ -658,12 +672,6 @@ PUBLISHED_FORECAST_LEARNED_MAE_UGM3: Final[float] = 17.50
 #: What persistence -- assuming the current value holds -- scored.
 PUBLISHED_FORECAST_PERSISTENCE_MAE_UGM3: Final[float] = 22.05
 
-#: Change in the sparse node's error when it adopted the federated global model
-#: instead of its own. Negative: federation made Kanpur worse, so the
-#: negative-transfer check recommended it keep the local model.
-#: Source: `npm run fl:validate`.
-PUBLISHED_FEDERATED_SPARSE_NODE_CHANGE: Final[float] = -0.068
-
 
 # ---------------------------------------------------------------------------
 # Citizen photo haze estimation
@@ -806,23 +814,40 @@ PILOT_CITY_RADIUS_M: Final[int] = 25_000
 #: that distinction is the whole Coimbatore finding.
 PILOT_REPORTING_WINDOW_HOURS: Final[int] = 48
 
-#: Measured error, in ug/m3, of each node's own forecast model against the
-#: federated global model on that node's held-out data. Source: `npm run
-#: fl:validate`. Published unchanged: a federation where nodes advertise only
-#: favourable numbers is worse than none, because a data-poor city would adopt a
-#: model that harms it and have no way to find out.
+#: Measured error, in ug/m3, of each node's own forecast model on its held-out
+#: data. The baseline every federated candidate is compared against.
+#: Source: `npm run fl:validate`, seeded, reproducible exactly.
 FEDERATED_LOCAL_MAE_UGM3: Final[dict[str, float]] = {"delhi": 16.82, "kanpur": 9.21}
-FEDERATED_GLOBAL_MAE_UGM3: Final[dict[str, float]] = {"delhi": 16.84, "kanpur": 9.85}
 
-#: Training and test rows each node contributed to that run, so a reader can see
-#: how thin the evidence is. Kanpur's 23-row test set is why its result is
-#: reported as a signal rather than a settled fact.
+#: Each federated candidate against the node's own model, on the same held-out
+#: rows: (candidate MAE, gain, interval low, interval high), all in ug/m3, gain
+#: positive when the candidate is better. Intervals are 95% paired bootstraps, kept
+#: to three decimals: rounding to two turned Delhi's fine-tuned upper bound of
+#: -0.004 into -0.00, which reads as zero and flipped its verdict.
+#:
+#: Published with the intervals because the point estimates alone were once
+#: stated as findings. Kanpur's plain-averaging row was reported as "federation
+#: measurably harmed Kanpur"; its interval, [-3.441, +2.203], shows 23 held-out rows
+#: cannot distinguish that from no effect. Every Kanpur candidate is inconclusive,
+#: and no candidate is established as helping or harming either node.
+#: Source: `npm run fl:validate`.
+FEDERATED_CANDIDATE_RESULTS: Final[dict[str, dict[str, tuple[float, float, float, float]]]] = {
+    "delhi": {
+        "global": (16.84, -0.013, -0.036, 0.010),
+        "fine-tuned": (16.84, -0.013, -0.021, -0.004),
+        "local head": (16.79, 0.030, 0.007, 0.053),
+    },
+    "kanpur": {
+        "global": (9.85, -0.631, -3.441, 2.203),
+        "fine-tuned": (9.63, -0.417, -1.875, 1.112),
+        "local head": (8.91, 0.303, -1.606, 2.115),
+    },
+}
+
+#: Training and test rows each node contributed to that run, published so a
+#: reader can see how thin the evidence is.
 FEDERATED_TRAIN_ROWS: Final[dict[str, int]] = {"delhi": 1719, "kanpur": 55}
 FEDERATED_TEST_ROWS: Final[dict[str, int]] = {"delhi": 493, "kanpur": 23}
-
-#: Relative degradation a node tolerates before the federated model is judged to
-#: have harmed it. Two percent is inside the noise of a holdout this size.
-FEDERATED_HARM_TOLERANCE: Final[float] = 0.02
 
 
 # ---------------------------------------------------------------------------
