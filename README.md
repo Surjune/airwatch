@@ -1,516 +1,440 @@
+<div align="center">
+
+<img src="frontend/public/favicon.svg" width="56" alt="" />
+
 # AirWatch
 
-**Federated hyperlocal air quality intelligence for Indian cities.**
+**Find the pollution the city average hides, trace it to a likely source, and get it in front of
+the authority that can act on it.**
 
-Detects hidden pollution hotspots, attributes them to probable sources, forecasts spikes across
-economic corridors 24–72h ahead, and lets cities share predictive models without sharing raw data.
+A federated, hyperlocal air-quality platform for Indian cities, built for the *Clean Air & Climate
+Resilience* challenge. Piloted in Delhi-NCR, Kanpur and Coimbatore.
 
----
+[**Live site**](https://airwatch-cbe.duckdns.org) ·
+[API reference](https://airwatch-cbe.duckdns.org/docs) ·
+[Validation](docs/VALIDATION.md) ·
+[Design notes](docs/DESIGN.md) ·
+[Deploy on AWS](docs/DEPLOY_AWS.md)
 
-## The problem
+</div>
 
-Indian cities monitor macro-level air quality but consistently miss hyper-local pollution events.
-The reason is an economics problem wearing a technology costume:
-
-**1. The accurate instrument cannot be dense; the dense instrument cannot be accurate.**
-A CPCB reference-grade CAAQMS costs roughly ₹1–1.5 crore to install. India has ~400–550 of them,
-and only ~12% of census cities and towns have any monitoring at all — 28 NCAP cities still have
-zero real-time stations. One station is treated as representing tens of km². But PM2.5 varies 3–5×
-within a single kilometre: a brick kiln, a landfill fire, a construction site, an arterial road at
-6pm. The official number is a spatial average that structurally cannot see the event harming you.
-A ₹15,000 low-cost sensor can be deployed 100× denser, but reads 20–40 µg/m³ off under humidity —
-so it is inadmissible for policy.
-
-**2. AQI is retrospective by construction.** It is a 24-hour rolling average. A three-hour toxic
-plume is diluted into a daily number, published after people already breathed it.
-
-**3. The data is fragmented along administrative lines, and pollution is not.** CPCB, ~35 state
-boards, municipal corporations, ISRO, IMD and private networks each hold a fragment. Punjab's
-stubble smoke becomes Delhi's health emergency in ~48 hours. No state will hand another its raw
-data — that is a governance wall, not a bandwidth problem, which is why every attempt at a single
-national data lake stalls.
-
-**4. No attribution means no enforcement, so punishment becomes collective.** Even when a spike is
-detected, nobody knows which source caused it. The policy response is therefore a sledgehammer —
-GRAP shuts down all construction — instead of "this kiln, this stretch, this dump."
-
-### Who pays
-
-Roughly **1.7 million deaths in India in 2022** from PM2.5 exposure, and an economic loss of about
-**9.5% of GDP (~$339B)**. The burden is concentrated on outdoor workers who cannot leave the
-exposure (traffic police, construction labour, delivery riders, street vendors), children in
-schools on arterial roads where lung-development loss is permanent, settlements beside industrial
-corridors and landfills, and respiratory and cardiac patients.
-
-Two groups are routinely mis-blamed: **farmers**, who have a 2–3 week window between paddy harvest
-and wheat sowing and no affordable alternative, and **industrial units**, shut down collectively
-because attribution is missing.
+![The AirWatch overview for Coimbatore](docs/images/overview-desktop.png)
 
 ---
 
-## The approach
+## In one minute
 
-Do not try to replace the reference network. Use it as ground truth to calibrate a cheap dense
-network, and use satellites and meteorology to fill the space between.
+- **The problem.** India measures air quality with a few hundred expensive monitors and a 24-hour
+  average. A three-hour plume from a kiln, a landfill or a bus depot never shows up in that number.
+  Even when it is seen, nobody knows its source, and the source is often across a district or state
+  line.
+- **What AirWatch does.** It combines the official network, community and household sensors,
+  residents' photographs, Sentinel-5P satellite columns, hourly wind and NASA fire detections. From
+  these it:
+  - flags any monitor reading far above what its neighbours predict;
+  - traces that excess back along the wind to ranked candidate sources;
+  - forecasts 24–72 hours ahead along economic corridors;
+  - alerts the district that holds the hotspot, and asks the jurisdiction that holds the source to
+    act too;
+  - lets cities train a model together by sharing weights, never raw data.
+- **What makes it credible.** Every figure is validated against held-out real monitors and published
+  with its uncertainty, including the results where a learned model lost to a simple baseline. The
+  system says "we cannot see here" rather than drawing unmonitored ground as clean.
+- **Is it real?** Yes: it is deployed, updates hourly, and has already produced a cross-state
+  coordination request from live data (see [§3.6](#36-coordinating-across-cities-and-states)).
+  Tests: 806 backend, 95 frontend, all run in CI together with a replay of a recorded pollution
+  episode.
 
-| Tier | Source | Property | Role |
-| --- | --- | --- | --- |
-| 1 — Truth, sparse | CPCB CAAQMS, OpenAQ | accurate, ~400 points | ground truth, calibration target, validation |
-| 2 — Dense, biased | low-cost sensors, citizen photos | everywhere, systematically wrong | spatial density once calibrated |
-| 3 — Uniform, coarse | Sentinel-5P, NASA FIRMS, Open-Meteo/ERA5 | complete coverage, low resolution | covariates, fire events, transport physics |
+## Contents
 
-Four things follow that current systems do not do:
-
-- **A hotspot is an anomaly against a locally expected baseline**, not a national threshold.
-  40 µg/m³ in a clean southern city is an event; the same reading in Delhi in November is noise.
-  This is what "hidden" actually means.
-- **Attribution by wind back-trajectory.** Trace upwind from the hotspot through the wind field and
-  intersect with a source registry and FIRMS fire pixels. Output changes from "AQI is bad" to
-  "this plume traces to a fire detected 40 minutes ago at these coordinates."
-- **Forecast before exposure**, 24–72h along economic corridors, so the alert arrives in time to
-  matter.
-- **Federated by necessity.** Cities exchange model weights, not raw data, because that is the
-  only arrangement that survives Indian data-governance reality. The hope is that a model trained
-  in Delhi and Kanpur gives a city like Coimbatore — which has almost no stations — a working
-  forecast from the start. That is a claim, not a result: the measurements below have not yet
-  established that sharing helps any node.
-
-Software cannot stop the burning. What it can do is collapse detection-to-response from days to
-minutes, make enforcement surgical instead of collective, cut an individual's actual inhaled dose
-through timing and routing, and build the evidence trail that makes accountability possible.
+1. [The problem, as a Coimbatore resident sees it](#1-the-problem-as-a-coimbatore-resident-sees-it)
+2. [The idea: three tiers of evidence, one chain of action](#2-the-idea-three-tiers-of-evidence-one-chain-of-action)
+3. [How each part of the challenge is answered](#3-how-each-part-of-the-challenge-is-answered)
+4. [The product, screen by screen](#4-the-product-screen-by-screen)
+5. [What the evidence says](#5-what-the-evidence-says)
+6. [Is it feasible?](#6-is-it-feasible)
+7. [How it is built](#7-how-it-is-built)
+8. [Run it, test it, deploy it](#8-run-it-test-it-deploy-it)
+9. [API](#9-api)
+10. [Known limitations](#10-known-limitations)
 
 ---
 
-## Validated results
+## 1. The problem, as a Coimbatore resident sees it
 
-### How these results are judged
+Coimbatore is home to about 2.5 million people. OpenAQ lists a single reference monitor in range,
+SIDCO Kurichi. Its particulate readings reach OpenAQ days late, and its PM2.5 sensor stopped
+reporting weeks ago. The site still counts as "active", because its other sensors still report. On
+paper the city is monitored; in practice, nobody knows what is in the air on any given street.
 
-Every comparison below was re-run with two safeguards added after a published
-federation claim turned out to rest on noise (see *Federation*).
+Delhi has the opposite problem and the same blind spot. With more than 50 monitors it is one of the
+densest networks in the country, yet in our leave-one-out test neighbouring stations explained
+**less than a quarter of the variance** at a location they did not cover (R² 0.25). Four structural
+causes sit underneath:
 
-- **Pinned data.** Validations read only observations before 12 September 2026
-  00:00 UTC. Without that cutoff every figure drifted as the hourly worker added
-  data — LightGBM's error here had already moved from the originally published
-  12.84 to 12.44 — so the tables below supersede the first published figures.
-- **Reference monitors only.** Five AirGradient low-cost sensors were once
-  ingested as if they were reference monitors, because ingestion ignored
-  OpenAQ's own classification. Their uncalibrated readings sat inside every
-  validation below. They are now stored as the low-cost tier and excluded from
-  all analysis, and every figure here was re-run without them. No conclusion
-  changed; most numbers did.
-- **Intervals, and a rule for reading them.** Each method is compared with the
-  baseline by a bootstrap that resamples **whole stations**, since a station that
-  is hard to predict is hard every hour and its rows are not independent. A
-  method is called better or worse only when the 95% interval excludes zero *and*
-  the difference exceeds 2%.
-
-### Reconstructing unmonitored ground
-
-Numbers below come from `npm run ml:validate-loso`: 7,001 scored station-hours
-across 33 held-out reference stations in Delhi-NCR.
-
-**Leave-one-station-out**: hide one real station completely — from the features
-*and* from training — estimate its location from the rest of the network, and
-compare against what it actually recorded.
-
-| Method | MAE | RMSE | R² |
-| --- | --- | --- | --- |
-| Inverse-distance weighting | **11.75** | **17.85** | **0.246** |
-| LightGBM (absolute target) | 12.76 | 19.00 | 0.146 |
-| LightGBM (residual to IDW) | 13.00 | 19.25 | 0.123 |
-
-| Against IDW (33 stations) | Difference (µg/m³) | 95% interval | Verdict |
-| --- | --- | --- | --- |
-| LightGBM (absolute) | −1.01 | [−2.17, +0.07] | inconclusive |
-| LightGBM (residual) | −1.25 | [−2.56, −0.07] | worse |
-
-Two findings:
-
-**1. No learned model is established as better than interpolation, so IDW is
-what ships.** The residual framing is established as worse. The absolute
-framing's deficit is not established — its interval just crosses zero — though an
-earlier version of this section stated it flatly as "~12% worse" from a point
-estimate. Either way
-nothing shows a gain, and without evidence of one the simpler estimator is the
-one to trust. With 33 scorable stations the trees tend to learn each site's
-idiosyncrasies rather than a spatial relationship that transfers to ground the
-network does not cover.
-
-**2. R² of 0.246 is the headline, and it is a result about the problem, not
-about the method.** Even with more than 60 monitors inside 25 km — one of the densest
-networks in India — neighbouring stations explain under a quarter of the
-variance at an unmonitored point. This is the resolution mismatch in the
-problem statement above, measured rather than asserted. The hardest station to
-reconstruct is Anand Vihar (MAE 42 µg/m³), a bus terminal beside an industrial
-belt: exactly the kind of hyper-local source that a city-average AQI cannot see.
-
-**Error is predictable, which is what makes uncertainty honest.** Disagreement
-between nearby monitors tracks error closely:
-
-| Spread among 3 nearest stations | Mean absolute error |
+| Root cause | What it means on the ground |
 | --- | --- |
-| 0–5 µg/m³ | 10.45 |
-| 5–15 µg/m³ | 11.52 |
-| 15–30 µg/m³ | 13.57 |
-| 30+ µg/m³ | 24.76 |
+| **Accurate instruments cannot be dense.** A CPCB reference station (CAAQMS) costs about ₹1–1.5 crore; India has roughly 400–550 of them. | One monitor stands in for tens of km², while PM2.5 can vary 3–5× within a kilometre. |
+| **The AQI looks backwards.** It is a 24-hour rolling average. | A three-hour toxic plume is diluted into a daily number published after people have breathed it. |
+| **Data follows administrative lines; pollution does not.** CPCB, some 35 state boards, municipalities and private networks each hold a fragment. | Smoke from one state is another state's emergency, and no state hands its raw data to another. |
+| **Without attribution there is no enforcement.** | Responses are blunt and collective, such as halting all construction under GRAP, instead of "this kiln, this depot". |
 
-The fused surface therefore publishes a per-cell uncertainty fitted to this
-relationship, and returns *nothing* rather than a number for cells too poorly
-supported to estimate. A cell nothing supports is drawn as unknown, never as
-clean.
+The cost is concentrated on outdoor workers, children in schools on arterial roads, settlements
+beside industrial corridors and landfills, and people with respiratory or cardiac disease. PM2.5
+exposure is associated with about 1.7 million deaths in India in 2022, and air pollution costs
+roughly 9.5% of GDP.
 
-**What would actually improve this** is not a better model but better-resolved
-inputs — the low-cost sensor tier and satellite AOD — which is the argument for
-the three-tier design rather than a bigger network of reference monitors.
+## 2. The idea: three tiers of evidence, one chain of action
 
-### Forecasting, 24-72 hours
+AirWatch does not try to replace the reference network. It uses that network as ground truth, adds
+denser but less accurate sources around it, and uses satellites and weather to cover the gaps. It
+keeps every tier separate and labelled, so a ₹15,000 sensor is never mistaken for a ₹1-crore monitor.
 
-Validated on a temporal holdout -- trained on the earliest days, tested on the
-latest -- because a random split would place hours from the same afternoon on
-both sides and let autocorrelation stand in for skill.
-
-| Method | 24h MAE | 48h MAE | 72h MAE |
+| Tier | Sources in AirWatch | Property | Used for |
 | --- | --- | --- | --- |
-| Persistence | 21.68 | 23.02 | 22.21 |
-| **Climatology** | **15.79** | **16.35** | **16.24** |
-| LightGBM (absolute) | 17.77 | 19.95 | 19.71 |
-| LightGBM (residual to climatology) | 17.41 | 19.55 | 19.02 |
+| **1 · Ground truth** | CPCB/state reference monitors via OpenAQ; CPCB's live AQI feed via data.gov.in | Accurate, sparse | Detection, validation, the reference every other tier is compared against |
+| **2 · Dense, biased** | Community low-cost networks (AirGradient); residents' photographs; residents' household sensor readings | Everywhere, systematically wrong | Coverage, shown uncalibrated; builds the evidence to calibrate against tier 1 |
+| **3 · Complete, coarse** | Sentinel-5P NO₂, SO₂, CO and aerosol index via Google Earth Engine; Open-Meteo wind; NASA FIRMS fires | Full coverage, low resolution | The regional picture between monitors, wind for back-trajectories, fires as candidate sources |
 
-| Against climatology (58 stations) | 24h | 48h | 72h |
-| --- | --- | --- | --- |
-| Persistence | −5.89 [−7.27, −4.52] | −6.67 [−8.40, −5.10] | −5.97 [−7.19, −4.85] |
-| LightGBM (absolute) | −1.98 [−2.78, −0.99] | −3.60 [−4.64, −2.49] | −3.47 [−4.22, −2.69] |
-| LightGBM (residual) | −1.62 [−2.44, −0.62] | −3.20 [−4.18, −2.08] | −2.79 [−3.44, −2.12] |
+```mermaid
+flowchart LR
+  subgraph S["Sense"]
+    T1["Tier 1: reference monitors, CPCB feed"]
+    T2["Tier 2: low-cost sensors, residents"]
+    T3["Tier 3: Sentinel-5P, wind, fires"]
+  end
+  W["Hourly worker: TimescaleDB + PostGIS on an H3 grid"]
+  D["Detect: monitor vs neighbourhood prediction"]
+  A["Attribute: wind back-trajectory, ranked sources"]
+  F["Forecast: 24 to 72 h along corridors"]
+  R["Alert: district holding the hotspot"]
+  C["Coordinate: jurisdiction holding the source"]
+  K["Authority console: acknowledge, resolve, SLA"]
+  X["Share: federated weights, interop API"]
+  T1 --> W
+  T2 --> W
+  T3 --> W
+  W --> D --> A
+  W --> F
+  A --> R --> K
+  A --> C --> K
+  W --> X
+```
 
-*Difference in MAE (µg/m³) with 95% station-level interval; negative means worse
-than climatology.*
+Every stage has one screen, one set of API endpoints, and one honest statement of what it cannot
+establish.
 
-**Climatology wins at every horizon, and this one survives the stricter test,
-so climatology is what ships.** Every interval above excludes zero and every
-difference clears the practical threshold. Knowing what a station is
-*usually* like at 3pm beats knowing what it is doing right now by a wide margin,
-which is a real statement about the pollutant: Delhi PM2.5 is dominated by its
-daily cycle.
+## 3. How each part of the challenge is answered
 
-This is the second phase where a learned model failed to beat a simple
-baseline, and both point at the same cause rather than at the model. Around 2,600 training
-rows drawn from fourteen days cannot support a twenty-feature gradient-boosted
-model against a strong prior. The next real improvement is months of history and
-denser inputs, not a different architecture.
-
-**What the climatological forecast cannot do**, stated plainly because the
-output looks more confident than it is: it has no day-to-day skill. It predicts
-the same value for 15:30 on Friday, Saturday and Sunday, because that is what a
-diurnal climatology is. It captures the daily cycle and the spatial gradient; it
-cannot say that Saturday will be worse than Friday. Supplying that was the job
-of the weather-driven model, and with this much data it could not.
-
-A corridor run across Delhi, from Dwarka east to Anand Vihar, does show the
-gradient clearly -- 18 µg/m³ at the western end rising to 51 at the eastern,
-roughly a threefold change across one city. The western 6 km return no forecast
-at all, because no station lies within range; that stretch renders as unknown
-rather than as clean.
-
-Uncertainty is published with every point and is frequently larger than the
-signal (18 ± 28 µg/m³ at the clean end). The forecast is currently more useful
-for *where along a route* the air turns than for the absolute level.
-
-### Federation: does sharing weights help the data-poor city?
-
-The premise of the federated design is that a city with three monitors benefits
-from a model shaped partly by a city with sixty, without either handing over raw
-data. That is a claim, and `npm run fl:validate` measures it: each node compares
-the federated global model against its own local one, on its own held-out data.
-
-First, the monitoring gap that motivates the whole arrangement, as it actually
-stands in the pilot cities:
-
-| City | Active stations | Hourly PM2.5 readings |
+| The challenge asks for | What AirWatch does | Where to see it |
 | --- | --- | --- |
-| Delhi-NCR | 56 | 13,100 |
-| Kanpur | 3 | 660 |
-| Coimbatore | 0 usable | 0 |
+| Citizen-sourced **photos** | Measures atmospheric haze from a photo; refuses dark, blurred or over-exposed images; derives no PM2.5 until 30 photos taken near monitors calibrate it | Contribute → *A photograph*; `POST /v1/citizen/reports` |
+| Citizen-sourced **local sensor readings** | Accepts PM2.5/PM10 from household sensors, stores them as reported, pairs each with the nearest monitor, publishes the tier's measured bias | Contribute → *A sensor reading*; map squares; `POST /v1/citizen/sensor-readings` |
+| **Satellite imagery** | Daily Sentinel-5P columns per ~36 km² cell, for NO₂, SO₂, CO and aerosol index | Overview tier 3; map layer; `GET /v1/satellite` |
+| **Meteorological data** | Hourly wind for every pilot city, steering each back-trajectory from the nearest weather cell | Hotspot sources on the map |
+| **Detect hidden hotspots** | A monitor far above what its neighbours predict, for hours; ranked by excess, not concentration | Live map; `GET /v1/hotspots` |
+| **Forecast spikes across economic corridors** | 24/48/72 h outlook along named corridors, with uncertainty, unforecast stretches, and the best departure hour | Forecast; `GET /v1/forecast/corridor`, `/v1/exposure/advisory` |
+| **Alert relevant authorities** | Routed by OpenStreetMap district and state boundaries; one alert per episode; SLA deadlines; webhook delivery; resolution note required | Authority console; `GET /v1/alerts` |
+| **Coordinate resources** across cities and states | When a hotspot's likely source lies in another jurisdiction, that jurisdiction is asked to act | Console → *Across a boundary* |
+| **Interoperability, sharing predictive models** | Flower federated learning exchanges weights only; OGC SensorThings-shaped GeoJSON exchange API; model cards | Federation; `GET /v1/interop/*` |
 
-Coimbatore has a population near 2.5 million and **one** monitoring station in
-range. That station reports as active, because OpenAQ's station-level timestamp
-is the maximum across all its sensors — but its PM2.5 sensor last produced a
-value five weeks earlier. The site is alive because its thermometer is. A city
-of millions has no current particulate monitoring at all, while every count of
-"active stations" includes it.
+### 3.1 Citizen-sourced data: photographs and household sensors
 
-**The result: nothing is established either way — and an earlier version of
-this README said otherwise.**
+<img src="docs/images/contribute-mobile.png" width="260" align="right" alt="Contribute screen on a phone" />
 
-Every federated model was compared with each city's own model on that city's
-held-out rows, with a paired bootstrap interval on the difference. A verdict of
-*helped* or *harmed* requires the interval to exclude zero **and** the effect to
-be large enough to act on (2%); anything else is reported as what it is.
+Residents are the only dense tier a city like Coimbatore can get quickly, and also the tier most
+likely to be believed beyond what it can support. Both citizen inputs are therefore built to *fail
+towards silence*.
 
-| Node | Test rows | Own model | Plain averaging | Fine-tuned | Local head |
-| --- | --- | --- | --- | --- | --- |
-| Delhi | 405 | 18.11 | 18.14 | 18.13 | 18.07 |
-| Kanpur | 23 | 9.20 | 10.18 | 9.75 | 9.20 |
+**Photographs.** A photo cannot measure PM2.5. What it can measure is how much contrast the air has
+removed, recovered with the dark-channel prior as a **haze index** from 0 to 1.
 
-| Node | Candidate | Gain vs own model (µg/m³) | 95% interval | Verdict |
-| --- | --- | --- | --- | --- |
-| Delhi | plain averaging | −0.027 | [−0.059, +0.005] | inconclusive |
-| Delhi | fine-tuned | −0.017 | [−0.027, −0.006] | no practical difference |
-| Delhi | local head | +0.038 | [+0.015, +0.062] | no practical difference |
-| Kanpur | plain averaging | −0.979 | [−3.895, +1.926] | inconclusive |
-| Kanpur | fine-tuned | −0.548 | [−1.931, +0.873] | inconclusive |
-| Kanpur | local head | −0.006 | [−2.014, +1.870] | inconclusive |
+- Dark, blurred and over-exposed frames are refused with a reason, because each makes clean air
+  look dirty.
+- EXIF data is checked and acted on only when it *contradicts* the submission.
+- No concentration is published until 30 photos taken within 3 km of a reporting monitor have
+  calibrated the relation. Until then the response says why, rather than giving a rough number.
 
-**A correction.** This section previously read *"federation harmed the sparse
-node"*, and the dashboard called that *"the measurement, not a provisional
-result."* It was a point estimate — Kanpur's error rising from 9.21 to 9.85 —
-on 23 held-out rows, and its interval, [−3.44, +2.20] µg/m³, shows those rows
-cannot tell it apart from no effect at all. The claim was stated with a certainty
-the evidence never had. It is corrected here, on the dashboard, and in the
-interop model card, and the rule that caught it (`app/core/evidence.py`) now
-decides every published verdict, so the experiment and the API cannot disagree.
+**Household sensor readings** (AirGradient, PurpleAir, Atmotube and similar). A resident posts what
+their sensor shows, with its model name and time.
 
-**Personalisation was then tried**, because it is the standard answer to the
-non-IID harm the point estimates suggested: fine-tuning the global model locally,
-and keeping the shared slopes while refitting each city's intercept (a local
-head). On the data first used, the local head gave Kanpur a point estimate
-better than its own model. With the low-cost sensors removed from Delhi's data it
-no longer does — its gain is −0.006 — and it was **inconclusive either way**: its
-interval spanned zero both times. A number that looks better on 23 rows is no
-more a finding than one that looks worse, and this is what that looks like in
-practice.
+- Values that no ambient air can reach are refused.
+- Accepted readings are stored **exactly as reported** and paired with the nearest monitor reading
+  within 3 km and 90 minutes.
+- The tier publishes its median sensor-to-monitor ratio, and marks it established only after 30
+  pairs. Readings stay out of detection, fusion and forecasting.
+- On the map they are squares, never circles, so they cannot be mistaken for a monitor.
 
-On Delhi's 405 rows the intervals are narrow enough to exclude zero, but the
-differences are a few hundredths of a microgram — real, and far too small to
-matter. That is why significance alone is not enough to call an effect.
+*Why this shape:* [docs/DESIGN.md](docs/DESIGN.md#household-sensor-readings-and-why-none-is-corrected).
 
-**What the evidence supports**, then, is modest: federating did not demonstrably
-help or hurt either city, so each keeps its own model. The plausible mechanism —
-Kanpur's cleaner, less variable air is an easier task, and a global model that
-is roughly 97% Delhi pulls it toward a harder regime — matches the direction of
-every point estimate and is not established by any of them. **What would settle
-it is more Kanpur history, not a different model:** a holdout several times
-larger would narrow those intervals enough to tell the options apart.
+<br clear="right" />
 
-There are also two participating nodes, not the intended three, and fourteen
-days of history, and the task is forecasting, where climatology already beat
-every learned model.
+### 3.2 Satellite imagery and meteorology
 
-**A federation constraint worth recording**: the shared feature schema is 17
-features, not the forecast model's full set. Meteorology is ingested only for
-Delhi, and a feature one node can compute and another cannot does not average.
-Agreeing the smaller common schema is the correct trade, and is a good example
-of federation being a governance problem before it is a modelling one.
+**Sentinel-5P.**
+- Daily TROPOMI means of NO₂, SO₂, CO and absorbing aerosol index are pulled through Google Earth
+  Engine for each coarse H3 cell over each city.
+- Units are kept as delivered, and cells with too few valid pixels are omitted rather than filled.
+- In Coimbatore this is the only view of the air between and beyond its single monitor. The overview
+  shows a 14-day trend and the map can overlay the cells.
+- It is labelled as a column over ~36 km², never as street-level concentration.
 
-## What the API exposes
+**Weather.**
+- Open-Meteo wind is ingested hourly for every pilot city.
+- A back-trajectory walks the air parcel upwind in 15-minute steps through the *nearest* weather cell
+  within 40 km. Keying wind by hour alone had let one city's trajectory run through another city's
+  wind; that bug was found and fixed.
+- NASA FIRMS VIIRS fire detections enter attribution as candidate sources, weighted by radiative
+  power and discarded if they postdate the hotspot.
 
-Four analysis endpoints, four exchange endpoints, and the alert console. Every
-estimated quantity carries its uncertainty or confidence in the payload, and
-every error returns the same envelope with a correlation ID.
+### 3.3 Detecting hidden hotspots
 
-| Endpoint | What it answers |
+A threshold alarm fires on a bad day across a whole city and stays silent on a bus depot in a clean
+one. AirWatch instead estimates what each monitor *should* read from its neighbours, and flags a
+location when three conditions hold: the excess is large relative to the expected error, it
+persists, and it is confirmed against neighbours. Forty µg/m³ in clean Coimbatore can be an event;
+the same reading in Delhi in November is noise.
+
+![Live map of Delhi-NCR with detected hotspots](docs/images/map-delhi-desktop.png)
+
+**The acceptance test.**
+- A committed fixture holds 1,232 real readings from 59 Delhi stations.
+- The replay runs the real detector over it and must report Anand Vihar: *381 µg/m³ where the network
+  predicted 40, z = 20.4*.
+- The top candidate source must be *Anand Vihar ISBT and rail terminal (60% plausible)*.
+- The replay runs in CI and fails the build if detection regresses.
+
+Where a city has too few monitors to compare, the map says so: *"no hotspot here means no comparison
+was possible, not that the air holds no surprises."*
+
+### 3.4 Forecasting spikes across economic corridors
+
+![Corridor forecast, Dwarka to Anand Vihar](docs/images/forecast-delhi-desktop.png)
+
+**What is shown.** Choose a corridor, such as Dwarka → Anand Vihar, NH-48, Ukkadam → SIDCO Kurichi
+or Avinashi Road. AirWatch then shows:
+- the 24, 48 or 72-hour outlook along it, coloured by CPCB sub-index;
+- a precautionary upper bound (value plus uncertainty);
+- stretches no monitor supports, hatched as unknown.
+
+**Exposure advisory.** This ranks departure hours by exposure along the route. On Dwarka–Anand Vihar,
+leaving at 20:00 instead of 16:00 avoids about 25% of the exposure. When the day's variation is
+smaller than the forecast's own error, no hour is named.
+
+**The honest part.** On a temporal holdout, a diurnal climatology beat every learned model at every
+horizon: 15.8 µg/m³ MAE at 24 h, against 17.4 for the best LightGBM model and 21.7 for persistence.
+So climatology is what ships. It resolves the daily cycle and the gradient along a road; it cannot
+say tomorrow will be worse than today, and the screen says so.
+
+### 3.5 Alerting authorities for rapid intervention
+
+- **Routing is spatial.**
+  - Each hotspot goes to the lowest-tier authority whose boundary contains it: district
+    administration first, then the state pollution body.
+  - Boundaries for 23 authorities come from OpenStreetMap.
+  - A hotspot inside no boundary is reported as *unrouted*, never silently dropped.
+- **One alert per episode.** An eight-hour fire is one event.
+- **Silence is recorded.**
+  - Alerts carry acknowledgement and resolution deadlines, and closing one requires a note of what
+    was done.
+  - Recording and delivery are separate facts: a failed webhook keeps the alert queued with the
+    reason.
+- **Operators are authenticated.** Anyone can read the trail. Acknowledging, resolving and running
+  detection require an operator key, compared in constant time.
+
+### 3.6 Coordinating across cities and states
+
+Routing an alert to the district where the hotspot sits sends it to the one body that often cannot
+touch the cause. So dispatch traces each hotspot upwind. When the likeliest source (at least 50%
+plausible) lies inside a **different** jurisdiction, that jurisdiction receives a **coordination
+request** alongside the local alert.
+
+![A coordination request in the authority console](docs/images/alerts-delhi-desktop.png)
+
+**The first one came from live data**, with nothing configured by hand:
+- The UP monitor at Prashant Garden, Khora read **74 µg/m³ where its neighbours predicted 20**.
+- The local alert went to the Gautam Buddha Nagar administration in Uttar Pradesh.
+- The back-trajectory ranked the **Ghazipur landfill** first, at 69% plausible, and the landfill is
+  in East Delhi.
+- The East Delhi district administration was therefore asked to act for its neighbour, across a
+  state line.
+
+The request states its confidence and says plainly that it is *a ranked candidate, not an
+established cause*. The webhook event is `airwatch.coordination_request`, with the source to
+inspect.
+
+### 3.7 Sharing predictive models: federation and interoperability
+
+![Federation screen](docs/images/federation-desktop.png)
+
+**Federation.**
+- Each city is a node that trains the forecasting model on its own data. A Flower server aggregates
+  weights (FedAvg) and never opens a database.
+- The first round exchanges only per-feature sums, to build a shared scaler.
+- The same protocol runs in-process for validation and across processes over gRPC; with pinned data
+  the two give identical results.
+
+**Interoperability.**
+- `/v1/interop/*` publishes observations and detected episodes as GeoJSON with OGC SensorThings
+  property names, an explicit CRS, licence and measurement tier.
+- It also publishes model cards: what each estimator scored, and what it lost to.
+
+**Does sharing help?** Measured with station-level bootstrap intervals, and the honest answer is
+*not yet established*. Delhi's differences are real but a few hundredths of a µg/m³; Kanpur's 23
+held-out rows cannot tell any variant from no effect. Each node keeps its own model and no weights
+are pushed on a data-poor city without evidence. What would settle it is more Kanpur history, not a
+different model. Full tables are in [docs/VALIDATION.md](docs/VALIDATION.md).
+
+## 4. The product, screen by screen
+
+The interface follows the chain of work: **Overview → Live map → Forecast → Authority console →
+Federation → Contribute**.
+- **On a desktop:** the screens are tabs in a masthead that also holds the city and a live-data
+  indicator.
+- **On a phone:** they move to a bottom bar within thumb reach, and the map's hotspot list becomes a
+  sheet that opens from the bottom.
+
+| Overview | Live map | Contribute |
+| :---: | :---: | :---: |
+| <img src="docs/images/overview-mobile.png" width="240" alt="Overview on a phone" /> | <img src="docs/images/map-mobile.png" width="240" alt="Map on a phone" /> | <img src="docs/images/contribute-mobile.png" width="240" alt="Contribute on a phone" /> |
+
+The overview reads as a numbered argument rather than a wall of widgets:
+1. **Right now:** CPCB's official index beside the latest reading at each monitor.
+2. **What the network can see here:** each tier's count for *this* city, with "thin here" and
+   "nothing yet" where that is the truth.
+3. **What is unexpected:** hotspots, or why none can be detected.
+4. **Who has been told:** open alerts, overdue ones, requests across a boundary, and alerts never
+   delivered.
+5. **How it works.**
+
+A shared link such as `/?city=delhi&pollutant=pm25#/map` opens on that city and pollutant.
+
+**Design choices that carry meaning:**
+- The six CPCB band colours are the only saturated colour, so a "Poor" reading is never competing
+  with decoration.
+- Figures are set in a monospace so columns line up.
+- Monitors, community sensors, residents' sensors and hotspots use four shapes that cannot be
+  confused.
+- A failed request is never drawn as an empty map. Loading, empty, failed and successful states each
+  have their own colour and glyph.
+
+## 5. What the evidence says
+
+All figures were measured on data pinned before 12 September 2026, on **reference monitors only**,
+with 95% intervals from a bootstrap that resamples whole stations. A method is called better or
+worse only if its interval excludes zero *and* the difference clears 2%.
+
+| Question | Result | Verdict |
+| --- | --- | --- |
+| How well can an unmonitored location be reconstructed? (leave one station out, 33 Delhi stations, 7,001 station-hours) | Inverse-distance weighting: MAE **11.75 µg/m³**, R² **0.246**. LightGBM: 12.76 absolute and 13.00 residual. | No learned model beats interpolation, so **IDW ships**. Low R² is the problem itself, measured. |
+| Is the uncertainty honest? | Error rises with disagreement between nearby monitors, from 10.5 to 24.8 µg/m³ | Every fused cell publishes an uncertainty fitted to this; unsupported cells return nothing |
+| Which forecast works at 24 / 48 / 72 h? | Climatology **15.8 / 16.4 / 16.2** · LightGBM residual 17.4 / 19.6 / 19.0 · persistence 21.7 / 23.0 / 22.2 | **Climatology ships**; every learned model is significantly worse |
+| Does federation help the sparse node? | Kanpur: every variant inconclusive (23 test rows). Delhi: differences of hundredths of a µg/m³. | **Not established either way**; each node keeps its own model |
+| Does detection find a known episode? | Anand Vihar, 381 vs 40 predicted, z = 20.4, source ranked first | **PASS**, and enforced in CI |
+
+These are published *because* two learned models lost. An earlier claim that federation "harmed"
+Kanpur rested on a point estimate. It was corrected in the README, on the dashboard and in the model
+card, and the evidence rule that caught it (`core/evidence.py`) now decides every published verdict.
+Details: [docs/VALIDATION.md](docs/VALIDATION.md).
+
+## 6. Is it feasible?
+
+**Cost to run a city node.**
+
+| Item | Cost |
 | --- | --- |
-| `GET /v1/stations` | Latest reading at every station, worst first |
-| `GET /v1/hotspots` | Locations dirtier than their neighbourhood predicts, with ranked candidate sources |
-| `GET /v1/forecast/corridor` | Concentration outlook along a route |
-| `GET /v1/exposure/advisory` | When to travel a route, by the exposure each departure costs |
-| `GET /v1/alerts` | The alert inbox, ordered by standardised excess |
-| `POST /v1/alerts/dispatch` | Detect over a window and route alerts to the responsible authorities |
-| `POST /v1/alerts/{id}/acknowledge` | Record that an authority has seen an alert |
-| `POST /v1/alerts/{id}/resolve` | Close an alert with a note describing the outcome |
-| `POST /v1/alerts/deliver` | Send recorded alerts to the configured endpoint |
-| `GET /v1/alerts/sla-breaches` | Alerts past their response deadline |
-| `GET /v1/federation/status` | Live node coverage, and whether federating helped |
-| `GET /v1/interop/capabilities` | What this node offers a partner, discoverable at runtime |
-| `GET /v1/interop/observations` | Observations as GeoJSON with OGC SensorThings property names |
-| `GET /v1/interop/hotspots` | Detected episodes as GeoJSON, carrying observed, expected and excess |
-| `GET /v1/interop/models` | Model cards: what each estimator scored, and what it lost to |
-| `POST /v1/citizen/reports` | Submit a geotagged photograph; returns the haze it measured |
-| `GET /v1/citizen/reports` | Recent submissions, and which of them also calibrate |
-| `GET /v1/citizen/calibration` | Whether a photograph can yield a concentration yet |
+| Server: one AWS `t3.small` running API, worker, database and HTTPS | about **US$20 a month**; also runs on any Ubuntu host, including Oracle Cloud's free tier |
+| Data: OpenAQ, data.gov.in, NASA FIRMS, Open-Meteo, Google Earth Engine (non-commercial), OpenStreetMap | **free**, with registration keys |
+| Densifying a neighbourhood with household sensors | a few thousand to ~₹20,000 per sensor, against ₹1–1.5 crore per reference station |
 
-### Alerting, and why it is shaped this way
+**Adoption path for a new city or state:**
+1. Deploy the stack with two scripts: [docs/DEPLOY_AWS.md](docs/DEPLOY_AWS.md).
+2. Load its district and state boundaries with `tools/fetch_osm_jurisdictions.py`.
+3. Confirm with those bodies which office receives each tier of alert, and set its webhook.
+4. Invite residents and community sensor owners to contribute; the bias of their tier becomes
+   measurable as readings accumulate beside monitors.
+5. Join the federation as a node. Raw data stays on the state's own server; only weights travel.
 
-Routing is spatial, not configured per station, because a hotspot can appear on
-ground no monitor covers -- which is the reason for estimating a surface at all.
-Three rules follow, and all three exist to protect the one thing the chain
-depends on, that alerts keep being read:
+**Why it scales across governance lines.** Nothing in the design needs a national data lake:
+- A node shares weights, and GeoJSON observations it can audit before sending.
+- Routing and coordination come from boundaries and wind, not from any per-station setup.
+- Each node degrades honestly: a city with one monitor still gets the official feed, the satellite
+  picture, citizen tiers and forecasts where coverage allows, and is told exactly what it lacks.
 
-- **One alert per episode.** A source that burns for eight hours is one event.
-- **Lowest jurisdiction tier first,** so a municipal body is reached before a
-  state board rather than both being told and each assuming the other is acting.
-- **An unrouted hotspot is reported, not dropped.** A hotspot inside no
-  registered jurisdiction is a gap in the authority registry; hiding it would
-  make an incomplete registry look like a quiet day.
-- **Recording an alert and delivering it are separate facts.** Delivery runs as
-  its own step, because a slow endpoint would otherwise stall detection and a
-  failed one would lose the alert. A failed delivery keeps the alert queued with
-  the reason attached, so an authority that was never told stays distinguishable
-  from one that was told and stayed silent.
+**Already running.** The live site has served from a single server since 13 September 2026:
+- ingests all three cities hourly and Sentinel-5P daily;
+- has routed 23 alerts, including one coordination request;
+- restarts cleanly with `deploy.sh`, and backs up nightly.
 
-Resolution requires a note. A resolution with no explanation records that
-someone clicked a button, which is not the same as recording that something was
-done, and the difference is the whole value of the trail.
+## 7. How it is built
 
-Measured against the live database: **21 episodes detected, 21 routed, 0
-unrouted**, and a second run suppressed all 21. Anand Vihar routes to East Delhi,
-Nehru Nagar to South Delhi.
+| Layer | Technology |
+| --- | --- |
+| API | Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2, Alembic |
+| Data | PostgreSQL 16 + PostGIS + TimescaleDB; H3 hexagons (resolution 8, ~0.46 km²) as the shared spatial key |
+| Analysis | NumPy, LightGBM for the validated candidates, Flower for federation, earthengine-api |
+| Web | React 18, TypeScript (strict), Vite, Tailwind CSS 4, Leaflet with OpenStreetMap tiles; types generated from the OpenAPI spec |
+| Operations | Docker Compose, Caddy (automatic HTTPS, strict CSP), an hourly worker, nightly `pg_dump` backups |
 
-### Turning a weak forecast into a decision it can actually support
+**Engineering rules, enforced rather than aspired to** (see [CLAUDE.md](CLAUDE.md)):
+- **Layering.** Code depends in one direction: routes → services → repositories. `ml/` holds pure
+  analysis, `core/` holds shared calculations, and services never import each other.
+- **No magic numbers.** Every threshold lives in `core/constants.py` with its source or reasoning.
+- **Typed errors.** Every error is typed and returned in one JSON envelope with a correlation ID.
+  Missing credentials produce an explicit error, never a placeholder reading.
+- **Strict types.** `mypy --strict` for Python and `strict` TypeScript; ruff and ESLint.
+- **Tests mirror the code.** They follow the source tree one-to-one, never call the network, and run
+  against real PostGIS where SQL matters.
+- **CI on every push:**
+  - lint, format and type checks;
+  - migrations applied, rolled back and re-applied, then `alembic check`;
+  - 806 backend and 95 frontend tests;
+  - the Anand Vihar replay;
+  - both Docker images built and the production compose file validated.
 
-Climatology beat every learned model, which meant the forecast has no day-to-day
-skill: it cannot say whether Friday will be worse than Thursday. That is a real
-limitation and it is recorded above.
+```
+backend/app/
+  core/          constants, AQI math, geo, H3, alerting and evidence rules
+  external/      OpenAQ, CPCB, FIRMS, Open-Meteo, Sentinel-5P, webhook clients
+  repositories/  the only place SQL and PostGIS appear
+  ml/            detection, attribution, forecasting, fusion, vision, co-location
+  services/      one per pillar: ingestion, analysis, alerts, citizen, satellite, federation, interop
+  routes/        thin HTTP layer
+federated/       Flower client, server and protocol
+ml/              validation scripts that produced every published figure
+frontend/src/    features/ per screen, components/ui, hooks, lib (the only fetch and coordinate code)
+infra/           compose files, Caddy, deploy and backup scripts, seeds and recorded fixtures
+```
 
-What it *does* resolve is the shape of an average day — and that is exactly what
-a timing decision needs. "Is the evening usually better than the afternoon on
-this route" is a question about the daily cycle; "will tomorrow be bad" is not.
-So the exposure advisory is built on the one thing the estimator is genuinely
-good at rather than on the thing it was hoped to do.
+## 8. Run it, test it, deploy it
 
-Each candidate departure hour is forecast along the whole route and integrated
-with **time spent in each segment as the weight** — weighting by sample count
-instead would let a long clean stretch outvote the short filthy one that
-determines the dose. On the Dwarka–Anand Vihar corridor the answer is concrete:
-travelling at 20:00 rather than 16:00 avoids about **25%** of the exposure.
-
-Two refusals are built in. When the spread across the day is smaller than the
-forecast's own error, **no hour is named** — advice gets acted on, and naming one
-there would be dressing noise as advice. And the quantity is exposure
-(µg/m³ × minutes), never micrograms inhaled: that needs a ventilation rate which
-depends on the person, and inventing one would add a fabricated factor to a
-number that is useful without it.
-
-### The citizen tier, and what a photograph can establish
-
-A reference monitor costs ~₹1 crore and there are a few hundred in the country.
-There are a billion cameras. The risk is that density arrives without accuracy
-and gets treated as if it had both, so this tier is arranged to fail towards
-silence.
-
-A photograph cannot measure PM2.5. It can measure how much contrast the
-atmosphere removed, which the dark-channel prior (He, Sun and Tang, CVPR 2009)
-recovers as a transmission map; transmission is `exp(-βd)` for extinction over
-scene depth. The depth is not in the image, so the measurement stops at a
-dimensionless **haze index** in [0, 1].
-
-Converting that to micrograms needs an empirical relation, and the only
-defensible source is this network's own data: submissions taken within 3 km of a
-reference monitor pair a haze index with a measured concentration. **Below
-thirty pairs, no concentration is published** — not a rough number, not a wide
-interval. The response carries the haze index, a null estimate, and a sentence
-saying what is missing. An uncalibrated concentration derived from a photograph
-is a fabricated reading.
-
-The error is measured by leave-one-out rather than in-sample, because at this
-sample size the fit has seen every point it would otherwise be scored on.
-
-Three image conditions are refused outright — **darkness, blur, over-exposure**
-— because each one makes clean air look dirty. A bug here would not produce an
-obviously broken number; it would produce a plausible pollution reading from a
-clear day, which is the worst output this system can emit. A refusal returns the
-reason, so the photograph can be retaken.
-
-Trust moves only when a comparison was possible. A device is never penalised for
-photographing somewhere the reference network cannot check it, since that is
-exactly where the tier is most needed.
-
-### Interoperability, and why weights are withheld
-
-No state hands another its raw database, so a national data lake stalls on
-ownership rather than bandwidth. What a state will exchange is a bounded,
-self-describing envelope it can audit before sending -- hence GeoJSON, OGC
-SensorThings property names, and an explicit CRS, licence and measurement tier
-on every payload.
-
-`GET /v1/interop/models` publishes the measured performance of every estimator,
-including the two that lost, and offers **no weight vector**. That is deliberate
-rather than unfinished: the learned models were trained, validated and beaten by
-their baselines, and neither federated averaging nor its personalised variants
-is established as improving on a node's own model. Publishing weights without
-evidence of benefit would invite a data-poor city to adopt something nobody can
-show is better. The reason is stated in the card.
-
-## Running it
+**Prerequisites:** Docker, Node 20+, Python 3.12. Free keys for OpenAQ, data.gov.in and NASA FIRMS
+go in `.env` (copy `.env.example`). Earth Engine is optional.
 
 ```bash
-npm run db:up         # Postgres + PostGIS + TimescaleDB, and Redis
+npm install
+npm run db:up         # PostgreSQL + PostGIS + TimescaleDB
 npm run db:migrate    # apply migrations
-npm run seed          # load the source and authority registries
-npm run ingest:once   # pull live data from OpenAQ, Open-Meteo and FIRMS
-npm run backfill      # pull hourly history so forecasting has a series
+npm run seed          # source registry and 23 authority boundaries
+npm run worker:once   # one full cycle: every pilot city's readings, weather, fires, CPCB feed
+npm run backfill -- --city delhi --pollutant pm25   # hourly history for detection and forecasts
 npm run dev           # API on :8000, web on :5173
 ```
 
-### Keeping it current
+Keep it current with `npm run worker`: one cycle an hour covering ingestion, the official feed,
+detection and routing, and delivery, plus the satellite fetch once a day.
 
-Without a schedule the data goes stale within a day, and a hotspot that develops
-overnight goes unseen until someone runs ingestion by hand. The worker runs one
-cycle per hour -- ingest every pilot city, detect and route, deliver:
-
-```bash
-npm run worker        # long-running, one cycle per hour
-npm run worker:once   # a single cycle, for cron or Windows Task Scheduler
-```
-
-Each step is isolated, so an outage for one city or one upstream does not stop
-the others, and detection still runs over the data already held. `worker:once`
-exits non-zero if any step failed, so a scheduler watching the exit code sees it.
-
-On Windows, schedule it hourly with:
-
-```powershell
-schtasks /Create /SC HOURLY /TN "AirWatch worker" /TR "cmd /c cd /d C:\path\to\airwatch && npm run worker:once >> worker.log 2>&1"
-```
-
-A cycle stores each station's latest reading, so hotspot detection needs a few
-hours of cycles before a persistent episode can appear. After a long gap, run
-`npm run backfill` once to restore the hourly history.
-
-### Reproducing the headline result
-
-Every figure here came from live upstreams over a fourteen-day window, which
-nobody else can reproduce without three API keys and the same fortnight of
-weather. So the episode is committed:
+**Verify the claims yourself:**
 
 ```bash
-npm run demo:replay
+npm run check                 # lint, formatting, types and every test
+npm run demo:replay           # the recorded Anand Vihar episode must print PASS
+npm run ml:validate-loso      # leave-one-station-out reconstruction
+npm run ml:validate-forecast  # temporal-holdout forecast comparison
+npm run fl:validate           # does federation help the sparse node?
 ```
 
-That loads `infra/fixtures/delhi-anand-vihar-august.json` — 1,232 real readings
-from 59 reference stations and 4 low-cost sensors (which detection ignores) over
-three days — and runs the actual detection
-over them. It prints what it found and exits non-zero if the episode is not
-there:
-
-```
-Anand Vihar, New Delhi - DPCC: 381 ug/m3 where the network predicted 40
-                               (excess 341, z=20.4, 7 intervals)
-    candidate: Anand Vihar ISBT and rail terminal (60% plausible)
-PASS: the expected episode at Anand Vihar was found.
-```
-
-The fixture carries its own acceptance criterion, so the file states what it is
-supposed to demonstrate. The same replay runs in the test suite against an empty
-database, which makes it a regression test rather than a demo: if a change to
-fusion, the uncertainty model or the persistence filter quietly stops the system
-seeing a bus terminal running nine times its neighbourhood, the suite fails.
-
-Verification:
-
-```bash
-npm run check              # lint, formatting, types, and every test
-npm run ml:validate-loso   # leave-one-station-out on the fused surface
-npm run ml:validate-forecast
-npm run fl:validate        # does federation help the sparse node?
-npm run alerts:dispatch    # detect and route from the command line
-npm run alerts:deliver     # send recorded alerts to the configured endpoint
-```
-
-### Running the federation across processes
-
-`npm run fl:validate` measures federation in one process. The same protocol also
-runs with each city as its own process, over Flower's gRPC transport, so no
-party ever holds another's data:
+The federation also runs across real processes over Flower's gRPC transport:
 
 ```bash
 npm run fl:server -- --nodes 2
@@ -518,141 +442,93 @@ npm run fl:node -- --city delhi --pinned
 npm run fl:node -- --city kanpur --pinned
 ```
 
-The server opens no database. The first round exchanges per-feature sums and
-counts, from which it builds the shared scaler; every round after that exchanges
-model weights only, and each node reports the global model's error on its own
-held-out rows. Membership is fixed at the first round, and a node that drops out
-stops the run rather than being averaged around.
+**Deploy:** a single Ubuntu server runs everything behind Caddy with automatic HTTPS. The
+step-by-step AWS guide is [docs/DEPLOY_AWS.md](docs/DEPLOY_AWS.md); on any other host run
+`infra/deploy/bootstrap.sh`, fill in `.env` from `.env.production.example`, then
+`infra/deploy/deploy.sh --first-load`.
 
-Training is deterministic, so the transport can be held to an exact standard:
-with `--pinned` it reproduces the in-process result — Delhi 18.14 and Kanpur 10.18
-µg/m³ after ten rounds — and a test drives Flower's own round loop and checks the
-weights match to floating-point precision.
+## 9. API
 
-Tests marked `integration` need a reachable PostgreSQL and skip with a reported
-reason when there is none, so `npm run check` is green on a clean clone.
+Interactive reference: [`/docs`](https://airwatch-cbe.duckdns.org/docs). Every estimated quantity
+carries its uncertainty or confidence, and every error returns the same envelope.
 
-## Deploying it
+| Endpoint | What it answers |
+| --- | --- |
+| `GET /v1/health` | Is the API up, and which upstreams are configured |
+| `GET /v1/cities` | The pilot cities, their centres and default pollutants |
+| `GET /v1/stations` | Latest reading at every reference monitor, worst first |
+| `GET /v1/sensors` | Community low-cost sensors, uncalibrated |
+| `GET /v1/official-aqi` | CPCB's latest published index per station |
+| `GET /v1/satellite` | A Sentinel-5P product over a city: daily series and latest cells |
+| `GET /v1/hotspots` | Locations dirtier than their neighbourhood predicts, with ranked sources |
+| `GET /v1/forecast/corridor` | Outlook along a route, with uncertainty and sub-index per point |
+| `GET /v1/exposure/advisory` | When to travel a route, by the exposure each departure costs |
+| `GET /v1/alerts` · `GET /v1/alerts/sla-breaches` | The alert trail, including coordination requests, and what is overdue |
+| `POST /v1/alerts/dispatch` · `/deliver` · `/{id}/acknowledge` · `/{id}/resolve` | Operator actions (bearer key) |
+| `POST` · `GET /v1/citizen/reports` · `GET /v1/citizen/calibration` | Photographs and the state of their calibration |
+| `POST` · `GET /v1/citizen/sensor-readings` | Household sensor readings and the tier's measured bias |
+| `GET /v1/federation/status` | Node coverage and whether federating helped |
+| `GET /v1/interop/capabilities` · `/observations` · `/hotspots` · `/models` | The exchange a partner city consumes |
 
-A single server runs the whole stack with Docker Compose -- Caddy for HTTPS and the
-web app, the API, the hourly worker, and TimescaleDB with PostGIS -- defined in
-`infra/docker-compose.prod.yml`. Only Caddy publishes ports; the database and API
-stay on the private network.
+## 10. Known limitations
 
-- **AWS, step by step:** [`docs/DEPLOY_AWS.md`](docs/DEPLOY_AWS.md). One `t3.small`
-  in Mumbai, about US$20 a month, set up with two scripts and no access keys.
-- **Any other Ubuntu server:** run `infra/deploy/bootstrap.sh`, fill in `.env` from
-  [`.env.production.example`](.env.production.example), then
-  `infra/deploy/deploy.sh --first-load`.
-- **Backups:** `infra/deploy/backup.sh`, nightly from cron, optionally copied to S3.
+These are deferred deliberately and recorded here rather than as TODOs in the code.
 
-Before a deployment is public, set `OPERATOR_API_KEY`: without it every operator
-action is refused, and with a weak one the authority console is guessable.
+**Coverage and data**
+- **Coimbatore has one reference monitor in range, and its PM2.5 sensor is down.**
+  - The dashboard opens on Coimbatore and PM10.
+  - Detection and corridor forecasts need several monitors, and there they say they cannot run.
+  - The official feed, satellite and citizen tiers still work.
+- **Station-level activity is not pollutant-level activity.** A site whose PM2.5 sensor is dead still
+  reports as active if any other sensor is live.
+- **Upstream CO units are not trustworthy.**
+  - Delhi stations declare CO in ppb while reporting values that are plausible only as ppm.
+  - The plausibility guard flags them and they are excluded; they are never "corrected", because
+    guessing what an instrument meant would be inventing a number.
+- **CPCB's live feed gives sub-indices, not concentrations**, so it is shown as the official index
+  and never fed into analysis.
+- **Sentinel-5P is a regional covariate, not a hotspot detector.** At ~36 km² it cannot locate a
+  single kiln, and cloudy days are omitted.
+- **FIRMS misses fires between satellite overpasses**, and most stubble burning has shifted to
+  16:00–18:00 to avoid them.
 
-## Known limitations
+**The dense tier**
+- **Low-cost and household sensors are uncalibrated and kept out of analysis.** Their bias is being
+  measured against monitors as pairs accumulate; no correction is applied yet.
+- **Photographs yield no concentration until 30 co-located pairs exist.** That is intended behaviour,
+  not a missing feature.
+- **EXIF can corroborate a photo but not authenticate it.** Metadata is editable; this raises the
+  cost of spoofing without closing it.
 
-Deferred deliberately, and tracked here rather than as TODOs in the code.
+**Models**
+- **The fused surface is inverse-distance weighting and the forecast is a climatology.** Both are
+  empirical decisions: learned models were measured against them and lost.
+- **The forecast has no day-to-day skill.** It resolves the daily cycle, not whether tomorrow is
+  worse than today.
+- **Back-trajectory uses a single-layer wind field**, not full HYSPLIT dispersion. Candidates are
+  ranked, never asserted.
+- **No federated model is established as helping or harming either node**; Kanpur's holdout is too
+  small to tell.
+- **No model weights are published for exchange.** Model cards publish performance; the envelope
+  supports weights, but nothing has earned a recommendation.
 
-- **No low-cost sensor tier exists.** Every station ingested is reference-grade, so the
-  sensor-calibration model the three-tier design depends on has nothing to calibrate against. The
-  storage path keeps the raw value and the calibrating model version separately, so calibration can
-  be applied later without re-ingesting.
-- **The citizen tier has no calibration yet, by construction.** It needs thirty photographs taken
-  near a reference monitor across a range of conditions. Until then it reports a haze index and no
-  concentration, which is the intended behaviour rather than an unfinished one.
-- **Coimbatore has one working reference monitor, and its PM2.5 sensor is down.** The dashboard
-  opens on Coimbatore and on PM10, because SIDCO Kurichi (TNPCB) reports PM10 while its PM2.5 sensor
-  returned nothing across the ingested fortnight, and PSG College of Arts and Science has not
-  reported since July. With one station, hotspot detection (which needs at least three neighbours)
-  and corridor forecasts cannot run, and both screens say so rather than showing an empty result.
-  Citizen photographs taken there are measured and shown, but cannot count toward calibration, which
-  is fitted against PM2.5; a photo pairs only with a reading within 90 minutes and 3 km of it.
-- **EXIF corroborates but cannot authenticate.** Metadata is read and a photograph whose own header
-  places it in another city, or hours from the claimed time, is refused. But EXIF is editable and
-  routinely stripped, so absence cannot be treated as fraud: an unverifiable submission is accepted,
-  marked, and held below the trust a pair needs to shape the calibration. A determined spoofer can
-  still write matching metadata; this raises the cost, it does not close the hole.
-- **No federated model is established as helping or harming either node.**
-  Plain averaging and two personalised variants are implemented, tested and
-  published with bootstrap intervals; Kanpur's 23-row holdout leaves every one of
-  them inconclusive. The limiting factor is the size of that holdout, which only
-  more history can fix.
-- **Federation nodes share one database and one machine.** Each city runs as its
-  own process and reads only its own city's rows, but the pilot points every node
-  at the same PostgreSQL. Transport is loopback and unencrypted; a deployment
-  across state boundaries needs TLS and node authentication, which v1 does not set
-  up.
-- **The Flower entry points are deprecated.** Nodes use `start_server` and
-  `start_client`, which Flower 1.x supports but has superseded with its
-  SuperLink/SuperNode deployment. The dependency is capped below 2.0; moving to
-  SuperLink is packaging work, and the strategy and client carry over unchanged.
-- **Station-level activity is not pollutant-level activity.** A site whose
-  PM2.5 sensor is dead still reports as active if any other sensor is live.
-  Confirming a pollutant is reporting requires querying its sensor history.
-- **The forecast is climatological and has no day-to-day skill.** It resolves
-  the daily cycle and the spatial gradient but predicts the same value for a
-  given hour on consecutive days. Learned models were measured against it and
-  lost; see the validation table above.
-- **The fusion model is inverse-distance weighting, not machine learning.** That
-  is an empirical decision recorded above, not an unfinished one.
-- **Jurisdiction boundaries are real; who answers inside them is an assumption.**
-  `infra/seed/authorities.json` holds OpenStreetMap outlines for the 13 Delhi districts, Gautam
-  Buddha Nagar, Ghaziabad, Gurugram, Faridabad, Kanpur Nagar and Coimbatore, plus the four state
-  pollution bodies (© OpenStreetMap contributors, ODbL), built by `tools/fetch_osm_jurisdictions.py`.
-  Alerts go to the district administration first and the state body second. That assignment is an
-  explicit table in the script, not something the map can say, and a deployment must confirm it with
-  those bodies -- an alert delivered to the wrong office creates a record of notification nobody
-  could act on. Placeholder authorities from earlier seeds are retired, not deleted, so alerts already
-  sent to them stay attributed.
-- **No model weights are published for exchange.** `GET /v1/interop/models` serves model cards with
-  measured performance and withholds weights, because both learned models lost to their baselines.
-  The envelope supports weights; there is nothing this node would honestly recommend adopting.
-- **Delivery is a webhook only.** An authority's endpoint receives a machine-readable event; there
-  is no email or SMS gateway. That is a deliberate choice -- a control room needs an event its own
-  software can file and close, and anything needing email can subscribe to the same webhook through
-  a gateway the authority controls -- but it does mean a deployment with no such endpoint records
-  alerts without delivering them, and says so rather than claiming success.
-- **Operators share one key; there are no named accounts.** Reading is open to everyone. Running
-  detection, delivering, acknowledging and resolving alerts require `OPERATOR_API_KEY` as a bearer
-  token, compared in constant time; with no key set those actions are refused outright rather than
-  left open. The authority console offers a sign-in that keeps the key for the browser tab only.
-  Because the key is shared, the trail records what was done but not which operator did it -- named
-  accounts are the next step. Every client is also rate limited (`RATE_LIMIT_PER_MINUTE`, default
-  120, with `Retry-After`), held in memory per process and keyed on the connecting address; behind a
-  reverse proxy the proxy must supply the real address (uvicorn `--proxy-headers`).
-- **Upstream CO units are not trustworthy at face value.** Several live Delhi stations declare CO
-  in `ppb` while reporting values around 1.2 -- implausible as ppb (ambient CO runs in the hundreds)
-  and exactly right as ppm. Every one of the 114 CO readings in the pilot database had this error.
-  A plausibility guard now flags any reading outside physical bounds (`PLAUSIBLE_CONCENTRATION_RANGE`)
-  at ingestion, and `npm run data:reflag` re-applies the bounds to rows already stored; flagged rows
-  are kept but excluded from every estimate. The values are deliberately not "corrected" to ppm:
-  guessing what an instrument meant would be inventing a number. So there is currently no usable CO
-  data, rather than wrong CO data. Negative values, which some networks emit as "no data" sentinels,
-  are dropped at ingestion.
-- **Stations carry duplicate sensors across generations.** A live station commonly exposes both a
-  current sensor and a decommissioned one for the same pollutant, and the API returns the final
-  value of each. Readings are filtered by observation recency per reading, not per station.
-- **CPCB's live feed gives indices, not concentrations.** `npm run official:coimbatore` (and the
-  worker, for every city) stores CPCB's real-time AQI from data.gov.in, which is current for stations
-  OpenAQ lags on by days. The feed publishes per-pollutant *sub-indices*, so it is shown as the
-  official AQI and never converted back into concentrations for analysis. The portal looked down for
-  weeks; the cause was its gateway returning 502 to httpx's default User-Agent, fixed by naming the
-  client.
-- **Sentinel-5P is a regional covariate, not a hotspot detector.** Daily TROPOMI means of NO2, SO2,
-  CO and the absorbing aerosol index are stored per ~36 km² cell (`npm run satellite:coimbatore`),
-  in the units delivered and never converted into a PM2.5 figure. At that resolution it shows the
-  air between and beyond the monitors -- which matters most in Coimbatore -- but cannot locate a
-  single kiln or depot. Cloudy days and thinly observed cells are omitted rather than filled.
-- **Low-cost sensors are shown uncalibrated and kept out of analysis.** Five AirGradient units
-  around Delhi are ingested as their own tier and served by `/v1/sensors`; detection, fusion,
-  forecasting and validation read reference monitors only. Calibrating them against co-located
-  monitors is the next step and has not been done.
-- **Back-trajectory uses a single-layer wind field,** not full HYSPLIT dispersion.
-- **Citizen photo PM2.5 is a proxy** with wide error bars, and is never used as the sole evidence
-  for a cell.
-- **FIRMS misses fires between satellite overpasses,** and most stubble burning has shifted to
-  16:00-18:00 specifically to fall outside them.
+**Operations and governance**
+- **Boundaries are real; who answers inside them is an assumption.** The district-first, state-second
+  assignment is an explicit table that a deployment must confirm with those bodies. Retired
+  authorities keep their history.
+- **Coordination requests depend on the source registry and wind history.** A source not in the
+  registry, or an hour with no wind record, produces no request.
+- **Delivery is a webhook only.** There is no email or SMS gateway; without an endpoint, alerts are
+  recorded and shown as not delivered.
+- **Operators share one key; there are no named accounts.** The trail records what was done, not
+  which operator did it. Rate limiting is per process.
+- **Federation nodes in the pilot share one database and one machine.** A deployment across state
+  boundaries needs TLS and node authentication. Nodes use Flower's `start_server`/`start_client`,
+  which are superseded by SuperLink/SuperNode.
 
-## Licence
+## Credits and licence
 
-MIT
+Data: OpenAQ; CPCB via data.gov.in; NASA FIRMS; Open-Meteo; Copernicus Sentinel-5P via Google Earth
+Engine; boundaries and map tiles © OpenStreetMap contributors (ODbL).
+
+MIT licence.
