@@ -355,6 +355,14 @@ ATTRIBUTION_MIN_CONFIDENCE: Final[float] = 0.35
 #: with confidences; it never presents the top one as established fact.
 ATTRIBUTION_MAX_CANDIDATES: Final[int] = 5
 
+#: Farthest a weather cell may be from a hotspot, in metres, for its wind to
+#: steer that hotspot's trajectory. Weather is stored per pilot city, each at its
+#: own cell; without a bound a Delhi trajectory could be stepped through
+#: Coimbatore's wind for the same hour. 40 km matches the city view radius and
+#: sits well inside the few-hundred-kilometre scale over which synoptic flow is
+#: coherent, so within a city one cell's wind is representative.
+ATTRIBUTION_WIND_MAX_DISTANCE_M: Final[float] = 40_000.0
+
 
 # ---------------------------------------------------------------------------
 # Forecasting

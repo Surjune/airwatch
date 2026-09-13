@@ -60,6 +60,9 @@ class FakeWeather:
     observed_at: datetime
     wind_u: float
     wind_v: float
+    #: The weather cell. Defaults to the synthetic city, so the wind steers its
+    #: hotspots; a test about another city's weather overrides it.
+    h3_cell: str = point_to_cell(STATION_POSITIONS[1])
 
 
 @dataclass(frozen=True)
@@ -260,6 +263,36 @@ class TestDetectAndAttribute:
 
         assert detected[0].trajectory_unavailable is True
         assert detected[0].attributions == []
+
+    def test_another_citys_wind_never_steers_the_trajectory(
+        self, monkeypatch: pytest.MonkeyPatch, stub_repositories: None
+    ) -> None:
+        # Weather is stored for every pilot city with the same hourly timestamps.
+        # A Delhi hotspot with only Coimbatore's wind on record has no usable
+        # wind, and must say so rather than trace through the wrong city's air.
+        coimbatore_cell = point_to_cell((76.96, 11.01))
+        monkeypatch.setattr(
+            observation_repository, "readings_in_window", lambda *a, **k: reading_rows()
+        )
+        monkeypatch.setattr(
+            observation_repository,
+            "weather_in_window",
+            lambda *a, **k: [
+                FakeWeather(
+                    observed_at=hour.observed_at,
+                    wind_u=hour.wind_u,
+                    wind_v=hour.wind_v,
+                    h3_cell=coimbatore_cell,
+                )
+                for hour in wind_hours()
+            ],
+        )
+
+        detected = analysis_service.detect_and_attribute(
+            _session(), Pollutant.PM25, window_hours=24, now=NOW
+        )
+
+        assert detected[0].trajectory_unavailable is True
 
     def test_ranks_a_nearby_registered_source(
         self, monkeypatch: pytest.MonkeyPatch, stub_repositories: None

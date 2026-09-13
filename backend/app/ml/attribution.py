@@ -27,7 +27,7 @@ worse than naming nobody.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -43,6 +43,7 @@ from app.core.constants import (
     ATTRIBUTION_MAX_CANDIDATES,
     ATTRIBUTION_MIN_CONFIDENCE,
     ATTRIBUTION_STEP_MINUTES,
+    ATTRIBUTION_WIND_MAX_DISTANCE_M,
 )
 from app.core.enums import SourceType
 from app.core.geo import (
@@ -188,6 +189,51 @@ def back_trajectory(
         )
 
     return points
+
+
+@dataclass(frozen=True, slots=True)
+class WindRecord:
+    """One stored hour of wind at one weather cell's centre."""
+
+    coordinates: LonLat
+    observed_at: datetime
+    wind_u: float
+    wind_v: float
+
+
+def wind_field_near(
+    records: Iterable[WindRecord],
+    point: LonLat,
+    *,
+    max_distance_m: float = ATTRIBUTION_WIND_MAX_DISTANCE_M,
+) -> dict[datetime, WindHour]:
+    """The hourly wind field at the weather cell nearest a point.
+
+    Weather is held for several cities at once, and hours from different cities
+    share timestamps. Keying all of them by hour alone would let whichever city
+    was read last overwrite the rest, so a trajectory in Delhi could be walked
+    through Coimbatore's wind. Only the nearest cell within range is used.
+
+    Returns:
+        Wind by hour, or an empty field when no cell is close enough. An empty
+        field makes the trajectory unavailable, which is reported as "could not
+        look" rather than traced through someone else's weather.
+    """
+    materialised = list(records)
+    distances = {
+        record.coordinates: haversine_distance_m(point, record.coordinates)
+        for record in materialised
+    }
+    in_range = {coords: dist for coords, dist in distances.items() if dist <= max_distance_m}
+    if not in_range:
+        return {}
+
+    nearest = min(in_range, key=lambda coords: in_range[coords])
+    return {
+        record.observed_at: WindHour(wind_u=record.wind_u, wind_v=record.wind_v)
+        for record in materialised
+        if record.coordinates == nearest
+    }
 
 
 def _wind_for(at_time: datetime, wind_by_hour: Mapping[datetime, WindHour]) -> WindHour | None:

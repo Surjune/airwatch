@@ -28,15 +28,16 @@ from app.core.constants import (
 )
 from app.core.enums import PilotCity, Pollutant, StationTier
 from app.core.geo import LonLat
-from app.core.h3_grid import H3Cell
+from app.core.h3_grid import H3Cell, cell_centroid
 from app.core.logging import get_logger
 from app.ml.attribution import (
     Attribution,
     CandidateSource,
-    WindHour,
+    WindRecord,
     attribute,
     back_trajectory,
     fire_to_candidate,
+    wind_field_near,
 )
 from app.ml.exposure import Advisory, DepartureOption, RouteSample, advise, route_exposure
 from app.ml.forecasting import ForecastPoint, forecast_corridor, sample_corridor
@@ -201,11 +202,12 @@ def detect_and_attribute(
     if not hotspots:
         return []
 
-    wind = _load_wind(session, since)
+    wind_records = _load_wind(session, since)
     sources = _load_sources(session, since)
 
     attributed: list[AttributedHotspot] = []
     for hotspot in hotspots:
+        wind = wind_field_near(wind_records, hotspot.coordinates)
         trajectory = back_trajectory(hotspot.coordinates, hotspot.last_seen_at, wind)
         ranked = attribute(hotspot.coordinates, hotspot.last_seen_at, trajectory, sources)
         attributed.append(
@@ -227,12 +229,17 @@ def detect_and_attribute(
     return attributed
 
 
-def _load_wind(session: Session, since: datetime) -> dict[datetime, WindHour]:
-    """Load the wind field for back-trajectory tracing."""
-    return {
-        record.observed_at: WindHour(wind_u=record.wind_u, wind_v=record.wind_v)
+def _load_wind(session: Session, since: datetime) -> list[WindRecord]:
+    """Load every city's stored wind, placed at its weather cell's centre."""
+    return [
+        WindRecord(
+            coordinates=cell_centroid(record.h3_cell),
+            observed_at=record.observed_at,
+            wind_u=record.wind_u,
+            wind_v=record.wind_v,
+        )
         for record in observation_repository.weather_in_window(session, since)
-    }
+    ]
 
 
 def _load_sources(session: Session, since: datetime) -> list[CandidateSource]:

@@ -17,9 +17,11 @@ from app.core.geo import LonLat, destination_point, haversine_distance_m
 from app.ml.attribution import (
     CandidateSource,
     WindHour,
+    WindRecord,
     attribute,
     back_trajectory,
     fire_to_candidate,
+    wind_field_near,
 )
 
 DELHI: LonLat = (77.2090, 28.6139)
@@ -51,6 +53,44 @@ def source_at(
         emission_prior=prior,
         observed_at=observed_at,
     )
+
+
+def wind_records(at: LonLat, wind: WindHour, hours: int = 3) -> list[WindRecord]:
+    """Hourly records for one weather cell."""
+    return [
+        WindRecord(
+            coordinates=at,
+            observed_at=OBSERVED_AT - timedelta(hours=offset),
+            wind_u=wind.wind_u,
+            wind_v=wind.wind_v,
+        )
+        for offset in range(hours)
+    ]
+
+
+class TestWindFieldNear:
+    def test_uses_the_nearest_cell_when_cities_share_hours(self) -> None:
+        # Two cities, identical timestamps, opposite winds. Keyed by hour alone
+        # the later city would overwrite the earlier; the nearest must win.
+        coimbatore: LonLat = (76.96, 11.01)
+        records = wind_records(coimbatore, WindHour(-5.0, 0.0)) + wind_records(DELHI, WESTERLY)
+
+        field = wind_field_near(records, destination_point(DELHI, 90.0, 5000.0))
+
+        assert set(field.values()) == {WESTERLY}
+        assert len(field) == 3
+
+    def test_no_cell_in_range_is_an_empty_field(self) -> None:
+        coimbatore: LonLat = (76.96, 11.01)
+
+        assert wind_field_near(wind_records(coimbatore, WESTERLY), DELHI) == {}
+
+    def test_a_cell_at_the_boundary_still_counts(self) -> None:
+        edge = destination_point(DELHI, 0.0, 10_000.0)
+
+        field = wind_field_near(wind_records(edge, WESTERLY), DELHI, max_distance_m=10_001.0)
+
+        assert len(field) == 3
 
 
 class TestBackTrajectory:
