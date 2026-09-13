@@ -1,6 +1,7 @@
 import { CircleCheck } from 'lucide-react';
 
 import { AqiChip } from '@/components/ui/AqiChip';
+import { ReportDownload } from '@/features/citizen/ReportDownload';
 import type { SensorReadingAccepted } from '@/hooks/useCitizenSensors';
 
 /** Percent, for presenting a relative difference. */
@@ -64,6 +65,8 @@ export function SensorReadingResult({ accepted }: { readonly accepted: SensorRea
         </span>{' '}
         co-located readings towards measuring this tier’s bias. {colocation.explanation}
       </p>
+
+      <ReportDownload reference={accepted.complaint_reference} />
     </section>
   );
 }

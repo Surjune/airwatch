@@ -89,6 +89,8 @@ export interface RequestOptions {
   readonly formData?: FormData;
   readonly signal?: AbortSignal;
   readonly searchParams?: Record<string, string | number | boolean | undefined>;
+  /** Extra headers, such as the anonymous device identifier a resident's own records need. */
+  readonly headers?: Record<string, string>;
 }
 
 function buildUrl(path: string, searchParams: RequestOptions['searchParams']): string {
@@ -130,7 +132,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
   // Held as a plain record rather than HeadersInit: the union also admits an
   // array and a Headers instance, neither of which can be spread into an object.
-  const headers: Record<string, string> = { Accept: 'application/json' };
+  const headers: Record<string, string> = { Accept: 'application/json', ...options.headers };
   if (body !== undefined && formData === undefined) {
     headers['Content-Type'] = 'application/json';
   }
@@ -205,6 +207,58 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   }
 
   return payload as T;
+}
+
+/** A file the API returned, with the name it suggested. */
+export interface DownloadedFile {
+  readonly blob: Blob;
+  readonly filename: string;
+}
+
+/**
+ * Fetch a file, such as a PDF report, rather than JSON.
+ *
+ * A failure still arrives as the JSON error envelope and is raised as an
+ * {@link ApiError}, so a refused download is reported like any other failure
+ * instead of saving an error page under a `.pdf` name.
+ */
+export async function download(
+  path: string,
+  options: Pick<RequestOptions, 'headers' | 'signal'> & { readonly fallbackName: string },
+): Promise<DownloadedFile> {
+  let response: Response;
+  try {
+    response = await fetch(buildUrl(path, undefined), {
+      headers: { Accept: 'application/pdf, application/json', ...options.headers },
+      ...(options.signal ? { signal: options.signal } : {}),
+    });
+  } catch (cause) {
+    throw new ApiError(
+      'network_error',
+      cause instanceof Error ? cause.message : 'The download could not be started.',
+      0,
+    );
+  }
+
+  if (!response.ok) {
+    const requestId = response.headers.get(REQUEST_ID_HEADER) ?? undefined;
+    const payload: unknown = await response.json().catch(() => null);
+    if (isApiErrorBody(payload)) {
+      throw new ApiError(
+        payload.error.code,
+        payload.error.message,
+        response.status,
+        payload.error.details ?? {},
+        payload.error.request_id ?? requestId,
+        payload,
+      );
+    }
+    throw new ApiError('unknown_error', 'The download failed.', response.status, {}, requestId);
+  }
+
+  const disposition = response.headers.get('Content-Disposition') ?? '';
+  const named = /filename="([^"]+)"/.exec(disposition)?.[1];
+  return { blob: await response.blob(), filename: named ?? options.fallbackName };
 }
 
 /** Shorthand for a GET request. */

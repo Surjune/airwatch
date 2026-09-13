@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import type { components } from '@/lib/api-types';
 import { ApiError, get, request } from '@/lib/api-client';
+import type { ComplaintCategory } from '@/lib/complaints';
 import { deviceId } from '@/lib/device';
 
 export type Submission = components['schemas']['SubmissionResponse'];
@@ -21,6 +22,9 @@ export interface SubmissionInput {
   readonly longitude: number;
   readonly latitude: number;
   readonly capturedAt: Date;
+  /** What the resident saw, for their complaint report. */
+  readonly category?: ComplaintCategory | null;
+  readonly description?: string;
 }
 
 export interface CitizenTier {
@@ -89,6 +93,8 @@ export function useCitizen(windowHours = 24): CitizenTier {
         form.append('latitude', String(input.latitude));
         form.append('captured_at', input.capturedAt.toISOString());
         form.append('device_id', deviceId());
+        if (input.category) form.append('category', input.category);
+        if (input.description?.trim()) form.append('description', input.description.trim());
 
         const report = await request<Submission>('/citizen/reports', {
           method: 'POST',

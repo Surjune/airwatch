@@ -1,5 +1,6 @@
 import { CircleCheck } from 'lucide-react';
 
+import { ReportDownload } from '@/features/citizen/ReportDownload';
 import type { SubmissionOutcome } from '@/hooks/useCitizen';
 
 /**
@@ -66,6 +67,8 @@ export function SubmissionResult({ outcome }: { readonly outcome: SubmissionOutc
           'No reference monitor was within range, which is exactly the gap this tier exists to fill.'
         )}
       </p>
+
+      <ReportDownload reference={report.complaint_reference} />
     </section>
   );
 }

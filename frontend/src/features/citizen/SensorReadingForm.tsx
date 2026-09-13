@@ -3,6 +3,7 @@ import { useId, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { ComplaintFields, type ComplaintInput } from '@/features/citizen/ComplaintFields';
 import { LocationPicker, type PickedPosition } from '@/features/citizen/LocationPicker';
 import type { SensorReadingInput } from '@/hooks/useCitizenSensors';
 import { VIEW_POLLUTANTS, type Pollutant } from '@/lib/scope';
@@ -50,6 +51,7 @@ export function SensorReadingForm({ isSubmitting, onSubmit }: SensorReadingFormP
   const [model, setModel] = useState('');
   const [observedAt, setObservedAt] = useState(localNow);
   const [position, setPosition] = useState<PickedPosition | null>(null);
+  const [complaint, setComplaint] = useState<ComplaintInput>({ category: null, description: '' });
   const ids = { value: useId(), model: useId(), time: useId(), list: useId() };
 
   const numeric = Number(value);
@@ -74,6 +76,8 @@ export function SensorReadingForm({ isSubmitting, onSubmit }: SensorReadingFormP
           value_ugm3: numeric,
           observed_at: new Date(observedAt).toISOString(),
           sensor_model: model.trim(),
+          ...(complaint.category ? { category: complaint.category } : {}),
+          ...(complaint.description.trim() ? { description: complaint.description.trim() } : {}),
         });
       }}
     >
@@ -147,6 +151,8 @@ export function SensorReadingForm({ isSubmitting, onSubmit }: SensorReadingFormP
           <LocationPicker position={position} onChange={setPosition} />
         </div>
       </div>
+
+      <ComplaintFields value={complaint} onChange={setComplaint} />
 
       <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
         <Button

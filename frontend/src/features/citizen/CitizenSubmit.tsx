@@ -1,9 +1,10 @@
-import { Camera, Gauge } from 'lucide-react';
+import { Camera, FileText, Gauge } from 'lucide-react';
 import { useState } from 'react';
 
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusMessage } from '@/components/ui/StatusMessage';
+import { MyComplaints } from '@/features/citizen/MyComplaints';
 import { PhotoForm } from '@/features/citizen/PhotoForm';
 import { RecentReadings } from '@/features/citizen/RecentReadings';
 import { RecentSubmissions } from '@/features/citizen/RecentSubmissions';
@@ -13,7 +14,7 @@ import { useCitizen } from '@/hooks/useCitizen';
 import { useCitizenSensors, type SensorReadingAccepted } from '@/hooks/useCitizenSensors';
 import { useScope } from '@/lib/scope';
 
-type Mode = 'photo' | 'sensor';
+type Mode = 'photo' | 'sensor' | 'reports';
 
 /**
  * The citizen contribution screen: a photograph, or a household sensor reading.
@@ -44,10 +45,10 @@ export function CitizenSubmit() {
 
         <div className="grid gap-6 lg:grid-cols-[1.35fr_1fr]">
           <div className="space-y-4">
-            <div role="tablist" aria-label="What to contribute" className="grid grid-cols-2 gap-2">
+            <div role="tablist" aria-label="What to contribute" className="grid grid-cols-3 gap-2">
               <ModeTab
                 icon={<Camera aria-hidden className="size-4" />}
-                title="A photograph"
+                title="Photograph"
                 detail="Haze, measured from the image"
                 isActive={mode === 'photo'}
                 onSelect={() => {
@@ -56,29 +57,42 @@ export function CitizenSubmit() {
               />
               <ModeTab
                 icon={<Gauge aria-hidden className="size-4" />}
-                title="A sensor reading"
+                title="Sensor reading"
                 detail="PM2.5 or PM10 from your device"
                 isActive={mode === 'sensor'}
                 onSelect={() => {
                   setMode('sensor');
                 }}
               />
+              <ModeTab
+                icon={<FileText aria-hidden className="size-4" />}
+                title="Your reports"
+                detail="PDF for every submission"
+                isActive={mode === 'reports'}
+                onSelect={() => {
+                  setMode('reports');
+                }}
+              />
             </div>
 
-            <Card>
-              {mode === 'photo' ? (
-                <PhotoForm tier={photos} />
-              ) : (
-                <SensorReadingForm
-                  isSubmitting={sensors.isSubmitting}
-                  onSubmit={(input) => {
-                    void sensors.submit(input).then(setAccepted);
-                  }}
-                />
-              )}
-            </Card>
+            {mode === 'reports' ? (
+              <MyComplaints />
+            ) : (
+              <Card>
+                {mode === 'photo' ? (
+                  <PhotoForm tier={photos} />
+                ) : (
+                  <SensorReadingForm
+                    isSubmitting={sensors.isSubmitting}
+                    onSubmit={(input) => {
+                      void sensors.submit(input).then(setAccepted);
+                    }}
+                  />
+                )}
+              </Card>
+            )}
 
-            {failure && (
+            {mode !== 'reports' && failure && (
               <StatusMessage
                 kind="error"
                 title={
@@ -105,10 +119,10 @@ export function CitizenSubmit() {
                 detail={photos.calibration.explanation}
               />
             )}
-            {mode === 'photo' ? (
-              <RecentSubmissions reports={photos.reports} isLoading={photos.isLoading} />
-            ) : (
+            {mode === 'sensor' ? (
               <RecentReadings tier={sensors} cityLabel={cityLabel} />
+            ) : (
+              <RecentSubmissions reports={photos.reports} isLoading={photos.isLoading} />
             )}
           </div>
         </div>
@@ -136,17 +150,19 @@ function ModeTab({
       role="tab"
       aria-selected={isActive}
       onClick={onSelect}
-      className={`rounded-card border p-3 text-left transition-colors ${
+      className={`rounded-card border p-2.5 text-left transition-colors sm:p-3 ${
         isActive ? 'border-ink bg-surface' : 'border-border bg-surface/50 hover:border-ink/40'
       }`}
     >
       <span
-        className={`flex items-center gap-2 text-sm font-semibold ${isActive ? 'text-ink' : 'text-ink-muted'}`}
+        className={`flex flex-col items-start gap-1 text-[13px] font-semibold leading-tight sm:flex-row sm:items-center sm:gap-2 sm:text-sm ${
+          isActive ? 'text-ink' : 'text-ink-muted'
+        }`}
       >
         {icon}
         {title}
       </span>
-      <span className="mt-0.5 block text-xs text-ink-subtle">{detail}</span>
+      <span className="mt-0.5 hidden text-xs text-ink-subtle sm:block">{detail}</span>
     </button>
   );
 }

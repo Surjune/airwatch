@@ -423,6 +423,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/citizen/complaints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * This device's submissions
+         * @description Every photograph and sensor reading this device submitted, newest first.
+         */
+        get: operations["list_complaints_v1_citizen_complaints_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/citizen/complaints/{reference}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the PDF complaint report for one submission
+         * @description The report for a submission this device made; any other device gets a 404.
+         */
+        get: operations["complaint_pdf_v1_citizen_complaints__reference__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/federation/status": {
         parameters: {
             query?: never;
@@ -666,6 +706,13 @@ export interface components {
             captured_at: string;
             /** Device Id */
             device_id: string;
+            /** @description What the resident says they saw. */
+            category?: components["schemas"]["ComplaintCategory"] | null;
+            /**
+             * Description
+             * @description The resident's own words, for their complaint report.
+             */
+            description?: string | null;
         };
         /**
          * CalibrationStatusResponse
@@ -820,6 +867,63 @@ export interface components {
             is_established: boolean;
             /** Explanation */
             explanation: string;
+        };
+        /**
+         * ComplaintCategory
+         * @description What a resident says they saw, attached to a photograph or sensor reading.
+         *
+         *     Kept to the source types an inspector would be sent to check, so a complaint
+         *     can be read by the body responsible without translation. ``other`` exists
+         *     because a forced wrong category is worse than an honest unknown.
+         * @enum {string}
+         */
+        ComplaintCategory: "open_burning" | "industrial_smoke" | "construction_dust" | "vehicle_exhaust" | "crop_residue_burning" | "road_dust" | "other";
+        /**
+         * ComplaintSummaryResponse
+         * @description One of the requesting device's submissions.
+         */
+        ComplaintSummaryResponse: {
+            /**
+             * Reference
+             * @description Quote this; the PDF report is downloaded by it.
+             */
+            reference: string;
+            kind: components["schemas"]["SubmissionKind"];
+            /**
+             * Submitted At
+             * Format: date-time
+             */
+            submitted_at: string;
+            /**
+             * Observed At
+             * Format: date-time
+             */
+            observed_at: string;
+            category: components["schemas"]["ComplaintCategory"] | null;
+            /**
+             * Area
+             * @description The pilot city the submission falls in, if any.
+             */
+            area: string;
+            /** Headline */
+            headline: string;
+            /**
+             * Compared With Monitor
+             * @description Whether a reference monitor reported close enough in space and time.
+             */
+            compared_with_monitor: boolean;
+        };
+        /**
+         * ComplaintsResponse
+         * @description Every submission this device has made, newest first.
+         */
+        ComplaintsResponse: {
+            /** Complaint Count */
+            complaint_count: number;
+            /** Complaints */
+            complaints: components["schemas"]["ComplaintSummaryResponse"][];
+            /** Note */
+            note: string;
         };
         /**
          * CorridorForecastResponse
@@ -1786,6 +1890,11 @@ export interface components {
         SensorReadingAccepted: {
             /** Reading Id */
             reading_id: number;
+            /**
+             * Complaint Reference
+             * @description What the resident quotes, and downloads their complaint report by.
+             */
+            complaint_reference: string;
             /** H3 Cell */
             h3_cell: string;
             /**
@@ -1844,6 +1953,13 @@ export interface components {
              * @description What the instrument is, for example 'AirGradient ONE'.
              */
             sensor_model: string;
+            /** @description What the resident says they saw, if anything. */
+            category?: components["schemas"]["ComplaintCategory"] | null;
+            /**
+             * Description
+             * @description The resident's own words, for their complaint report.
+             */
+            description?: string | null;
         };
         /**
          * SensorReadingSummary
@@ -1981,12 +2097,23 @@ export interface components {
             readings: components["schemas"]["StationReadingResponse"][];
         };
         /**
+         * SubmissionKind
+         * @description Which citizen tier a submission came through.
+         * @enum {string}
+         */
+        SubmissionKind: "photo" | "sensor";
+        /**
          * SubmissionResponse
          * @description What a submitted photograph yielded.
          */
         SubmissionResponse: {
             /** Report Id */
             report_id: number;
+            /**
+             * Complaint Reference
+             * @description What the resident quotes, and downloads their complaint report by.
+             */
+            complaint_reference: string;
             /** H3 Cell */
             h3_cell: string;
             /**
@@ -2737,6 +2864,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SensorReadingAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_complaints_v1_citizen_complaints_get: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The anonymous identifier this browser submitted with. */
+                "X-Device-ID": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplaintsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complaint_pdf_v1_citizen_complaints__reference__pdf_get: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The anonymous identifier this browser submitted with. */
+                "X-Device-ID": string;
+            };
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The report. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": unknown;
                 };
             };
             /** @description Validation Error */

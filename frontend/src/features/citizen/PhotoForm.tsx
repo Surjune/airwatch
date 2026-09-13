@@ -3,10 +3,13 @@ import { useCallback, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { StatusMessage } from '@/components/ui/StatusMessage';
+import { ComplaintFields, type ComplaintInput } from '@/features/citizen/ComplaintFields';
 import { LocationPicker, type PickedPosition } from '@/features/citizen/LocationPicker';
 import { PhotoDropzone } from '@/features/citizen/PhotoDropzone';
 import { SubmissionResult } from '@/features/citizen/SubmissionResult';
 import type { CitizenTier, SubmissionOutcome } from '@/hooks/useCitizen';
+
+const NO_COMPLAINT: ComplaintInput = { category: null, description: '' };
 
 /**
  * Submit a photograph and see what it measured.
@@ -19,6 +22,7 @@ export function PhotoForm({ tier }: { readonly tier: CitizenTier }) {
   const [file, setFile] = useState<File | null>(null);
   const [position, setPosition] = useState<PickedPosition | null>(null);
   const [outcome, setOutcome] = useState<SubmissionOutcome | null>(null);
+  const [complaint, setComplaint] = useState<ComplaintInput>(NO_COMPLAINT);
   const { submit, isSubmitting } = tier;
 
   const canSubmit = file !== null && position !== null && !isSubmitting;
@@ -33,11 +37,16 @@ export function PhotoForm({ tier }: { readonly tier: CitizenTier }) {
       // capture time without parsing EXIF, and for a photo taken to be submitted
       // the two are the same moment.
       capturedAt: new Date(file.lastModified),
+      category: complaint.category,
+      description: complaint.description,
     }).then((result) => {
       setOutcome(result);
-      if (result?.kind === 'accepted') setFile(null);
+      if (result?.kind === 'accepted') {
+        setFile(null);
+        setComplaint(NO_COMPLAINT);
+      }
     });
-  }, [file, position, submit]);
+  }, [file, position, submit, complaint]);
 
   return (
     <div className="space-y-5">
@@ -62,6 +71,8 @@ export function PhotoForm({ tier }: { readonly tier: CitizenTier }) {
           <LocationPicker position={position} onChange={setPosition} />
         </div>
       </div>
+
+      <ComplaintFields value={complaint} onChange={setComplaint} />
 
       <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
         <Button
