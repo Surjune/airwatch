@@ -42,7 +42,7 @@ Resilience* challenge. Piloted in Delhi-NCR, Kanpur and Coimbatore.
   system says "we cannot see here" rather than drawing unmonitored ground as clean.
 - **Is it real?** Yes: it is deployed, updates hourly, and has already produced a cross-state
   coordination request from live data (see [§3.6](#36-coordinating-across-cities-and-states)).
-  Tests: 806 backend, 95 frontend, all run in CI together with a replay of a recorded pollution
+  Tests: 843 backend, 101 frontend, all run in CI together with a replay of a recorded pollution
   episode.
 
 ## Contents
@@ -128,8 +128,9 @@ establish.
 
 | The challenge asks for | What AirWatch does | Where to see it |
 | --- | --- | --- |
-| Citizen-sourced **photos** | Measures atmospheric haze from a photo; refuses dark, blurred or over-exposed images; derives no PM2.5 until 30 photos taken near monitors calibrate it | Contribute → *A photograph*; `POST /v1/citizen/reports` |
-| Citizen-sourced **local sensor readings** | Accepts PM2.5/PM10 from household sensors, stores them as reported, pairs each with the nearest monitor, publishes the tier's measured bias | Contribute → *A sensor reading*; map squares; `POST /v1/citizen/sensor-readings` |
+| Citizen-sourced **photos** | Measures atmospheric haze from a photo; refuses dark, blurred or over-exposed images; derives no PM2.5 until 30 photos taken near monitors calibrate it | Contribute → *Photograph*; `POST /v1/citizen/reports` |
+| Citizens **complaining**, and being able to follow up | Every submission can carry a concern and a description, and produces a PDF complaint report naming the responsible authorities | Contribute → *Your reports*; `GET /v1/citizen/complaints` |
+| Citizen-sourced **local sensor readings** | Accepts PM2.5/PM10 from household sensors, stores them as reported, pairs each with the nearest monitor, publishes the tier's measured bias | Contribute → *Sensor reading*; map squares; `POST /v1/citizen/sensor-readings` |
 | **Satellite imagery** | Daily Sentinel-5P columns per ~36 km² cell, for NO₂, SO₂, CO and aerosol index | Overview tier 3; map layer; `GET /v1/satellite` |
 | **Meteorological data** | Hourly wind for every pilot city, steering each back-trajectory from the nearest weather cell | Hotspot sources on the map |
 | **Detect hidden hotspots** | A monitor far above what its neighbours predict, for hours; ranked by excess, not concentration | Live map; `GET /v1/hotspots` |
@@ -164,6 +165,17 @@ their sensor shows, with its model name and time.
 - The tier publishes its median sensor-to-monitor ratio, and marks it established only after 30
   pairs. Readings stay out of detection, fusion and forecasting.
 - On the map they are squares, never circles, so they cannot be mistaken for a monitor.
+
+**A complaint report for every submission.** Either kind of submission can say what the resident
+saw: open burning, industrial smoke, construction dust and so on, plus a description in any
+language. Each one gets a reference such as `AW-S-000042` and a **downloadable PDF** containing:
+- what was reported and what AirWatch measured;
+- how it compared with the nearest monitor;
+- the district administration and state board responsible for that spot;
+- an honest account of what happens next.
+
+The PDF is meant to be attached to an official grievance. Only the browser that made a submission
+can list it or download its report, and Tamil or Hindi descriptions print correctly.
 
 *Why this shape:* [docs/DESIGN.md](docs/DESIGN.md#household-sensor-readings-and-why-none-is-corrected).
 
@@ -388,7 +400,7 @@ Details: [docs/VALIDATION.md](docs/VALIDATION.md).
 - **CI on every push:**
   - lint, format and type checks;
   - migrations applied, rolled back and re-applied, then `alembic check`;
-  - 806 backend and 95 frontend tests;
+  - 843 backend and 101 frontend tests;
   - the Anand Vihar replay;
   - both Docker images built and the production compose file validated.
 
@@ -467,6 +479,7 @@ carries its uncertainty or confidence, and every error returns the same envelope
 | `POST /v1/alerts/dispatch` · `/deliver` · `/{id}/acknowledge` · `/{id}/resolve` | Operator actions (bearer key) |
 | `POST` · `GET /v1/citizen/reports` · `GET /v1/citizen/calibration` | Photographs and the state of their calibration |
 | `POST` · `GET /v1/citizen/sensor-readings` | Household sensor readings and the tier's measured bias |
+| `GET /v1/citizen/complaints` · `/{reference}/pdf` | This browser's own submissions, and the PDF complaint report for each (`X-Device-ID` header) |
 | `GET /v1/federation/status` | Node coverage and whether federating helped |
 | `GET /v1/interop/capabilities` · `/observations` · `/hotspots` · `/models` | The exchange a partner city consumes |
 

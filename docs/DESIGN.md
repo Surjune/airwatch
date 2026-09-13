@@ -153,6 +153,38 @@ by an amount that differs by model and by day.
 The instrument model is recorded on purpose: a correction can only ever be fitted
 per model if the model was written down.
 
+## Complaint reports, and what they refuse to claim
+
+A resident who photographs smoke behind a bus stand wants to *do* something with
+it. So a submission can carry a concern (open burning, industrial smoke,
+construction dust...) and a description in their own words, and it produces a
+reference (`AW-P-000123` for a photograph, `AW-S-000045` for a sensor reading)
+and a PDF they can attach to a grievance.
+
+- **Only the submitting browser can reach it.** A description can reveal where
+  someone lives. The list and the PDF are keyed on the anonymous device
+  identifier, sent as an `X-Device-ID` header so it never appears in a URL, and a
+  reference belonging to another device returns the same 404 as one that does
+  not exist.
+- **It names who is responsible, from boundaries, and says that is an assumption.**
+  The district administration and state body come from the same OpenStreetMap
+  jurisdictions that route alerts; which office inside each handles complaints is
+  left for that body to confirm.
+- **It does not pretend an office was told.** AirWatch does not forward individual
+  complaints. The report says so, tells the resident where to lodge it, and says
+  that a persistent excess detected by the monitors is routed on its own.
+- **It never upgrades the measurement.** A photograph's report states the haze
+  index and gives a PM2.5 estimate only if the calibration exists, labelled with
+  the date it was computed; the photo itself is not stored. A sensor reading's
+  report prints the value as reported and its uncalibrated index.
+- **It prints the resident's language.** The PDF embeds Noto Sans with Tamil and
+  Devanagari fallbacks and shapes text with HarfBuzz, so a description written in
+  Tamil prints as Tamil rather than as boxes.
+
+The layout lives in `app/documents/complaint_pdf.py`, a leaf that receives
+already-worded sections; every sentence is decided in `complaint_service`, where
+the rules about what can be claimed are.
+
 ## Interoperability, and why weights are withheld
 
 No state hands another its raw database, so a national data lake stalls on

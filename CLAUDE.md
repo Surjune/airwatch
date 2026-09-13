@@ -29,6 +29,7 @@ routes  ->  services  ->  repositories  ->  database
               |                 |
               +--> external ----+
               +--> ml
+              +--> documents
               +--> core (importable by everything)
 ```
 
@@ -46,6 +47,9 @@ routes  ->  services  ->  repositories  ->  database
   **A pure computation belongs here, not in `services/`.** Detection and attribution touch no
   database, so putting them in the service layer forced a route needing both to make one service
   import another, which the layering forbids for good reason.
+- `documents/` lays out files AirWatch hands to people, such as the PDF complaint report. It receives
+  content already worded by a service and imports only `core`; what a document may claim is
+  decided in the service, never in the layout.
 - `core/` is leaf-level: config, logging, exceptions, constants and every shared calculation. It
   imports nothing from the layers above.
 
