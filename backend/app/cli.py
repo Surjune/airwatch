@@ -15,7 +15,7 @@ from datetime import datetime
 
 from app.core.config import get_settings
 from app.core.constants import BACKFILL_DAYS, PILOT_CITY_CENTRES, PILOT_CITY_FIRE_BOXES
-from app.core.enums import Pollutant
+from app.core.enums import PilotCity, Pollutant
 from app.core.geo import LonLat
 from app.core.logging import configure_logging, get_logger
 from app.repositories import observation_repository, station_repository
@@ -26,6 +26,7 @@ from app.services import (
     analysis_service,
     fixture_service,
     plausibility_service,
+    satellite_service,
     seed_service,
 )
 from app.services.alert_service import DEFAULT_DISPATCH_WINDOW_HOURS
@@ -190,6 +191,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     backfill.add_argument("--days", type=int, default=BACKFILL_DAYS)
 
+    satellite = subparsers.add_parser(
+        "satellite", help="Fetch Sentinel-5P daily column means from Earth Engine"
+    )
+    satellite.add_argument("--city", choices=sorted(PILOT_CITIES), default="coimbatore")
+
     subparsers.add_parser(
         "reflag",
         help="Re-apply the plausibility bounds to every stored reading",
@@ -234,6 +240,17 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     settings = get_settings()
     configure_logging(level=settings.log_level, json_output=False)
+
+    if args.command == "satellite":
+        with session_scope() as session:
+            summary = satellite_service.ingest_with_earth_engine(
+                settings, session, PilotCity(args.city)
+            )
+        print("")
+        print(f"satellite {summary.city.value}: {summary.stored} cell-days stored")
+        for product, days in summary.days_observed.items():
+            print(f"  {product.value:<14} observed on {days} of {summary.days} days")
+        return 0
 
     if args.command == "reflag":
         with session_scope() as session:

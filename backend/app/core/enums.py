@@ -32,6 +32,15 @@ class Pollutant(StrEnum):
     NH3 = "nh3"
 
 
+class SatelliteProduct(StrEnum):
+    """A Sentinel-5P TROPOMI column product ingested from Earth Engine."""
+
+    NO2 = "no2"
+    SO2 = "so2"
+    CO = "co"
+    AEROSOL_INDEX = "aerosol_index"
+
+
 class StationTier(StrEnum):
     """Provenance tier of an observation, which sets how much it is trusted.
 

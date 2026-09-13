@@ -931,3 +931,49 @@ WORKER_INTERVAL_MINUTES: Final[int] = 60
 #: contain a persistent episode, short enough that a run reports what is
 #: happening rather than re-reporting last week.
 WORKER_DETECTION_WINDOW_HOURS: Final[int] = 24
+
+
+# ---------------------------------------------------------------------------
+# Satellite (Sentinel-5P TROPOMI via Google Earth Engine)
+# ---------------------------------------------------------------------------
+
+#: Earth Engine collection and band for each product. Near-real-time (NRTI)
+#: level-3 collections, because the point is what the air column held in the
+#: last few days, not a reprocessed archive weeks later.
+#: Source: https://developers.google.com/earth-engine/datasets/catalog/sentinel-5p
+S5P_PRODUCTS: Final[dict[str, tuple[str, str]]] = {
+    "no2": ("COPERNICUS/S5P/NRTI/L3_NO2", "tropospheric_NO2_column_number_density"),
+    "so2": ("COPERNICUS/S5P/NRTI/L3_SO2", "SO2_column_number_density"),
+    "co": ("COPERNICUS/S5P/NRTI/L3_CO", "CO_column_number_density"),
+    "aerosol_index": ("COPERNICUS/S5P/NRTI/L3_AER_AI", "absorbing_aerosol_index"),
+}
+
+#: Unit each product is stored in, as delivered. Column densities stay in mol/m^2
+#: and are converted only at the fusion feature boundary; the aerosol index is
+#: dimensionless.
+S5P_PRODUCT_UNITS: Final[dict[str, str]] = {
+    "no2": "mol/m2",
+    "so2": "mol/m2",
+    "co": "mol/m2",
+    "aerosol_index": "index",
+}
+
+#: H3 resolution satellite values are aggregated to. Resolution 6 cells average
+#: about 36 km^2, close to one TROPOMI pixel (roughly 5.5 x 3.5 km at nadir).
+#: Storing them on the r8 analysis grid would repeat one pixel's value across
+#: dozens of cells and present a 7 km measurement as a 0.5 km one.
+SATELLITE_H3_RESOLUTION: Final[int] = 6
+
+#: Scale, in metres, Earth Engine samples the level-3 grid at: its native
+#: 0.01-degree bin, about 1.1 km at the equator.
+S5P_SAMPLE_SCALE_M: Final[float] = 1113.2
+
+#: Days of satellite history fetched per ingestion run. TROPOMI passes once a
+#: day and near-real-time products arrive within hours, so a week backfills gaps
+#: from cloudy days and missed runs without re-fetching the whole archive.
+SATELLITE_LOOKBACK_DAYS: Final[int] = 7
+
+#: Fewest valid level-3 pixels a cell needs on a day for its mean to be stored.
+#: Cloud and quality filtering routinely leave a cell with one or two pixels at
+#: its edge, and a mean of those describes a sliver, not the cell.
+SATELLITE_MIN_PIXELS: Final[int] = 5

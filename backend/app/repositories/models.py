@@ -19,12 +19,13 @@ Two decisions run through the whole schema:
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     CheckConstraint,
+    Date,
     DateTime,
     Float,
     ForeignKey,
@@ -41,7 +42,14 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from app.core.constants import SRID_WGS84
-from app.core.enums import AlertStatus, HotspotStatus, Pollutant, SourceType, StationTier
+from app.core.enums import (
+    AlertStatus,
+    HotspotStatus,
+    Pollutant,
+    SatelliteProduct,
+    SourceType,
+    StationTier,
+)
 
 #: Length of an H3 cell index in its canonical string form.
 H3_INDEX_LENGTH = 15
@@ -270,6 +278,38 @@ class FireDetection(Base):
         ),
         Index("ix_fire_observed_at", "observed_at"),
         Index("ix_fire_detections_geom", "geom", postgresql_using="gist"),
+    )
+
+
+class SatelliteObservation(Base):
+    """A daily mean of one Sentinel-5P product over one coarse H3 cell.
+
+    Satellite columns are a covariate and a regional picture, not a ground
+    measurement: a tropospheric NO2 column says how much gas sat above a
+    ~36 km^2 cell during one overpass, not what anyone breathed. They are kept on
+    their own coarse grid for exactly that reason.
+    """
+
+    __tablename__ = "satellite_observations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    h3_cell: Mapped[str] = mapped_column(String(H3_INDEX_LENGTH), nullable=False)
+    observed_on: Mapped[date] = mapped_column(Date, nullable=False)
+    product: Mapped[SatelliteProduct] = mapped_column(
+        SqlEnum(SatelliteProduct, name="satellite_product", values_callable=_enum_values),
+        nullable=False,
+    )
+    #: Mean over the cell's valid pixels, in the unit of ``unit``.
+    value: Mapped[float] = mapped_column(Float, nullable=False)
+    unit: Mapped[str] = mapped_column(String(16), nullable=False)
+    #: Valid level-3 pixels behind the mean, so a thinly observed day can be told
+    #: apart from a well observed one.
+    pixel_count: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("h3_cell", "observed_on", "product", name="uq_satellite_cell_day_product"),
+        CheckConstraint("pixel_count > 0", name="ck_satellite_pixels_positive"),
+        Index("ix_satellite_product_day", "product", "observed_on"),
     )
 
 

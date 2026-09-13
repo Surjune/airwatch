@@ -25,6 +25,7 @@ dependencies = [
     "pillow>=11.0",
     "shapely>=2.0",
     "python-multipart>=0.0.17",
+    "earthengine-api>=1.4",
 ]
 
 [project.optional-dependencies]
@@ -111,7 +112,7 @@ exclude = ["^build/", "^dist/"]
 
 [[tool.mypy.overrides]]
 # These ship without stubs.
-module = ["h3.*", "lightgbm.*", "geoalchemy2.*", "shapely.*", "sklearn.*"]
+module = ["h3.*", "lightgbm.*", "geoalchemy2.*", "shapely.*", "sklearn.*", "ee.*"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------
