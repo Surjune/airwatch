@@ -1,4 +1,5 @@
 import { AppShell } from '@/components/layout/AppShell';
+import { OperatorProvider } from '@/components/layout/OperatorProvider';
 import { ScopeProvider } from '@/components/layout/ScopeProvider';
 import { SCREEN_KEYS } from '@/components/layout/navigation';
 import { AlertConsole } from '@/features/alerts/AlertConsole';
@@ -19,14 +20,16 @@ export function App(): React.JSX.Element {
 
   return (
     <ScopeProvider>
-      <AppShell active={screen} onNavigate={navigate}>
-        {screen === 'overview' && <OverviewScreen onNavigate={navigate} />}
-        {screen === 'map' && <MapScreen />}
-        {screen === 'corridor' && <CorridorView />}
-        {screen === 'alerts' && <AlertConsole />}
-        {screen === 'federation' && <FederationView />}
-        {screen === 'citizen' && <CitizenSubmit />}
-      </AppShell>
+      <OperatorProvider>
+        <AppShell active={screen} onNavigate={navigate}>
+          {screen === 'overview' && <OverviewScreen onNavigate={navigate} />}
+          {screen === 'map' && <MapScreen />}
+          {screen === 'corridor' && <CorridorView />}
+          {screen === 'alerts' && <AlertConsole />}
+          {screen === 'federation' && <FederationView />}
+          {screen === 'citizen' && <CitizenSubmit />}
+        </AppShell>
+      </OperatorProvider>
     </ScopeProvider>
   );
 }

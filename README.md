@@ -595,11 +595,13 @@ Deferred deliberately, and tracked here rather than as TODOs in the code.
   software can file and close, and anything needing email can subscribe to the same webhook through
   a gateway the authority controls -- but it does mean a deployment with no such endpoint records
   alerts without delivering them, and says so rather than claiming success.
-- **No authentication in v1.** The API is anonymous, protected only by per-client rate limiting
-  (`RATE_LIMIT_PER_MINUTE`, default 120, with `Retry-After` on refusal) and a locked CORS allowlist.
-  The limit is held in memory per process, so each uvicorn worker enforces it separately and a
-  restart forgets it; a multi-worker deployment would move it to Redis. It keys on the connecting
-  address and deliberately ignores `X-Forwarded-For`, which any caller can forge, so behind a
+- **Operators share one key; there are no named accounts.** Reading is open to everyone. Running
+  detection, delivering, acknowledging and resolving alerts require `OPERATOR_API_KEY` as a bearer
+  token, compared in constant time; with no key set those actions are refused outright rather than
+  left open. The authority console offers a sign-in that keeps the key for the browser tab only.
+  Because the key is shared, the trail records what was done but not which operator did it -- named
+  accounts are the next step. Every client is also rate limited (`RATE_LIMIT_PER_MINUTE`, default
+  120, with `Retry-After`), held in memory per process and keyed on the connecting address; behind a
   reverse proxy the proxy must supply the real address (uvicorn `--proxy-headers`).
 - **Upstream CO units are not trustworthy at face value.** Several live Delhi stations declare CO
   in `ppb` while reporting values around 1.2 -- implausible as ppb (ambient CO runs in the hundreds)

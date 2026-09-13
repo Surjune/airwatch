@@ -7,7 +7,9 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { MetricCard } from '@/components/ui/MetricCard';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { AlertCard } from '@/features/alerts/AlertCard';
+import { OperatorSignIn } from '@/features/alerts/OperatorSignIn';
 import { useAlerts } from '@/hooks/useAlerts';
+import { useOperator } from '@/lib/operator';
 import { useScope } from '@/lib/scope';
 
 /** Status filters an operator can apply. */
@@ -38,6 +40,7 @@ type FilterKey = (typeof FILTERS)[number]['key'];
  */
 export function AlertConsole() {
   const { city, current } = useScope();
+  const { isOperator } = useOperator();
   const { alerts, breaches, error, isLoading, isBusy, acknowledge, resolve, dispatch } =
     useAlerts(city);
   const [filter, setFilter] = useState<FilterKey>('open');
@@ -63,25 +66,31 @@ export function AlertConsole() {
           title={`Authority console · ${current?.label ?? '…'}`}
           description="Alerts are routed by jurisdiction, one per episode, and ordered by how far above its neighbourhood each sits — not by concentration. Recording an alert and delivering it are separate facts."
           actions={
-            <Button
-              variant="primary"
-              size="md"
-              isBusy={isBusy}
-              busyLabel="Working…"
-              onClick={() => {
-                void dispatch().then((outcome) => {
-                  if (!outcome) return;
-                  setLastDispatch(
-                    `${String(outcome.detected)} detected · ${String(outcome.raised)} raised · ` +
-                      `${String(outcome.suppressed)} already in flight · ${String(outcome.unrouted)} unrouted`,
-                  );
-                });
-              }}
-            >
-              Run detection
-            </Button>
+            isOperator && (
+              <Button
+                variant="primary"
+                size="md"
+                isBusy={isBusy}
+                busyLabel="Working…"
+                onClick={() => {
+                  void dispatch().then((outcome) => {
+                    if (!outcome) return;
+                    setLastDispatch(
+                      `${String(outcome.detected)} detected · ${String(outcome.raised)} raised · ` +
+                        `${String(outcome.suppressed)} already in flight · ${String(outcome.unrouted)} unrouted`,
+                    );
+                  });
+                }}
+              >
+                Run detection
+              </Button>
+            )
           }
         />
+
+        <div className="mt-5">
+          <OperatorSignIn />
+        </div>
 
         <dl className="mt-6 grid gap-3 sm:grid-cols-3">
           <MetricCard
@@ -167,6 +176,7 @@ export function AlertConsole() {
                     alert={alert}
                     isOverdue={overdueIds.has(alert.alert_id)}
                     isBusy={isBusy}
+                    canAct={isOperator}
                     onAcknowledge={(id) => {
                       void acknowledge(id);
                     }}

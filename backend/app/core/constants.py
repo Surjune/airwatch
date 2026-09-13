@@ -649,6 +649,10 @@ ALERT_SUPPRESSION_HOURS: Final[int] = 6
 #: thing standing between the API and a scraper.
 RATE_LIMIT_REQUESTS_PER_MINUTE: Final[int] = 120
 
+#: Shortest operator key accepted. Long enough that it cannot be guessed within
+#: the per-client rate limit; generate one with ``openssl rand -hex 32``.
+OPERATOR_KEY_MIN_LENGTH: Final[int] = 32
+
 #: Tracked clients above which the limiter forgets fully refilled buckets. A
 #: refilled bucket is identical to an unseen client, so the sweep changes no
 #: decision; the threshold only sets how often the sweep's cost is paid.

@@ -208,6 +208,28 @@ class ModelNotLoadedError(AirWatchError):
         )
 
 
+class AuthenticationRequiredError(AirWatchError):
+    """An operator action was attempted without a valid operator key."""
+
+    code = "authentication_required"
+    status_code = 401
+
+    def __init__(self) -> None:
+        super().__init__("This action needs an operator key. Sign in as an operator to continue.")
+
+
+class OperatorActionsDisabledError(AirWatchError):
+    """No operator key is configured, so every operator action is refused."""
+
+    code = "operator_actions_disabled"
+    status_code = 403
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Operator actions are disabled on this deployment: no OPERATOR_API_KEY is set."
+        )
+
+
 class RateLimitExceededError(AirWatchError):
     """The caller exceeded the per-IP or per-device rate limit."""
 

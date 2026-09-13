@@ -15,7 +15,7 @@ from typing import Annotated, Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
-from app.core.constants import RATE_LIMIT_REQUESTS_PER_MINUTE
+from app.core.constants import OPERATOR_KEY_MIN_LENGTH, RATE_LIMIT_REQUESTS_PER_MINUTE
 from app.core.exceptions import MissingCredentialError
 
 #: Repository root, resolved from this file: core -> app -> backend -> repo root.
@@ -67,6 +67,11 @@ class Settings(BaseSettings):
     #: receiving system.
     alert_webhook_url: str = ""
 
+    #: Shared key that authorises operator actions: raising, sending,
+    #: acknowledging and resolving alerts. Empty disables those actions entirely,
+    #: so a deployment that forgets to set it fails closed rather than open.
+    operator_api_key: str = ""
+
     #: Comma-separated in the environment, split into a list by the validator.
     #: NoDecode is required, not decorative: without it pydantic-settings tries to
     #: JSON-decode any complex-typed value coming from a dotenv file and raises
@@ -96,6 +101,17 @@ class Settings(BaseSettings):
     #: Earth Engine has required a registered Cloud project since November 2024,
     #: and ee.Initialize() will not authenticate without it.
     gee_project_id: str = ""
+
+    @field_validator("operator_api_key")
+    @classmethod
+    def _operator_key_is_strong(cls, value: str) -> str:
+        """Refuse a key short enough to guess."""
+        if value and len(value) < OPERATOR_KEY_MIN_LENGTH:
+            raise ValueError(
+                f"OPERATOR_API_KEY must be at least {OPERATOR_KEY_MIN_LENGTH} characters; "
+                "generate one with `openssl rand -hex 32`."
+            )
+        return value
 
     @field_validator("cors_allowed_origins", mode="before")
     @classmethod

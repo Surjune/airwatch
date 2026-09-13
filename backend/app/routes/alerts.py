@@ -15,6 +15,7 @@ from app.core.config import Settings, get_settings
 from app.core.enums import AlertStatus, PilotCity, Pollutant
 from app.repositories.alert_repository import AlertDetail
 from app.repositories.session import get_db_session
+from app.routes.dependencies import OperatorOnly
 from app.schemas.alerts import (
     AlertResponse,
     AlertsResponse,
@@ -81,6 +82,7 @@ def list_alerts(
     "/dispatch",
     response_model=DispatchResponse,
     summary="Detect hotspots and route alerts for them",
+    dependencies=[OperatorOnly],
 )
 def dispatch(
     session: Annotated[Session, Depends(get_db_session)],
@@ -103,6 +105,7 @@ def dispatch(
     "/deliver",
     response_model=DeliveryResponse,
     summary="Send recorded alerts to the authorities' endpoint",
+    dependencies=[OperatorOnly],
 )
 async def deliver(
     session: Annotated[Session, Depends(get_db_session)],
@@ -127,6 +130,7 @@ async def deliver(
     "/{alert_id}/acknowledge",
     response_model=AlertResponse,
     summary="Record that an authority has seen an alert",
+    dependencies=[OperatorOnly],
 )
 def acknowledge(
     session: Annotated[Session, Depends(get_db_session)],
@@ -140,6 +144,7 @@ def acknowledge(
     "/{alert_id}/resolve",
     response_model=AlertResponse,
     summary="Close an alert with a note describing the outcome",
+    dependencies=[OperatorOnly],
 )
 def resolve(
     session: Annotated[Session, Depends(get_db_session)],

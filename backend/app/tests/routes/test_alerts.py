@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from app.core.enums import Pollutant
 from app.repositories.session import get_db_session
 from app.services import alert_service
+from app.tests.conftest import OPERATOR_KEY
 from app.tests.services.test_alert_service import _seed_authority, _seed_network
 
 pytestmark = pytest.mark.integration
@@ -33,7 +34,7 @@ def api(app: FastAPI, session: Session) -> Iterator[TestClient]:
         yield session
 
     app.dependency_overrides[get_db_session] = _session
-    with TestClient(app) as client:
+    with TestClient(app, headers={"Authorization": f"Bearer {OPERATOR_KEY}"}) as client:
         yield client
 
 

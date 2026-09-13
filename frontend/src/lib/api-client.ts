@@ -6,6 +6,8 @@
  * the transport does not ripple through the feature folders.
  */
 
+import { getOperatorToken } from './operator-token';
+
 /** Base path for the versioned API. Vite proxies this to the backend in dev. */
 const API_BASE = '/v1';
 
@@ -109,7 +111,9 @@ function isApiErrorBody(value: unknown): value is ApiErrorBody {
     return false;
   }
   const { error } = value;
-  return typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string';
+  return (
+    typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string'
+  );
 }
 
 /**
@@ -129,6 +133,12 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (body !== undefined && formData === undefined) {
     headers['Content-Type'] = 'application/json';
+  }
+  // Presented on every request once an operator has signed in; read endpoints
+  // ignore it, and write endpoints refuse without it.
+  const operatorToken = getOperatorToken();
+  if (operatorToken) {
+    headers.Authorization = `Bearer ${operatorToken}`;
   }
 
   const init: RequestInit = {
@@ -198,11 +208,18 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 }
 
 /** Shorthand for a GET request. */
-export function get<T>(path: string, options: Omit<RequestOptions, 'method' | 'body'> = {}): Promise<T> {
+export function get<T>(
+  path: string,
+  options: Omit<RequestOptions, 'method' | 'body'> = {},
+): Promise<T> {
   return request<T>(path, { ...options, method: 'GET' });
 }
 
 /** Shorthand for a POST request. */
-export function post<T>(path: string, body: unknown, options: Omit<RequestOptions, 'method' | 'body'> = {}): Promise<T> {
+export function post<T>(
+  path: string,
+  body: unknown,
+  options: Omit<RequestOptions, 'method' | 'body'> = {},
+): Promise<T> {
   return request<T>(path, { ...options, method: 'POST', body });
 }

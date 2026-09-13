@@ -109,6 +109,22 @@ describe('AlertCard', () => {
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
 
+  it('shows a read-only viewer the trail without any actions', () => {
+    render(
+      <AlertCard
+        alert={makeAlert({ delivered_at: null })}
+        isOverdue
+        isBusy={false}
+        canAct={false}
+        onAcknowledge={vi.fn()}
+        onResolve={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/past its response deadline/i)).toBeInTheDocument();
+    expect(screen.getByText('not delivered')).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
   it('shows the resolution and offers no further actions once resolved', () => {
     renderCard(
       makeAlert({ status: 'resolved', delivered_at: null, resolution_note: 'Kiln sealed.' }),

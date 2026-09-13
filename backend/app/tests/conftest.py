@@ -26,6 +26,9 @@ from app.core.config import Settings
 from app.main import create_app
 from app.repositories.models import Base
 
+#: Operator key used by every test application; long enough to pass validation.
+OPERATOR_KEY = "test-operator-key-0123456789abcdef0123"
+
 
 @pytest.fixture
 def settings() -> Settings:
@@ -45,6 +48,7 @@ def settings() -> Settings:
         firms_map_key="",
         gee_service_account_email="",
         gee_private_key_path="",
+        operator_api_key=OPERATOR_KEY,
     )
 
 

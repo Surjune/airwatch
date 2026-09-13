@@ -10,6 +10,8 @@ interface AlertCardProps {
   readonly alert: Alert;
   readonly isOverdue: boolean;
   readonly isBusy: boolean;
+  /** False for a read-only viewer: the trail is shown, the actions are not. */
+  readonly canAct?: boolean;
   readonly onAcknowledge: (alertId: number) => void;
   readonly onResolve: (alertId: number, note: string) => void;
 }
@@ -43,7 +45,14 @@ const STATUS_TONES = {
  * but reached nobody is a different finding from one that was delivered and
  * ignored, and an operator chasing the second should not be shown the first.
  */
-export function AlertCard({ alert, isOverdue, isBusy, onAcknowledge, onResolve }: AlertCardProps) {
+export function AlertCard({
+  alert,
+  isOverdue,
+  isBusy,
+  canAct = true,
+  onAcknowledge,
+  onResolve,
+}: AlertCardProps) {
   const [note, setNote] = useState('');
   const [isResolving, setIsResolving] = useState(false);
   const noteId = useId();
@@ -109,7 +118,7 @@ export function AlertCard({ alert, isOverdue, isBusy, onAcknowledge, onResolve }
         </p>
       )}
 
-      {!isResolved && (
+      {canAct && !isResolved && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {alert.status === 'sent' && (
             <Button
@@ -136,7 +145,7 @@ export function AlertCard({ alert, isOverdue, isBusy, onAcknowledge, onResolve }
         </div>
       )}
 
-      {isResolving && !isResolved && (
+      {canAct && isResolving && !isResolved && (
         <div id={noteId} className="mt-3 rounded-md border border-border bg-surface-sunken p-3">
           <label className="block text-xs font-medium text-ink" htmlFor={`${noteId}-field`}>
             What was found or done?{' '}
