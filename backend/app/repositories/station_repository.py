@@ -65,6 +65,9 @@ def upsert_station(
             constraint="uq_station_source_identity",
             set_={
                 "name": name,
+                # Updated, not fixed at first sight: a provider's own classification
+                # of a site is the authority on whether it is a reference monitor.
+                "tier": tier,
                 "geom": _point_wkt(coordinates),
                 "h3_cell": point_to_cell(coordinates),
                 "operator": operator,
@@ -195,7 +198,11 @@ def city_coverage(
     in_range = func.ST_DistanceSphere(Station.geom, origin) <= radius_m
 
     stations = int(
-        session.execute(select(func.count()).select_from(Station).where(in_range)).scalar_one()
+        session.execute(
+            select(func.count())
+            .select_from(Station)
+            .where(in_range, Station.tier == StationTier.REFERENCE)
+        ).scalar_one()
     )
 
     reporting = int(
@@ -205,6 +212,7 @@ def city_coverage(
             .join(Station, Station.id == Measurement.station_id)
             .where(
                 in_range,
+                Station.tier == StationTier.REFERENCE,
                 Measurement.pollutant == pollutant,
                 Measurement.is_plausible.is_(True),
                 Measurement.observed_at >= cutoff,
@@ -218,6 +226,7 @@ def city_coverage(
         .join(Station, Station.id == Measurement.station_id)
         .where(
             in_range,
+            Station.tier == StationTier.REFERENCE,
             Measurement.pollutant == pollutant,
             Measurement.is_plausible.is_(True),
         )

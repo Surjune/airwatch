@@ -579,7 +579,7 @@
       "source": "OpenAQ",
       "source_station_id": "4663956",
       "name": "Santushti Apartments, Vasant Kunj",
-      "tier": "reference",
+      "tier": "low_cost",
       "coordinates": [
         77.1493,
         28.5266
@@ -589,7 +589,7 @@
       "source": "OpenAQ",
       "source_station_id": "4712609",
       "name": "Air Check",
-      "tier": "reference",
+      "tier": "low_cost",
       "coordinates": [
         77.234167,
         28.623056
@@ -599,7 +599,7 @@
       "source": "OpenAQ",
       "source_station_id": "6105800",
       "name": "Sector 1, Noida extension",
-      "tier": "reference",
+      "tier": "low_cost",
       "coordinates": [
         77.431714,
         28.583491
@@ -609,7 +609,7 @@
       "source": "OpenAQ",
       "source_station_id": "6145551",
       "name": "Anand Lok",
-      "tier": "reference",
+      "tier": "low_cost",
       "coordinates": [
         77.21886,
         28.5587

@@ -28,7 +28,7 @@ from app.core.constants import (
     FORECAST_TEST_FRACTION,
     PILOT_CITY_CENTRES,
 )
-from app.core.enums import Pollutant
+from app.core.enums import Pollutant, StationTier
 from app.core.geo import haversine_distance_m
 from app.ml.forecast_features import (
     FEDERATED_EXCLUDED_PREFIXES,
@@ -102,8 +102,10 @@ def load_city_series(
                 select(Station.id, Station.geom.ST_X(), Station.geom.ST_Y())
             ).all()
         }
-        query = select(
-            Measurement.station_id, Measurement.observed_at, Measurement.value_raw
+        query = (
+            select(Measurement.station_id, Measurement.observed_at, Measurement.value_raw)
+            .join(Station, Station.id == Measurement.station_id)
+            .where(Station.tier == StationTier.REFERENCE)
         ).where(
             Measurement.pollutant == pollutant,
             Measurement.is_plausible.is_(True),

@@ -103,6 +103,39 @@ class TestStations:
         assert api.get("/v1/stations", params={"city": "mumbai"}).status_code == 422
 
 
+class TestLowCostSensors:
+    def test_serves_the_low_cost_tier_marked_uncalibrated(
+        self, api: TestClient, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        tiers: list[str] = []
+
+        def latest(*args: Any, **kwargs: Any) -> list[Any]:
+            tiers.append(str(args[2] if len(args) > 2 else kwargs.get("tier")))
+            return latest_rows()
+
+        monkeypatch.setattr(observation_repository, "latest_reading_per_station", latest)
+
+        body = api.get("/v1/sensors", params={"pollutant": "pm25"}).json()
+
+        assert body["calibrated"] is False
+        assert body["sensor_count"] == len(body["readings"])
+        assert tiers == ["low_cost"]
+
+    def test_the_station_endpoint_asks_for_reference_monitors_only(
+        self, api: TestClient, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        tiers: list[str] = []
+
+        def latest(*args: Any, **kwargs: Any) -> list[Any]:
+            tiers.append(str(args[2] if len(args) > 2 else kwargs.get("tier")))
+            return latest_rows()
+
+        monkeypatch.setattr(observation_repository, "latest_reading_per_station", latest)
+        api.get("/v1/stations")
+
+        assert tiers == ["reference"]
+
+
 class TestCities:
     def test_lists_every_pilot_city_with_where_to_centre_it(self, api: TestClient) -> None:
         cities = {city["city"]: city for city in api.get("/v1/cities").json()["cities"]}

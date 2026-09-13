@@ -17,7 +17,7 @@ from sqlalchemy import Row, func, select
 from sqlalchemy.orm import Session
 
 from app.core.constants import CITIZEN_COLOCATION_RADIUS_M, CITIZEN_REFERENCE_MAX_GAP_MINUTES
-from app.core.enums import Pollutant
+from app.core.enums import Pollutant, StationTier
 from app.core.geo import LonLat
 from app.core.h3_grid import H3Cell
 from app.ml.haze_calibration import CalibrationPair
@@ -95,6 +95,8 @@ def nearest_station_reading(
         .where(
             Measurement.pollutant == pollutant,
             Measurement.is_plausible.is_(True),
+            # A photo is calibrated against ground truth, never another estimate.
+            Station.tier == StationTier.REFERENCE,
             distance <= radius_m,
             Measurement.observed_at >= at - max_gap,
             Measurement.observed_at <= at + max_gap,

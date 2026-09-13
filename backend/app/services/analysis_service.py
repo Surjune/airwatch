@@ -26,7 +26,7 @@ from app.core.constants import (
     PILOT_CITY_DEFAULT_POLLUTANT,
     PILOT_CITY_LABELS,
 )
-from app.core.enums import PilotCity, Pollutant
+from app.core.enums import PilotCity, Pollutant, StationTier
 from app.core.geo import LonLat
 from app.core.h3_grid import H3Cell
 from app.core.logging import get_logger
@@ -121,12 +121,21 @@ class AttributedHotspot:
 
 
 def latest_snapshots(
-    session: Session, pollutant: Pollutant, city: PilotCity | None = None
+    session: Session,
+    pollutant: Pollutant,
+    city: PilotCity | None = None,
+    tier: StationTier = StationTier.REFERENCE,
 ) -> list[StationSnapshot]:
-    """Every station's most recent reading, with its sub-index, optionally in one city."""
+    """Every station's most recent reading, with its sub-index, optionally in one city.
+
+    Reference monitors unless another tier is named. A low-cost sensor's value is
+    returned as it reported, uncalibrated, and its sub-index is what that raw
+    value would mean -- which is why the route serving it says so on every
+    response.
+    """
     snapshots: list[StationSnapshot] = []
 
-    for row in observation_repository.latest_reading_per_station(session, pollutant):
+    for row in observation_repository.latest_reading_per_station(session, pollutant, tier):
         station_id, name, lon, lat, cell, observed_at, value, unit = row
         if not in_city((float(lon), float(lat)), city):
             continue

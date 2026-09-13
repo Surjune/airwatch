@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.core import aqi
 from app.core.constants import FORECAST_MAX_HORIZON_HOURS, METRES_PER_KILOMETRE
-from app.core.enums import PilotCity, Pollutant
+from app.core.enums import PilotCity, Pollutant, StationTier
 from app.core.exceptions import ValidationError
 from app.core.geo import LonLat, validate_lon_lat
 from app.repositories.session import get_db_session
@@ -28,6 +28,7 @@ from app.schemas.analysis import (
     ForecastPointResponse,
     HotspotResponse,
     HotspotsResponse,
+    LowCostSensorsResponse,
     Position,
     StationReadingResponse,
     StationsResponse,
@@ -85,20 +86,43 @@ def list_stations(
     return StationsResponse(
         pollutant=pollutant,
         station_count=len(snapshots),
-        readings=[
-            StationReadingResponse(
-                station_id=snapshot.station_id,
-                name=snapshot.name,
-                position=_position(snapshot.coordinates),
-                h3_cell=snapshot.h3_cell,
-                observed_at=snapshot.observed_at,
-                value=snapshot.value,
-                unit=snapshot.unit,
-                aqi=snapshot.aqi,
-                category=snapshot.category,
-            )
-            for snapshot in snapshots
-        ],
+        readings=[_reading(snapshot) for snapshot in snapshots],
+    )
+
+
+@router.get(
+    "/sensors",
+    response_model=LowCostSensorsResponse,
+    summary="Latest raw readings from low-cost sensors",
+)
+def list_low_cost_sensors(
+    session: Annotated[Session, Depends(get_db_session)],
+    pollutant: Pollutant = Pollutant.PM25,
+    city: PilotCity | None = None,
+) -> LowCostSensorsResponse:
+    """Uncalibrated low-cost sensor readings, kept apart from the reference network."""
+    snapshots = analysis_service.latest_snapshots(
+        session, pollutant, city, tier=StationTier.LOW_COST
+    )
+    return LowCostSensorsResponse(
+        pollutant=pollutant,
+        sensor_count=len(snapshots),
+        calibrated=False,
+        readings=[_reading(snapshot) for snapshot in snapshots],
+    )
+
+
+def _reading(snapshot: analysis_service.StationSnapshot) -> StationReadingResponse:
+    return StationReadingResponse(
+        station_id=snapshot.station_id,
+        name=snapshot.name,
+        position=_position(snapshot.coordinates),
+        h3_cell=snapshot.h3_cell,
+        observed_at=snapshot.observed_at,
+        value=snapshot.value,
+        unit=snapshot.unit,
+        aqi=snapshot.aqi,
+        category=snapshot.category,
     )
 
 

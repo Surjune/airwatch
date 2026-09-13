@@ -112,7 +112,7 @@ export function FederationView() {
               <p className="text-sm leading-relaxed text-ink-muted">
                 The point estimates suggest a mechanism — Kanpur&rsquo;s cleaner, less variable air
                 is an easier forecasting task, and a global model that is roughly 97% Delhi would
-                pull it toward a harder regime, which a local intercept undoes. That story is
+                pull it toward a harder regime. That story is
                 plausible and matches the direction of every number above. It is not established: on
                 23 held-out rows the intervals are wide enough to include no effect at all. What
                 would settle it is more Kanpur history, not a different model — a holdout several

@@ -19,7 +19,7 @@ from sqlalchemy import Row, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from app.core.enums import Pollutant
+from app.core.enums import Pollutant, StationTier
 from app.core.geo import LonLat
 from app.core.h3_grid import H3Cell, point_to_cell
 from app.core.observations import ObservedReading
@@ -225,9 +225,13 @@ def latest_measurement_at(session: Session) -> datetime | None:
 
 
 def latest_reading_per_station(
-    session: Session, pollutant: Pollutant
+    session: Session, pollutant: Pollutant, tier: StationTier = StationTier.REFERENCE
 ) -> list[Row[tuple[int, str, float, float, str, datetime, float, str]]]:
-    """Return each station's most recent reading for a pollutant.
+    """Return each station's most recent reading for a pollutant, for one tier.
+
+    Reference monitors by default. Low-cost sensors read systematically high in
+    humid air until calibrated, so they are only ever returned when asked for by
+    name -- never mixed into a surface or a detector that assumes ground truth.
 
     Uses DISTINCT ON, which on PostgreSQL returns the first row of each group in
     the ordering given -- the natural way to ask "latest per station" in one
@@ -245,7 +249,11 @@ def latest_reading_per_station(
             Measurement.unit,
         )
         .join(Measurement, Measurement.station_id == Station.id)
-        .where(Measurement.pollutant == pollutant, Measurement.is_plausible.is_(True))
+        .where(
+            Measurement.pollutant == pollutant,
+            Measurement.is_plausible.is_(True),
+            Station.tier == tier,
+        )
         .distinct(Station.id)
         .order_by(Station.id, Measurement.observed_at.desc())
     )
@@ -280,6 +288,8 @@ def readings_in_window(
             Measurement.pollutant == pollutant,
             Measurement.is_plausible.is_(True),
             Measurement.observed_at >= since,
+            # Analysis assumes ground truth; uncalibrated low-cost sensors are not.
+            Station.tier == StationTier.REFERENCE,
         )
         .order_by(Measurement.observed_at)
     )

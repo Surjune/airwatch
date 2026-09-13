@@ -304,7 +304,7 @@ def models(settings: Settings) -> ModelCatalogue:
                     "is inconclusive -- so its weights are not offered."
                 ),
                 limitations=[
-                    "R2 of 0.233 means neighbouring stations explain under a quarter of "
+                    "R2 of 0.246 means neighbouring stations explain under a quarter of "
                     "the variance at an unmonitored point, even in a dense network.",
                     "Uncertainty widens sharply where nearby monitors disagree; a cell "
                     "too poorly supported to estimate returns nothing rather than a number.",

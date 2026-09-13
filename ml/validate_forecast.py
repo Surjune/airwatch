@@ -51,7 +51,7 @@ from app.core.constants import (  # noqa: E402
     RANDOM_SEED,
     VALIDATION_DATA_UNTIL,
 )
-from app.core.enums import Pollutant  # noqa: E402
+from app.core.enums import Pollutant, StationTier  # noqa: E402
 from app.core.evidence import classify, paired_cluster_bootstrap  # noqa: E402
 from app.core.logging import configure_logging  # noqa: E402
 from app.ml.forecast_features import (  # noqa: E402
@@ -128,7 +128,10 @@ def load_series(
 
     with session_scope() as session:
         rows = session.execute(
-            select(Measurement.station_id, Measurement.observed_at, Measurement.value_raw).where(
+            select(Measurement.station_id, Measurement.observed_at, Measurement.value_raw)
+            .join(Station, Station.id == Measurement.station_id)
+            .where(
+                Station.tier == StationTier.REFERENCE,
                 Measurement.pollutant == pollutant,
                 Measurement.is_plausible.is_(True),
                 Measurement.observed_at < VALIDATION_DATA_UNTIL,

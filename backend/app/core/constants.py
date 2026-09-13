@@ -531,6 +531,18 @@ OPENMETEO_MAX_FORECAST_DAYS: Final[int] = 16
 #: NASA FIRMS API root. The active-fire product is served as CSV, not JSON.
 FIRMS_BASE_URL: Final[str] = "https://firms.modaps.eosdis.nasa.gov/api"
 
+#: data.gov.in API root, where CPCB publishes its real-time AQI feed.
+CPCB_AQI_BASE_URL: Final[str] = "https://api.data.gov.in"
+
+#: The "Real time Air Quality Index from various locations" resource, published by
+#: the Ministry of Environment, Forest and Climate Change. Values are CPCB
+#: sub-indices per station and pollutant, refreshed hourly.
+CPCB_AQI_RESOURCE_ID: Final[str] = "3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69"
+
+#: Largest page the portal serves. Delhi, the largest city, returns about 300
+#: station-pollutant rows, so one page covers any pilot city.
+CPCB_MAX_PAGE_LIMIT: Final[int] = 1000
+
 #: FIRMS active-fire source. VIIRS on Suomi-NPP resolves fires at 375 m, against
 #: MODIS at 1 km, which matters because a single stubble field is well under a
 #: MODIS pixel.
@@ -658,31 +670,31 @@ REQUEST_ID_HEADER: Final[str] = "X-Request-ID"
 #: Mean absolute error, ug/m3, of the shipped inverse-distance surface under
 #: leave-one-station-out validation: 7,957 scored station-hours across 36 held-out
 #: stations, data before VALIDATION_DATA_UNTIL. Source: `npm run ml:validate-loso`.
-PUBLISHED_FUSION_MAE_UGM3: Final[float] = 11.48
+PUBLISHED_FUSION_MAE_UGM3: Final[float] = 11.75
 
 #: Coefficient of determination for the same run. Low by design of the problem,
 #: not of the method: even inside one of India's densest networks, neighbouring
 #: stations explain under a quarter of the variance at an unmonitored point.
-PUBLISHED_FUSION_R2: Final[float] = 0.233
+PUBLISHED_FUSION_R2: Final[float] = 0.246
 
 #: What gradient boosting scored on the identical split, having also received
 #: the interpolated estimate as an input feature. Its deficit against IDW,
 #: -0.96 ug/m3 over a station-level interval of [-2.08, +0.06], is not established
 #: as worse -- but nothing establishes it as better either, so IDW ships.
-PUBLISHED_FUSION_LEARNED_MAE_UGM3: Final[float] = 12.44
+PUBLISHED_FUSION_LEARNED_MAE_UGM3: Final[float] = 12.76
 
 #: Mean absolute error, ug/m3, of the shipped diurnal climatology at 24 hours,
 #: on a temporal holdout, data before VALIDATION_DATA_UNTIL.
 #: Source: `npm run ml:validate-forecast`.
-PUBLISHED_FORECAST_MAE_UGM3: Final[float] = 15.24
+PUBLISHED_FORECAST_MAE_UGM3: Final[float] = 15.79
 
 #: The better of the two gradient-boosted framings (residual to climatology) at
 #: the same horizon on the same holdout. Established as worse than climatology:
 #: -1.55 ug/m3, station-level interval [-2.27, -0.67].
-PUBLISHED_FORECAST_LEARNED_MAE_UGM3: Final[float] = 16.79
+PUBLISHED_FORECAST_LEARNED_MAE_UGM3: Final[float] = 17.41
 
 #: What persistence -- assuming the current value holds -- scored.
-PUBLISHED_FORECAST_PERSISTENCE_MAE_UGM3: Final[float] = 21.39
+PUBLISHED_FORECAST_PERSISTENCE_MAE_UGM3: Final[float] = 21.68
 
 
 # ---------------------------------------------------------------------------
@@ -859,7 +871,7 @@ PILOT_REPORTING_WINDOW_HOURS: Final[int] = 48
 #: Measured error, in ug/m3, of each node's own forecast model on its held-out
 #: data. The baseline every federated candidate is compared against.
 #: Source: `npm run fl:validate`, seeded, reproducible exactly.
-FEDERATED_LOCAL_MAE_UGM3: Final[dict[str, float]] = {"delhi": 16.82, "kanpur": 9.21}
+FEDERATED_LOCAL_MAE_UGM3: Final[dict[str, float]] = {"delhi": 18.11, "kanpur": 9.20}
 
 #: Each federated candidate against the node's own model, on the same held-out
 #: rows: (candidate MAE, gain, interval low, interval high), all in ug/m3, gain
@@ -875,21 +887,21 @@ FEDERATED_LOCAL_MAE_UGM3: Final[dict[str, float]] = {"delhi": 16.82, "kanpur": 9
 #: Source: `npm run fl:validate`.
 FEDERATED_CANDIDATE_RESULTS: Final[dict[str, dict[str, tuple[float, float, float, float]]]] = {
     "delhi": {
-        "global": (16.84, -0.013, -0.036, 0.010),
-        "fine-tuned": (16.84, -0.013, -0.021, -0.004),
-        "local head": (16.79, 0.030, 0.007, 0.053),
+        "global": (18.14, -0.027, -0.059, 0.005),
+        "fine-tuned": (18.13, -0.017, -0.027, -0.006),
+        "local head": (18.07, 0.038, 0.015, 0.062),
     },
     "kanpur": {
-        "global": (9.85, -0.631, -3.441, 2.203),
-        "fine-tuned": (9.63, -0.417, -1.875, 1.112),
-        "local head": (8.91, 0.303, -1.606, 2.115),
+        "global": (10.18, -0.979, -3.895, 1.926),
+        "fine-tuned": (9.75, -0.548, -1.931, 0.873),
+        "local head": (9.20, -0.006, -2.014, 1.870),
     },
 }
 
 #: Training and test rows each node contributed to that run, published so a
 #: reader can see how thin the evidence is.
-FEDERATED_TRAIN_ROWS: Final[dict[str, int]] = {"delhi": 1719, "kanpur": 55}
-FEDERATED_TEST_ROWS: Final[dict[str, int]] = {"delhi": 493, "kanpur": 23}
+FEDERATED_TRAIN_ROWS: Final[dict[str, int]] = {"delhi": 1464, "kanpur": 55}
+FEDERATED_TEST_ROWS: Final[dict[str, int]] = {"delhi": 405, "kanpur": 23}
 
 
 # ---------------------------------------------------------------------------

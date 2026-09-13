@@ -41,6 +41,9 @@ logger = get_logger(__name__)
 #: Provider label recorded against stations from OpenAQ.
 _OPENAQ_SOURCE = "OpenAQ"
 
+#: Pollutants an optical particle counter can report. Anything else needs an analyser.
+_PARTICULATES = frozenset({Pollutant.PM25, Pollutant.PM10})
+
 
 @dataclass(slots=True)
 class SourceResult:
@@ -72,6 +75,30 @@ class IngestionReport:
     @property
     def failed_sources(self) -> list[str]:
         return [result.source for result in self.results if not result.succeeded]
+
+
+def station_tier(location: OpenAQLocation) -> StationTier:
+    """Classify a location as a reference monitor or a low-cost sensor.
+
+    OpenAQ's ``isMonitor`` flag alone is not reliable: stations added to OpenAQ
+    by hand -- several DPCC and UPPCB analyser sites around Delhi -- carry it as
+    false. So a location is treated as low-cost only when it is not flagged a
+    monitor *and* measures no gaseous pollutant. That second test is physical,
+    not a guess: the optical particle counters in AirGradient and PurpleAir units
+    cannot measure NO2, SO2, CO or O3, while a regulatory analyser site reports
+    that full suite.
+
+    Before this existed every location was stored as a reference monitor, which
+    put uncalibrated optical sensors into detection, fusion and validation as if
+    they were ground truth.
+    """
+    if location.is_monitor:
+        return StationTier.REFERENCE
+    measures_gas = any(
+        pollutant not in _PARTICULATES
+        for pollutant, _ in location.pollutant_by_sensor_id().values()
+    )
+    return StationTier.REFERENCE if measures_gas else StationTier.LOW_COST
 
 
 def _storable(value: float, pollutant: Pollutant) -> bool:
@@ -242,7 +269,7 @@ class IngestionService:
                 source=_OPENAQ_SOURCE,
                 source_station_id=str(location.id),
                 name=location.name,
-                tier=StationTier.REFERENCE,
+                tier=station_tier(location),
                 coordinates=location.coordinates.to_lon_lat(),
                 operator=location.provider.name if location.provider else None,
                 last_seen_at=location.last_reading_at,
@@ -325,7 +352,7 @@ class IngestionService:
                 source=_OPENAQ_SOURCE,
                 source_station_id=str(location.id),
                 name=location.name,
-                tier=StationTier.REFERENCE,
+                tier=station_tier(location),
                 coordinates=location.coordinates.to_lon_lat(),
                 operator=location.provider.name if location.provider else None,
                 last_seen_at=location.last_reading_at,

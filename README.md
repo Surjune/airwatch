@@ -92,6 +92,12 @@ federation claim turned out to rest on noise (see *Federation*).
   00:00 UTC. Without that cutoff every figure drifted as the hourly worker added
   data — LightGBM's error here had already moved from the originally published
   12.84 to 12.44 — so the tables below supersede the first published figures.
+- **Reference monitors only.** Five AirGradient low-cost sensors were once
+  ingested as if they were reference monitors, because ingestion ignored
+  OpenAQ's own classification. Their uncalibrated readings sat inside every
+  validation below. They are now stored as the low-cost tier and excluded from
+  all analysis, and every figure here was re-run without them. No conclusion
+  changed; most numbers did.
 - **Intervals, and a rule for reading them.** Each method is compared with the
   baseline by a bootstrap that resamples **whole stations**, since a station that
   is hard to predict is hard every hour and its rows are not independent. A
@@ -100,8 +106,8 @@ federation claim turned out to rest on noise (see *Federation*).
 
 ### Reconstructing unmonitored ground
 
-Numbers below come from `npm run ml:validate-loso`: 7,957 scored station-hours
-across 36 held-out CPCB/DPCC stations in Delhi.
+Numbers below come from `npm run ml:validate-loso`: 7,001 scored station-hours
+across 33 held-out reference stations in Delhi-NCR.
 
 **Leave-one-station-out**: hide one real station completely — from the features
 *and* from training — estimate its location from the rest of the network, and
@@ -109,14 +115,14 @@ compare against what it actually recorded.
 
 | Method | MAE | RMSE | R² |
 | --- | --- | --- | --- |
-| Inverse-distance weighting | **11.48** | **17.29** | **0.233** |
-| LightGBM (absolute target) | 12.44 | 18.15 | 0.155 |
-| LightGBM (residual to IDW) | 12.61 | 18.34 | 0.137 |
+| Inverse-distance weighting | **11.75** | **17.85** | **0.246** |
+| LightGBM (absolute target) | 12.76 | 19.00 | 0.146 |
+| LightGBM (residual to IDW) | 13.00 | 19.25 | 0.123 |
 
-| Against IDW (36 stations) | Difference (µg/m³) | 95% interval | Verdict |
+| Against IDW (33 stations) | Difference (µg/m³) | 95% interval | Verdict |
 | --- | --- | --- | --- |
-| LightGBM (absolute) | −0.96 | [−2.08, +0.06] | inconclusive |
-| LightGBM (residual) | −1.14 | [−2.29, −0.10] | worse |
+| LightGBM (absolute) | −1.01 | [−2.17, +0.07] | inconclusive |
+| LightGBM (residual) | −1.25 | [−2.56, −0.07] | worse |
 
 Two findings:
 
@@ -126,16 +132,16 @@ framing's deficit is not established — its interval just crosses zero — thou
 earlier version of this section stated it flatly as "~12% worse" from a point
 estimate. Either way
 nothing shows a gain, and without evidence of one the simpler estimator is the
-one to trust. With 36 scorable stations the trees tend to learn each site's
+one to trust. With 33 scorable stations the trees tend to learn each site's
 idiosyncrasies rather than a spatial relationship that transfers to ground the
 network does not cover.
 
-**2. R² of 0.233 is the headline, and it is a result about the problem, not
+**2. R² of 0.246 is the headline, and it is a result about the problem, not
 about the method.** Even with more than 60 monitors inside 25 km — one of the densest
 networks in India — neighbouring stations explain under a quarter of the
 variance at an unmonitored point. This is the resolution mismatch in the
 problem statement above, measured rather than asserted. The hardest station to
-reconstruct is Anand Vihar (MAE 40 µg/m³), a bus terminal beside an industrial
+reconstruct is Anand Vihar (MAE 42 µg/m³), a bus terminal beside an industrial
 belt: exactly the kind of hyper-local source that a city-average AQI cannot see.
 
 **Error is predictable, which is what makes uncertainty honest.** Disagreement
@@ -143,10 +149,10 @@ between nearby monitors tracks error closely:
 
 | Spread among 3 nearest stations | Mean absolute error |
 | --- | --- |
-| 0–5 µg/m³ | 9.89 |
-| 5–15 µg/m³ | 11.38 |
-| 15–30 µg/m³ | 13.66 |
-| 30+ µg/m³ | 24.47 |
+| 0–5 µg/m³ | 10.45 |
+| 5–15 µg/m³ | 11.52 |
+| 15–30 µg/m³ | 13.57 |
+| 30+ µg/m³ | 24.76 |
 
 The fused surface therefore publishes a per-cell uncertainty fitted to this
 relationship, and returns *nothing* rather than a number for cells too poorly
@@ -165,16 +171,16 @@ both sides and let autocorrelation stand in for skill.
 
 | Method | 24h MAE | 48h MAE | 72h MAE |
 | --- | --- | --- | --- |
-| Persistence | 21.39 | 22.87 | 20.27 |
-| **Climatology** | **15.24** | **16.12** | **14.62** |
-| LightGBM (absolute) | 17.12 | 18.32 | 17.50 |
-| LightGBM (residual to climatology) | 16.79 | 18.14 | 16.58 |
+| Persistence | 21.68 | 23.02 | 22.21 |
+| **Climatology** | **15.79** | **16.35** | **16.24** |
+| LightGBM (absolute) | 17.77 | 19.95 | 19.71 |
+| LightGBM (residual to climatology) | 17.41 | 19.55 | 19.02 |
 
-| Against climatology (62 stations) | 24h | 48h | 72h |
+| Against climatology (58 stations) | 24h | 48h | 72h |
 | --- | --- | --- | --- |
-| Persistence | −6.15 [−7.34, −4.88] | −6.76 [−8.31, −5.34] | −5.65 [−6.86, −4.55] |
-| LightGBM (absolute) | −1.88 [−2.56, −1.05] | −2.20 [−3.00, −1.37] | −2.88 [−3.87, −1.90] |
-| LightGBM (residual) | −1.55 [−2.27, −0.67] | −2.02 [−2.81, −1.15] | −1.96 [−2.72, −1.27] |
+| Persistence | −5.89 [−7.27, −4.52] | −6.67 [−8.40, −5.10] | −5.97 [−7.19, −4.85] |
+| LightGBM (absolute) | −1.98 [−2.78, −0.99] | −3.60 [−4.64, −2.49] | −3.47 [−4.22, −2.69] |
+| LightGBM (residual) | −1.62 [−2.44, −0.62] | −3.20 [−4.18, −2.08] | −2.79 [−3.44, −2.12] |
 
 *Difference in MAE (µg/m³) with 95% station-level interval; negative means worse
 than climatology.*
@@ -187,7 +193,7 @@ which is a real statement about the pollutant: Delhi PM2.5 is dominated by its
 daily cycle.
 
 This is the second phase where a learned model failed to beat a simple
-baseline, and both point at the same cause rather than at the model. Around 3,000 training
+baseline, and both point at the same cause rather than at the model. Around 2,600 training
 rows drawn from fourteen days cannot support a twenty-feature gradient-boosted
 model against a strong prior. The next real improvement is months of history and
 denser inputs, not a different architecture.
@@ -221,7 +227,7 @@ stands in the pilot cities:
 
 | City | Active stations | Hourly PM2.5 readings |
 | --- | --- | --- |
-| Delhi | 61 | 14,385 |
+| Delhi-NCR | 56 | 13,100 |
 | Kanpur | 3 | 660 |
 | Coimbatore | 0 usable | 0 |
 
@@ -242,17 +248,17 @@ be large enough to act on (2%); anything else is reported as what it is.
 
 | Node | Test rows | Own model | Plain averaging | Fine-tuned | Local head |
 | --- | --- | --- | --- | --- | --- |
-| Delhi | 493 | 16.82 | 16.84 | 16.84 | 16.79 |
-| Kanpur | 23 | 9.21 | 9.85 | 9.63 | 8.91 |
+| Delhi | 405 | 18.11 | 18.14 | 18.13 | 18.07 |
+| Kanpur | 23 | 9.20 | 10.18 | 9.75 | 9.20 |
 
 | Node | Candidate | Gain vs own model (µg/m³) | 95% interval | Verdict |
 | --- | --- | --- | --- | --- |
-| Delhi | plain averaging | −0.013 | [−0.036, +0.010] | inconclusive |
-| Delhi | fine-tuned | −0.013 | [−0.021, −0.004] | no practical difference |
-| Delhi | local head | +0.030 | [+0.007, +0.053] | no practical difference |
-| Kanpur | plain averaging | −0.631 | [−3.441, +2.203] | inconclusive |
-| Kanpur | fine-tuned | −0.417 | [−1.875, +1.112] | inconclusive |
-| Kanpur | local head | +0.303 | [−1.606, +2.115] | inconclusive |
+| Delhi | plain averaging | −0.027 | [−0.059, +0.005] | inconclusive |
+| Delhi | fine-tuned | −0.017 | [−0.027, −0.006] | no practical difference |
+| Delhi | local head | +0.038 | [+0.015, +0.062] | no practical difference |
+| Kanpur | plain averaging | −0.979 | [−3.895, +1.926] | inconclusive |
+| Kanpur | fine-tuned | −0.548 | [−1.931, +0.873] | inconclusive |
+| Kanpur | local head | −0.006 | [−2.014, +1.870] | inconclusive |
 
 **A correction.** This section previously read *"federation harmed the sparse
 node"*, and the dashboard called that *"the measurement, not a provisional
@@ -266,13 +272,14 @@ decides every published verdict, so the experiment and the API cannot disagree.
 **Personalisation was then tried**, because it is the standard answer to the
 non-IID harm the point estimates suggested: fine-tuning the global model locally,
 and keeping the shared slopes while refitting each city's intercept (a local
-head). The local head gives Kanpur its best point estimate, 8.91 — better than
-its own model — and that holds across every combination of rounds and proximal
-strength tried. It is **also inconclusive**: its interval spans zero too. A
-number that looks better on 23 rows is no more a finding than one that looks
-worse.
+head). On the data first used, the local head gave Kanpur a point estimate
+better than its own model. With the low-cost sensors removed from Delhi's data it
+no longer does — its gain is −0.006 — and it was **inconclusive either way**: its
+interval spanned zero both times. A number that looks better on 23 rows is no
+more a finding than one that looks worse, and this is what that looks like in
+practice.
 
-On Delhi's 493 rows the intervals are narrow enough to exclude zero, but the
+On Delhi's 405 rows the intervals are narrow enough to exclude zero, but the
 differences are a few hundredths of a microgram — real, and far too small to
 matter. That is why significance alone is not enough to call an effect.
 
@@ -469,8 +476,9 @@ weather. So the episode is committed:
 npm run demo:replay
 ```
 
-That loads `infra/fixtures/delhi-anand-vihar-august.json` — 1,232 real CPCB and
-DPCC readings from 63 stations over three days — and runs the actual detection
+That loads `infra/fixtures/delhi-anand-vihar-august.json` — 1,232 real readings
+from 59 reference stations and 4 low-cost sensors (which detection ignores) over
+three days — and runs the actual detection
 over them. It prints what it found and exits non-zero if the episode is not
 there:
 
@@ -517,7 +525,7 @@ held-out rows. Membership is fixed at the first round, and a node that drops out
 stops the run rather than being averaged around.
 
 Training is deterministic, so the transport can be held to an exact standard:
-with `--pinned` it reproduces the in-process result — Delhi 16.84 and Kanpur 9.85
+with `--pinned` it reproduces the in-process result — Delhi 18.14 and Kanpur 10.18
 µg/m³ after ten rounds — and a test drives Flower's own round loop and checks the
 weights match to floating-point precision.
 

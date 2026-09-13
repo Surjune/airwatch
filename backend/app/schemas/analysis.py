@@ -63,6 +63,21 @@ class StationsResponse(BaseModel):
     readings: list[StationReadingResponse]
 
 
+class LowCostSensorsResponse(BaseModel):
+    """Latest raw readings from low-cost optical sensors."""
+
+    pollutant: Pollutant
+    sensor_count: int
+    calibrated: bool = Field(
+        description=(
+            "Always false in this version. Optical sensors read high in humid air and "
+            "drift with age; these values are shown as reported and are never used in "
+            "hotspot detection, fusion or forecasting."
+        )
+    )
+    readings: list[StationReadingResponse]
+
+
 class AttributionResponse(BaseModel):
     """A ranked candidate explanation for a hotspot."""
 
