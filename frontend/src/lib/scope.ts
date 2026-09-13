@@ -12,6 +12,23 @@ export const VIEW_POLLUTANTS = [
   { key: 'pm10', label: 'PM10' },
 ] as const satisfies readonly { key: Pollutant; label: string }[];
 
+/** Every city key the API serves, so a value from a link can be checked before use. */
+const CITY_KEYS: readonly CityKey[] = ['delhi', 'kanpur', 'coimbatore'];
+
+/**
+ * A city and pollutant named in the address, as in `/?city=delhi&pollutant=pm25`.
+ *
+ * Lets a view be shared -- "look at the Delhi map" -- and wins over what the
+ * browser remembered, because a link someone sent is a statement about what to
+ * look at. An unknown value is ignored rather than trusted.
+ */
+export function readLinked(search: string): { city?: CityKey; pollutant?: Pollutant } {
+  const params = new URLSearchParams(search);
+  const city = CITY_KEYS.find((key) => key === params.get('city'));
+  const pollutant = VIEW_POLLUTANTS.find((option) => option.key === params.get('pollutant'))?.key;
+  return { ...(city ? { city } : {}), ...(pollutant ? { pollutant } : {}) };
+}
+
 export function pollutantLabel(pollutant: Pollutant): string {
   return (
     VIEW_POLLUTANTS.find((option) => option.key === pollutant)?.label ?? pollutant.toUpperCase()

@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 
 import { useCities } from '@/hooks/useAnalysis';
-import { ScopeContext, type CityKey, type Pollutant, type Scope } from '@/lib/scope';
+import { readLinked, ScopeContext, type CityKey, type Pollutant, type Scope } from '@/lib/scope';
 
 /** Where the chosen city and pollutant are remembered between visits. */
 const STORAGE_KEY = 'airwatch.scope';
@@ -20,6 +20,10 @@ interface Stored {
 }
 
 function readStored(): Stored {
+  const linked = readLinked(window.location.search);
+  if (linked.city) {
+    return { city: linked.city, pollutant: linked.pollutant ?? DEFAULT_POLLUTANT };
+  }
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
