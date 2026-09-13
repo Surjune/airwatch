@@ -15,6 +15,7 @@ from typing import Annotated, Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+from app.core.constants import RATE_LIMIT_REQUESTS_PER_MINUTE
 from app.core.exceptions import MissingCredentialError
 
 #: Repository root, resolved from this file: core -> app -> backend -> repo root.
@@ -44,6 +45,11 @@ class Settings(BaseSettings):
     environment: Literal["development", "test", "production"] = "development"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     api_port: Annotated[int, Field(ge=1, le=65535)] = 8000
+
+    #: Sustained requests allowed per client address per minute. Configurable so
+    #: a deployment behind a shared NAT -- a municipal office, a campus -- can raise
+    #: it without a code change.
+    rate_limit_per_minute: Annotated[int, Field(ge=1)] = RATE_LIMIT_REQUESTS_PER_MINUTE
 
     #: How this deployment identifies itself to other nodes. A federated network
     #: is a set of independently operated deployments, so an exchanged

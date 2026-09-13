@@ -9,9 +9,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import Settings, get_settings
+from app.core.constants import RATE_LIMIT_SWEEP_THRESHOLD_CLIENTS
 from app.core.logging import configure_logging, get_logger
+from app.core.rate_limit import TokenBucketLimiter
 from app.error_handlers import register_error_handlers
-from app.middleware import RequestContextMiddleware
+from app.middleware import RateLimitMiddleware, RequestContextMiddleware
 from app.routes import alerts, analysis, citizen, federation, health, interop
 from app.services.health_service import APP_VERSION
 
@@ -69,6 +71,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
 
+    # Starlette runs the last middleware added first. Rate limiting is added
+    # before the request context so a refused request still carries a request
+    # ID and is logged, and CORS stays outermost so a browser can read the 429.
+    # The limiter belongs to this app instance: state is per process, so each
+    # worker enforces the limit on its own share of traffic.
+    app.add_middleware(
+        RateLimitMiddleware,
+        limiter=TokenBucketLimiter(
+            resolved.rate_limit_per_minute,
+            sweep_threshold=RATE_LIMIT_SWEEP_THRESHOLD_CLIENTS,
+        ),
+    )
     app.add_middleware(RequestContextMiddleware)
     app.add_middleware(
         CORSMiddleware,
