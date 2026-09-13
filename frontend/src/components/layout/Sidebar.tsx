@@ -1,4 +1,5 @@
 import { ApiStatus } from '@/components/layout/ApiStatus';
+import { CityPicker } from '@/components/layout/CityPicker';
 import { Logo } from '@/components/layout/Logo';
 import { SCREEN_GROUPS, SCREENS, type ScreenKey } from '@/components/layout/navigation';
 
@@ -17,12 +18,16 @@ interface SidebarProps {
 export function Sidebar({ active, onNavigate }: SidebarProps) {
   return (
     <div className="flex h-full flex-col bg-chrome text-chrome-ink">
-      <div className="flex items-center gap-3 px-5 pb-6 pt-5">
+      <div className="flex items-center gap-3 px-5 pb-4 pt-5">
         <Logo className="size-9" />
         <div className="leading-tight">
           <p className="text-[15px] font-semibold tracking-tight">AirWatch</p>
           <p className="text-[11px] text-chrome-muted">Hyperlocal air intelligence</p>
         </div>
+      </div>
+
+      <div className="px-3 pb-5">
+        <CityPicker />
       </div>
 
       <nav aria-label="Screens" className="flex-1 space-y-6 overflow-y-auto px-3">

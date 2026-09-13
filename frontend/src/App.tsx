@@ -1,4 +1,5 @@
 import { AppShell } from '@/components/layout/AppShell';
+import { ScopeProvider } from '@/components/layout/ScopeProvider';
 import { SCREEN_KEYS } from '@/components/layout/navigation';
 import { AlertConsole } from '@/features/alerts/AlertConsole';
 import { CitizenSubmit } from '@/features/citizen/CitizenSubmit';
@@ -17,13 +18,15 @@ export function App(): React.JSX.Element {
   const [screen, navigate] = useHashRoute(SCREEN_KEYS, 'overview');
 
   return (
-    <AppShell active={screen} onNavigate={navigate}>
-      {screen === 'overview' && <OverviewScreen onNavigate={navigate} />}
-      {screen === 'map' && <MapScreen />}
-      {screen === 'corridor' && <CorridorView />}
-      {screen === 'alerts' && <AlertConsole />}
-      {screen === 'federation' && <FederationView />}
-      {screen === 'citizen' && <CitizenSubmit />}
-    </AppShell>
+    <ScopeProvider>
+      <AppShell active={screen} onNavigate={navigate}>
+        {screen === 'overview' && <OverviewScreen onNavigate={navigate} />}
+        {screen === 'map' && <MapScreen />}
+        {screen === 'corridor' && <CorridorView />}
+        {screen === 'alerts' && <AlertConsole />}
+        {screen === 'federation' && <FederationView />}
+        {screen === 'citizen' && <CitizenSubmit />}
+      </AppShell>
+    </ScopeProvider>
   );
 }

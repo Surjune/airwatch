@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { isWithinIndia } from '@/lib/geo';
+import { useScope } from '@/lib/scope';
 
 export interface PickedPosition {
   readonly longitude: number;
@@ -32,6 +33,7 @@ export function LocationPicker({ position, onChange }: LocationPickerProps) {
   const [problem, setProblem] = useState<string | null>(null);
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
+  const { current } = useScope();
 
   const accept = useCallback(
     (candidate: PickedPosition) => {
@@ -104,7 +106,7 @@ export function LocationPicker({ position, onChange }: LocationPickerProps) {
       <div className="mt-3 grid grid-cols-2 gap-3">
         <CoordinateField
           label="Latitude"
-          placeholder="28.6139"
+          placeholder={current ? current.centre.latitude.toFixed(4) : ''}
           value={latitude}
           onChange={(value) => {
             applyManual(value, longitude);
@@ -112,7 +114,7 @@ export function LocationPicker({ position, onChange }: LocationPickerProps) {
         />
         <CoordinateField
           label="Longitude"
-          placeholder="77.2090"
+          placeholder={current ? current.centre.longitude.toFixed(4) : ''}
           value={longitude}
           onChange={(value) => {
             applyManual(latitude, value);

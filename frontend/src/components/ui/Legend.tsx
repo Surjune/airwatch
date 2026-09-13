@@ -8,10 +8,10 @@ import { aqiBands } from '@/lib/aqi';
  * advice from "Moderate" -- and a gradient would imply a continuum the policy
  * does not have.
  */
-export function Legend() {
+export function Legend({ pollutantLabel }: { readonly pollutantLabel: string }) {
   return (
     <div>
-      <p className="text-xs font-medium text-ink-subtle">CPCB band (PM2.5 sub-index)</p>
+      <p className="text-xs font-medium text-ink-subtle">CPCB band ({pollutantLabel} sub-index)</p>
       <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
         {aqiBands().map((band) => (
           <li key={band.name} className="flex items-center gap-1.5 text-xs text-ink-muted">

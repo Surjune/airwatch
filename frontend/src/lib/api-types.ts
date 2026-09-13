@@ -24,6 +24,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/cities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cities a view can be scoped to
+         * @description Return every pilot city with its centre and the pollutant to open on.
+         */
+        get: operations["list_cities_v1_cities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/stations": {
         parameters: {
             query?: never;
@@ -33,7 +53,7 @@ export interface paths {
         };
         /**
          * Latest reading at every station
-         * @description Return the most recent reading for each station, worst first.
+         * @description Return the most recent reading for each station, worst first, optionally in one city.
          */
         get: operations["list_stations_v1_stations_get"];
         put?: never;
@@ -53,7 +73,7 @@ export interface paths {
         };
         /**
          * Locations dirtier than their neighbourhood predicts
-         * @description Detect hotspots over a recent window and rank candidate sources.
+         * @description Detect hotspots over a recent window and rank candidate sources, optionally in one city.
          */
         get: operations["list_hotspots_v1_hotspots_get"];
         put?: never;
@@ -113,7 +133,7 @@ export interface paths {
         };
         /**
          * The alert inbox
-         * @description Alerts routed to authorities, most urgent first.
+         * @description Alerts routed to authorities, most urgent first, optionally for one city.
          */
         get: operations["list_alerts_v1_alerts_get"];
         put?: never;
@@ -216,7 +236,7 @@ export interface paths {
         };
         /**
          * Alerts past their response deadline
-         * @description Alerts whose response window has elapsed, longest overdue first.
+         * @description Alerts whose response window has elapsed, longest overdue first, optionally for one city.
          */
         get: operations["sla_breaches_v1_alerts_sla_breaches_get"];
         put?: never;
@@ -585,6 +605,14 @@ export interface components {
             description: string;
         };
         /**
+         * CitiesResponse
+         * @description Every city this deployment covers.
+         */
+        CitiesResponse: {
+            /** Cities */
+            cities: components["schemas"]["CityResponse"][];
+        };
+        /**
          * CitizenReportSummary
          * @description One submission on the public map.
          */
@@ -621,6 +649,23 @@ export interface components {
             /** Reports */
             reports: components["schemas"]["CitizenReportSummary"][];
             calibration: components["schemas"]["CalibrationStatusResponse"];
+        };
+        /**
+         * CityResponse
+         * @description A city the dashboard can be scoped to.
+         */
+        CityResponse: {
+            city: components["schemas"]["PilotCity"];
+            /** Label */
+            label: string;
+            centre: components["schemas"]["Position"];
+            /**
+             * Radius M
+             * @description Radius of the area a view of this city covers.
+             */
+            radius_m: number;
+            /** @description The pollutant this city's monitors actually report, which a view opens on. */
+            default_pollutant: components["schemas"]["Pollutant"];
         };
         /**
          * CorridorForecastResponse
@@ -1043,6 +1088,11 @@ export interface components {
             window_hours: number;
             /** Hotspot Count */
             hotspot_count: number;
+            /**
+             * Min Neighbours
+             * @description Neighbouring stations a station needs before it can be compared with its neighbourhood. A city with fewer reporting stations cannot show a hotspot, which is a limit of coverage, not evidence of clean air.
+             */
+            min_neighbours: number;
             /** Hotspots */
             hotspots: components["schemas"]["HotspotResponse"][];
         };
@@ -1285,6 +1335,12 @@ export interface components {
             /** Definition */
             definition: string;
         };
+        /**
+         * PilotCity
+         * @description A city this deployment ingests, analyses and can scope a view to.
+         * @enum {string}
+         */
+        PilotCity: "delhi" | "kanpur" | "coimbatore";
         /**
          * PointGeometry
          * @description A GeoJSON point, always (longitude, latitude).
@@ -1611,10 +1667,31 @@ export interface operations {
             };
         };
     };
+    list_cities_v1_cities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CitiesResponse"];
+                };
+            };
+        };
+    };
     list_stations_v1_stations_get: {
         parameters: {
             query?: {
                 pollutant?: components["schemas"]["Pollutant"];
+                city?: components["schemas"]["PilotCity"] | null;
             };
             header?: never;
             path?: never;
@@ -1647,6 +1724,7 @@ export interface operations {
             query?: {
                 pollutant?: components["schemas"]["Pollutant"];
                 window_hours?: number;
+                city?: components["schemas"]["PilotCity"] | null;
             };
             header?: never;
             path?: never;
@@ -1745,6 +1823,7 @@ export interface operations {
         parameters: {
             query?: {
                 status?: components["schemas"]["AlertStatus"] | null;
+                city?: components["schemas"]["PilotCity"] | null;
             };
             header?: never;
             path?: never;
@@ -1892,7 +1971,9 @@ export interface operations {
     };
     sla_breaches_v1_alerts_sla_breaches_get: {
         parameters: {
-            query?: never;
+            query?: {
+                city?: components["schemas"]["PilotCity"] | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1906,6 +1987,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SlaBreachesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -535,6 +535,13 @@ Deferred deliberately, and tracked here rather than as TODOs in the code.
 - **The citizen tier has no calibration yet, by construction.** It needs thirty photographs taken
   near a reference monitor across a range of conditions. Until then it reports a haze index and no
   concentration, which is the intended behaviour rather than an unfinished one.
+- **Coimbatore has one working reference monitor, and its PM2.5 sensor is down.** The dashboard
+  opens on Coimbatore and on PM10, because SIDCO Kurichi (TNPCB) reports PM10 while its PM2.5 sensor
+  returned nothing across the ingested fortnight, and PSG College of Arts and Science has not
+  reported since July. With one station, hotspot detection (which needs at least three neighbours)
+  and corridor forecasts cannot run, and both screens say so rather than showing an empty result.
+  Citizen photographs taken there are measured and shown, but cannot count toward calibration, which
+  is fitted against PM2.5; a photo pairs only with a reading within 90 minutes and 3 km of it.
 - **EXIF corroborates but cannot authenticate.** Metadata is read and a photograph whose own header
   places it in another city, or hours from the claimed time, is refused. But EXIF is editable and
   routinely stripped, so absence cannot be treated as fraud: an unverifiable submission is accepted,

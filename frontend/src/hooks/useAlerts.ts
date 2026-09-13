@@ -36,7 +36,7 @@ export interface AlertConsole {
  * not here -- so the response to a write is the server's view, and guessing at
  * it locally would let the console display a state the database never reached.
  */
-export function useAlerts(windowHours = 720): AlertConsole {
+export function useAlerts(city: string, windowHours = 720): AlertConsole {
   const [alerts, setAlerts] = useState<readonly Alert[]>([]);
   const [breaches, setBreaches] = useState<readonly SlaBreach[]>([]);
   const [error, setError] = useState<ApiError | null>(null);
@@ -53,8 +53,11 @@ export function useAlerts(windowHours = 720): AlertConsole {
     setIsLoading(true);
 
     Promise.all([
-      get<AlertsResponse>('/alerts', { signal: controller.signal }),
-      get<SlaBreachesResponse>('/alerts/sla-breaches', { signal: controller.signal }),
+      get<AlertsResponse>('/alerts', { signal: controller.signal, searchParams: { city } }),
+      get<SlaBreachesResponse>('/alerts/sla-breaches', {
+        signal: controller.signal,
+        searchParams: { city },
+      }),
     ])
       .then(([inbox, overdue]) => {
         setAlerts(inbox.alerts);
@@ -72,7 +75,7 @@ export function useAlerts(windowHours = 720): AlertConsole {
     return () => {
       controller.abort();
     };
-  }, [reloadCount]);
+  }, [reloadCount, city]);
 
   const runWrite = useCallback(
     async (work: () => Promise<void>): Promise<void> => {

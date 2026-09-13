@@ -8,6 +8,7 @@ import { MetricCard } from '@/components/ui/MetricCard';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { AlertCard } from '@/features/alerts/AlertCard';
 import { useAlerts } from '@/hooks/useAlerts';
+import { useScope } from '@/lib/scope';
 
 /** Status filters an operator can apply. */
 const FILTERS = [
@@ -36,8 +37,9 @@ type FilterKey = (typeof FILTERS)[number]['key'];
  * would hide the last, which is the one that means the chain is broken.
  */
 export function AlertConsole() {
+  const { city, current } = useScope();
   const { alerts, breaches, error, isLoading, isBusy, acknowledge, resolve, dispatch } =
-    useAlerts();
+    useAlerts(city);
   const [filter, setFilter] = useState<FilterKey>('open');
   const [lastDispatch, setLastDispatch] = useState<string | null>(null);
 
@@ -58,7 +60,7 @@ export function AlertConsole() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
         <PageHeader
-          title="Authority console"
+          title={`Authority console · ${current?.label ?? '…'}`}
           description="Alerts are routed by jurisdiction, one per episode, and ordered by how far above its neighbourhood each sits — not by concentration. Recording an alert and delivering it are separate facts."
           actions={
             <Button

@@ -1,8 +1,11 @@
+import { PollutantToggle } from '@/components/layout/PollutantToggle';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { HotspotPanel } from '@/features/hotspots/HotspotPanel';
+import { NoHotspots } from '@/features/hotspots/NoHotspots';
 import { MapView } from '@/features/map/MapView';
 import { useHotspots, useStations } from '@/hooks/useAnalysis';
+import { pollutantLabel, useScope } from '@/lib/scope';
 
 /** Detection window, in hours. Two weeks, matching the ingested history. */
 const DETECTION_WINDOW_HOURS = 336;
@@ -10,35 +13,40 @@ const DETECTION_WINDOW_HOURS = 336;
 /**
  * The live map screen.
  *
- * Extracted from the shell so the shell only routes between screens. The map
- * and the hotspot list are one screen rather than two because they answer one
- * question between them: the map says where, the list says how far above what
- * was predicted, and neither is much use alone.
+ * The map and the hotspot list are one screen rather than two because they
+ * answer one question between them: the map says where, the list says how far
+ * above what was predicted, and neither is much use alone.
  *
  * Three states are kept visibly distinct. An API failure that renders as a
  * blank map would read as clean air, which is precisely the misreading this
  * system exists to prevent.
  */
 export function MapScreen() {
-  const stations = useStations();
-  const hotspots = useHotspots(DETECTION_WINDOW_HOURS);
+  const { city, pollutant, current } = useScope();
+  const stations = useStations(pollutant, city);
+  const hotspots = useHotspots(DETECTION_WINDOW_HOURS, pollutant, city);
 
   const failure = stations.error ?? hotspots.error;
-  const isLoading = stations.isLoading || hotspots.isLoading;
+  const isLoading = stations.isLoading || hotspots.isLoading || current === null;
   const detected = hotspots.data?.hotspots ?? [];
+  const label = pollutantLabel(pollutant);
+  const cityLabel = current?.label ?? '…';
 
   return (
     <div className="flex h-full min-h-0 flex-col lg:flex-row">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-border bg-surface px-4 py-3 sm:px-6">
           <div>
-            <h1 className="text-lg font-semibold tracking-tight text-ink">Live map</h1>
+            <h1 className="text-lg font-semibold tracking-tight text-ink">
+              Live map · {cityLabel}
+            </h1>
             <p className="text-xs text-ink-muted">
-              Latest PM2.5 at each station · hotspots over the last{' '}
+              Latest {label} at each station · hotspots over the last{' '}
               {String(Math.round(DETECTION_WINDOW_HOURS / 24))} days
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <PollutantToggle />
             <Pill label="Stations reporting" value={stations.data?.station_count} />
             <Pill
               label="Hotspots"
@@ -58,11 +66,7 @@ export function MapScreen() {
                     ? 'The deployment is misconfigured'
                     : 'Could not load air quality data'
                 }
-                detail={
-                  failure.isConfigurationFailure
-                    ? `${failure.message} An empty map here would mean missing configuration, not clean air.`
-                    : `${failure.message} An empty map here would mean the request failed, not that the air is clean.`
-                }
+                detail={`${failure.message} An empty map here would mean the request failed, not that the air is clean.`}
                 {...(failure.requestId ? { requestId: failure.requestId } : {})}
               />
             </div>
@@ -71,7 +75,13 @@ export function MapScreen() {
               <Skeleton label="Loading stations and detected hotspots" rows={5} />
             </div>
           ) : (
-            <MapView readings={stations.data?.readings ?? []} hotspots={detected} />
+            <MapView
+              readings={stations.data?.readings ?? []}
+              hotspots={detected}
+              centre={[current.centre.longitude, current.centre.latitude]}
+              radiusM={current.radius_m}
+              pollutantLabel={label}
+            />
           )}
         </div>
       </div>
@@ -99,10 +109,11 @@ export function MapScreen() {
             </div>
           ) : detected.length === 0 ? (
             <div className="p-4">
-              <StatusMessage
-                kind="empty"
-                title="No hotspots in this window"
-                detail="Every station sat within the expected range of its neighbours. That is a real result, not an absence of data."
+              <NoHotspots
+                cityLabel={cityLabel}
+                stationCount={stations.data?.station_count ?? 0}
+                minNeighbours={hotspots.data?.min_neighbours ?? 0}
+                pollutantLabel={label}
               />
             </div>
           ) : (

@@ -62,15 +62,27 @@ function useResource<T>(path: string, searchParams?: Record<string, string | num
   return { data, error, isLoading };
 }
 
-/** Latest reading at every station. */
-export function useStations(pollutant = 'pm25'): Resource<StationsResponse> {
-  return useResource<StationsResponse>('/stations', { pollutant });
+export type CitiesResponse = components['schemas']['CitiesResponse'];
+
+/** The cities the dashboard can be scoped to. */
+export function useCities(): Resource<CitiesResponse> {
+  return useResource<CitiesResponse>('/cities');
 }
 
-/** Hotspots detected over a recent window. */
-export function useHotspots(windowHours = 336, pollutant = 'pm25'): Resource<HotspotsResponse> {
+/** Latest reading at every station in a city. */
+export function useStations(pollutant: string, city: string): Resource<StationsResponse> {
+  return useResource<StationsResponse>('/stations', { pollutant, city });
+}
+
+/** Hotspots detected in a city over a recent window. */
+export function useHotspots(
+  windowHours: number,
+  pollutant: string,
+  city: string,
+): Resource<HotspotsResponse> {
   return useResource<HotspotsResponse>('/hotspots', {
     pollutant,
+    city,
     window_hours: windowHours,
   });
 }
@@ -78,10 +90,12 @@ export function useHotspots(windowHours = 336, pollutant = 'pm25'): Resource<Hot
 /** Forecast along a corridor. */
 export function useCorridorForecast(
   points: string,
-  horizonHours = 24,
+  horizonHours: number,
+  pollutant: string,
 ): Resource<CorridorForecast> {
   return useResource<CorridorForecast>('/forecast/corridor', {
     points,
+    pollutant,
     horizon_hours: horizonHours,
   });
 }
@@ -93,6 +107,6 @@ export function useCorridorForecast(
  * actually resolves. The response may decline to name an hour, and that is a
  * result rather than a failure.
  */
-export function useExposureAdvisory(points: string): Resource<ExposureAdvisory> {
-  return useResource<ExposureAdvisory>('/exposure/advisory', { points });
+export function useExposureAdvisory(points: string, pollutant: string): Resource<ExposureAdvisory> {
+  return useResource<ExposureAdvisory>('/exposure/advisory', { points, pollutant });
 }

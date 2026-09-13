@@ -2,15 +2,18 @@ import { ArrowRight, BellRing, Hourglass, Radar, RadioTower } from 'lucide-react
 import type { ReactNode } from 'react';
 
 import type { ScreenKey } from '@/components/layout/navigation';
+import { PollutantToggle } from '@/components/layout/PollutantToggle';
 import { Card } from '@/components/ui/Card';
 import { MetricCard } from '@/components/ui/MetricCard';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StatusMessage } from '@/components/ui/StatusMessage';
+import { NoHotspots } from '@/features/hotspots/NoHotspots';
 import { TopHotspots } from '@/features/overview/TopHotspots';
 import { WorstStations } from '@/features/overview/WorstStations';
 import { Workflow } from '@/features/overview/Workflow';
 import { useAlerts } from '@/hooks/useAlerts';
 import { useHotspots, useStations } from '@/hooks/useAnalysis';
+import { pollutantLabel, useScope } from '@/lib/scope';
 
 /** Detection window, in hours, matching the live map. */
 const DETECTION_WINDOW_HOURS = 336;
@@ -24,9 +27,12 @@ const DETECTION_WINDOW_HOURS = 336;
  * would be the most reassuring and least true thing on the page.
  */
 export function OverviewScreen({ onNavigate }: { readonly onNavigate: (key: ScreenKey) => void }) {
-  const stations = useStations();
-  const hotspots = useHotspots(DETECTION_WINDOW_HOURS);
-  const alerts = useAlerts();
+  const { city, pollutant, current } = useScope();
+  const stations = useStations(pollutant, city);
+  const hotspots = useHotspots(DETECTION_WINDOW_HOURS, pollutant, city);
+  const label = pollutantLabel(pollutant);
+  const cityLabel = current?.label ?? '…';
+  const alerts = useAlerts(city);
 
   const figure = (isLoading: boolean, failed: boolean, value: number | undefined): ReactNode =>
     isLoading ? '…' : failed || value === undefined ? '—' : value;
@@ -42,7 +48,7 @@ export function OverviewScreen({ onNavigate }: { readonly onNavigate: (key: Scre
             className="pointer-events-none absolute -right-16 -top-24 size-72 rounded-full bg-teal-400/20 blur-3xl"
           />
           <p className="text-xs font-semibold uppercase tracking-wider text-teal-300">
-            Pilot network · Delhi-NCR
+            Pilot network · {cityLabel}
           </p>
           <h1 className="mt-2 max-w-2xl text-2xl font-semibold tracking-tight sm:text-3xl">
             Find the pollution the city average hides.
@@ -71,6 +77,11 @@ export function OverviewScreen({ onNavigate }: { readonly onNavigate: (key: Scre
           </div>
         </section>
 
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-base font-semibold text-ink">{cityLabel} right now</h2>
+          <PollutantToggle />
+        </div>
+
         <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
             icon={RadioTower}
@@ -80,7 +91,7 @@ export function OverviewScreen({ onNavigate }: { readonly onNavigate: (key: Scre
               Boolean(stations.error),
               stations.data?.station_count,
             )}
-            note="Latest PM2.5 reading per site"
+            note={`Latest ${label} reading per site`}
           />
           <MetricCard
             icon={Radar}
@@ -132,6 +143,13 @@ export function OverviewScreen({ onNavigate }: { readonly onNavigate: (key: Scre
               />
             ) : hotspots.isLoading ? (
               <Skeleton label="Detecting hotspots" rows={4} />
+            ) : (hotspots.data?.hotspot_count ?? 0) === 0 ? (
+              <NoHotspots
+                cityLabel={cityLabel}
+                stationCount={stations.data?.station_count ?? 0}
+                minNeighbours={hotspots.data?.min_neighbours ?? 0}
+                pollutantLabel={label}
+              />
             ) : (
               <TopHotspots hotspots={hotspots.data?.hotspots ?? []} />
             )}
@@ -140,7 +158,7 @@ export function OverviewScreen({ onNavigate }: { readonly onNavigate: (key: Scre
           <Card
             className="lg:col-span-2"
             title="Highest latest readings"
-            description="CPCB PM2.5 sub-index at each station's most recent report, with its age"
+            description={`CPCB ${label} sub-index at each station's most recent report, with its age`}
           >
             {stations.error ? (
               <StatusMessage
