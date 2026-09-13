@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
 
+import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { isWithinIndia } from '@/lib/geo';
 import type { SubmissionOutcome } from '@/hooks/useCitizen';
@@ -26,7 +28,10 @@ export function CitizenSubmit() {
   const { reports, calibration, error, isLoading, isSubmitting, submit } = useCitizen();
 
   const [file, setFile] = useState<File | null>(null);
-  const [position, setPosition] = useState<{ longitude: number; latitude: number } | null>(null);
+  const [position, setPosition] = useState<{
+    longitude: number;
+    latitude: number;
+  } | null>(null);
   const [source, setSource] = useState<PositionSource>(null);
   const [locating, setLocating] = useState(false);
   const [locationProblem, setLocationProblem] = useState<string | null>(null);
@@ -84,145 +89,144 @@ export function CitizenSubmit() {
   }, [file, position, submit]);
 
   return (
-    <div className="mx-auto flex h-full min-h-0 max-w-3xl flex-col gap-4 overflow-y-auto p-6">
-      <header>
-        <h2 className="text-base font-semibold">Contribute a photograph</h2>
-        <p className="mt-1 text-sm text-neutral-600">
-          A photograph cannot measure PM2.5. It can measure how much contrast the atmosphere has
-          removed, and that is what this returns. Photographs taken near a reference monitor also
-          build the relation that lets photographs taken far from one mean something.
-        </p>
-      </header>
-
-      {calibration && (
-        <div
-          className={`rounded border p-3 text-sm ${
-            calibration.is_calibrated
-              ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
-              : 'border-amber-300 bg-amber-50 text-amber-900'
-          }`}
-        >
-          <p className="font-medium">
-            {calibration.is_calibrated
-              ? `Calibrated from ${String(calibration.pairs)} co-located submissions`
-              : `Not yet calibrated — ${String(calibration.pairs)} of ${String(
-                  calibration.pairs_needed,
-                )} pairs`}
-          </p>
-          <p className="mt-1">{calibration.explanation}</p>
-        </div>
-      )}
-
-      <section className="rounded border border-neutral-200 bg-white p-4">
-        <label className="block text-sm font-medium" htmlFor="photo">
-          Photograph
-        </label>
-        <p className="mb-2 text-xs text-neutral-600">
-          An outdoor scene with something distant in it, taken in daylight. A blurred, dark or
-          over-exposed frame will be refused — each of those makes clean air look dirty.
-        </p>
-        <input
-          id="photo"
-          type="file"
-          accept="image/*"
-          onChange={(event) => {
-            setFile(event.target.files?.[0] ?? null);
-            setOutcome(null);
-          }}
-          className="block w-full text-sm"
+    <div className="h-full overflow-y-auto">
+      <div className="mx-auto flex max-w-3xl flex-col gap-5 p-4 sm:p-6">
+        <PageHeader
+          title="Contribute a photograph"
+          description={
+            'A photograph cannot measure PM2.5. It can measure how much contrast the atmosphere has removed, and that is what this returns. Photographs taken near a reference monitor also build the relation that lets photographs taken far from one mean something.'
+          }
         />
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={locate}
-            disabled={locating}
-            className="rounded border border-neutral-300 px-3 py-1.5 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50"
+        {calibration && (
+          <div
+            className={`rounded border p-3 text-sm ${
+              calibration.is_calibrated
+                ? 'border-ok/30 bg-ok-subtle text-ok'
+                : 'border-warn/30 bg-warn-subtle text-warn'
+            }`}
           >
-            {locating ? 'Locating…' : 'Use my location'}
-          </button>
-          {position && (
-            <span className="text-xs text-neutral-600">
-              {position.latitude.toFixed(4)}, {position.longitude.toFixed(4)}
-              {source === 'device' ? ' (from this device)' : ''}
-            </span>
+            <p className="font-medium">
+              {calibration.is_calibrated
+                ? `Calibrated from ${String(calibration.pairs)} co-located submissions`
+                : `Not yet calibrated — ${String(calibration.pairs)} of ${String(
+                    calibration.pairs_needed,
+                  )} pairs`}
+            </p>
+            <p className="mt-1">{calibration.explanation}</p>
+          </div>
+        )}
+
+        <section className="rounded-[--radius-card] border border-border bg-surface p-4">
+          <label className="block text-sm font-medium" htmlFor="photo">
+            Photograph
+          </label>
+          <p className="mb-2 text-xs text-ink-muted">
+            An outdoor scene with something distant in it, taken in daylight. A blurred, dark or
+            over-exposed frame will be refused — each of those makes clean air look dirty.
+          </p>
+          <input
+            id="photo"
+            type="file"
+            accept="image/*"
+            onChange={(event) => {
+              setFile(event.target.files?.[0] ?? null);
+              setOutcome(null);
+            }}
+            className="block w-full text-sm"
+          />
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Button onClick={locate} isBusy={locating} busyLabel="Locating…">
+              Use my location
+            </Button>
+            {position && (
+              <span className="text-xs text-ink-muted">
+                {position.latitude.toFixed(4)}, {position.longitude.toFixed(4)}
+                {source === 'device' ? ' (from this device)' : ''}
+              </span>
+            )}
+          </div>
+
+          {locationProblem && (
+            <p className="mt-2 rounded bg-warn-subtle px-2 py-1 text-xs text-warn">
+              {locationProblem}
+            </p>
           )}
-        </div>
 
-        {locationProblem && (
-          <p className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-900">
-            {locationProblem}
-          </p>
-        )}
-
-        <button
-          type="button"
-          onClick={send}
-          disabled={!canSubmit}
-          className="mt-4 rounded bg-neutral-800 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-40"
-        >
-          {isSubmitting ? 'Measuring…' : 'Submit photograph'}
-        </button>
-        {!canSubmit && !isSubmitting && (
-          <p className="mt-2 text-xs text-neutral-500">
-            A photograph and a position are both needed before this can be submitted.
-          </p>
-        )}
-      </section>
-
-      {outcome?.kind === 'rejected' && (
-        <StatusMessage
-          kind="empty"
-          title="This photograph could not be measured"
-          detail={outcome.rejection.detail}
-        />
-      )}
-
-      {outcome?.kind === 'accepted' && <SubmissionResult outcome={outcome} />}
-
-      {error && (
-        <StatusMessage
-          kind="error"
-          title="Could not reach the submission service"
-          detail={error.message}
-          {...(error.requestId ? { requestId: error.requestId } : {})}
-        />
-      )}
-
-      <section>
-        <h3 className="text-sm font-semibold">Recent submissions</h3>
-        {isLoading ? (
-          <div className="mt-2">
-            <StatusMessage kind="loading" title="Loading submissions…" />
+          <div className="mt-4">
+            <Button
+              variant="primary"
+              size="md"
+              onClick={send}
+              disabled={!canSubmit}
+              isBusy={isSubmitting}
+              busyLabel="Measuring…"
+            >
+              Submit photograph
+            </Button>
           </div>
-        ) : reports.length === 0 ? (
-          <div className="mt-2">
-            <StatusMessage
-              kind="empty"
-              title="No submissions in the last day"
-              detail="This tier only has data when people contribute it, so an empty list here means nobody has, not that the air is clean."
-            />
-          </div>
-        ) : (
-          <ul className="mt-2 divide-y divide-neutral-200 rounded border border-neutral-200 bg-white">
-            {reports.slice(0, 12).map((report) => (
-              <li key={report.report_id} className="flex items-center justify-between px-3 py-2">
-                <span className="text-sm">
-                  haze {report.haze_index.toFixed(2)}
-                  {report.had_reference && (
-                    <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-800">
-                      also calibrates
-                    </span>
-                  )}
-                </span>
-                <span className="text-xs text-neutral-500">
-                  {report.position.latitude.toFixed(3)}, {report.position.longitude.toFixed(3)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {!canSubmit && !isSubmitting && (
+            <p className="mt-2 text-xs text-ink-subtle">
+              A photograph and a position are both needed before this can be submitted.
+            </p>
+          )}
+        </section>
+
+        {outcome?.kind === 'rejected' && (
+          <StatusMessage
+            kind="empty"
+            title="This photograph could not be measured"
+            detail={outcome.rejection.detail}
+          />
         )}
-      </section>
+
+        {outcome?.kind === 'accepted' && <SubmissionResult outcome={outcome} />}
+
+        {error && (
+          <StatusMessage
+            kind="error"
+            title="Could not reach the submission service"
+            detail={error.message}
+            {...(error.requestId ? { requestId: error.requestId } : {})}
+          />
+        )}
+
+        <section>
+          <h3 className="text-sm font-semibold">Recent submissions</h3>
+          {isLoading ? (
+            <div className="mt-2">
+              <StatusMessage kind="loading" title="Loading submissions…" />
+            </div>
+          ) : reports.length === 0 ? (
+            <div className="mt-2">
+              <StatusMessage
+                kind="empty"
+                title="No submissions in the last day"
+                detail="This tier only has data when people contribute it, so an empty list here means nobody has, not that the air is clean."
+              />
+            </div>
+          ) : (
+            <ul className="mt-2 divide-y divide-border rounded-[--radius-card] border border-border bg-surface">
+              {reports.slice(0, 12).map((report) => (
+                <li key={report.report_id} className="flex items-center justify-between px-3 py-2">
+                  <span className="text-sm">
+                    haze {report.haze_index.toFixed(2)}
+                    {report.had_reference && (
+                      <span className="ml-2 rounded bg-ok-subtle px-1.5 py-0.5 text-xs text-ok">
+                        also calibrates
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-xs text-ink-subtle">
+                    {report.position.latitude.toFixed(3)}, {report.position.longitude.toFixed(3)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
@@ -233,7 +237,7 @@ function SubmissionResult({ outcome }: { readonly outcome: SubmissionOutcome }) 
   const { report } = outcome;
 
   return (
-    <div className="rounded border border-neutral-300 bg-white p-4">
+    <div className="rounded-[--radius-card] border border-border bg-surface p-4">
       <h3 className="text-sm font-semibold">Measured</h3>
 
       <p className="mt-2 text-sm">
@@ -246,20 +250,20 @@ function SubmissionResult({ outcome }: { readonly outcome: SubmissionOutcome }) 
           Estimated PM2.5 <strong>{report.estimate.value.toFixed(0)} µg/m³</strong> ±{' '}
           {report.estimate.uncertainty.toFixed(0)}
           {report.estimate.is_extrapolating && (
-            <span className="ml-1 text-amber-800">
+            <span className="ml-1 text-warn">
               — outside the range the relation was fitted across, so treat it as an extrapolation
             </span>
           )}
         </p>
       ) : (
-        <p className="mt-2 rounded bg-amber-50 px-2 py-1 text-sm text-amber-900">
+        <p className="mt-2 rounded bg-warn-subtle px-2 py-1 text-sm text-warn">
           No concentration can be derived from this yet. Your submission still counts: it is one of
           the pairs that will make that possible.
         </p>
       )}
 
       {report.reference && (
-        <p className="mt-2 text-sm text-neutral-700">
+        <p className="mt-2 text-sm text-ink">
           Nearest monitor, {(report.reference.distance_m / 1000).toFixed(1)} km away, reported{' '}
           <strong>{report.reference.value.toFixed(0)} µg/m³</strong>
           {report.reference.agrees === true && ' — consistent with this photograph'}
@@ -267,7 +271,7 @@ function SubmissionResult({ outcome }: { readonly outcome: SubmissionOutcome }) 
         </p>
       )}
       {!report.reference && (
-        <p className="mt-2 text-sm text-neutral-700">
+        <p className="mt-2 text-sm text-ink">
           No reference monitor was within range, which is exactly the gap this tier exists to fill.
         </p>
       )}

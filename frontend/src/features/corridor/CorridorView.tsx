@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 
+import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import type { ExposureAdvisory } from '@/hooks/useAnalysis';
 import { useCorridorForecast, useExposureAdvisory } from '@/hooks/useAnalysis';
@@ -95,140 +97,123 @@ export function CorridorView() {
   const uncoveredKm = data ? data.corridor_length_km - data.covered_length_km : 0;
 
   return (
-    <div className="mx-auto flex h-full min-h-0 max-w-4xl flex-col gap-4 overflow-y-auto p-6">
-      <header>
-        <h2 className="text-base font-semibold">Corridor outlook</h2>
-        <p className="mt-1 text-sm text-neutral-600">
-          Where along a route the air changes, {horizon} hours ahead. The estimator is a diurnal
-          climatology, because it beat every learned model on a temporal holdout — so it resolves
-          the daily cycle and the spatial gradient, and cannot say that tomorrow will be worse than
-          today.
-        </p>
-      </header>
-
-      <div className="flex flex-wrap gap-2">
-        {CORRIDORS.map((option) => (
-          <button
-            key={option.key}
-            type="button"
-            onClick={() => {
-              setCorridorKey(option.key);
-            }}
-            className={`rounded px-3 py-1.5 text-xs font-medium ${
-              corridorKey === option.key
-                ? 'bg-neutral-800 text-white'
-                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-            }`}
-          >
-            {option.name}
-          </button>
-        ))}
-        <span className="mx-2 w-px bg-neutral-300" />
-        {HORIZONS.map((option) => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => {
-              setHorizon(option);
-            }}
-            className={`rounded px-3 py-1.5 text-xs font-medium ${
-              horizon === option
-                ? 'bg-neutral-800 text-white'
-                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-            }`}
-          >
-            {option}h
-          </button>
-        ))}
-      </div>
-
-      <p className="text-xs text-neutral-600">{corridor.note}</p>
-
-      {error ? (
-        <StatusMessage
-          kind="error"
-          title="Could not load the corridor forecast"
-          detail={`${error.message} An empty strip here would mean the request failed, not that the route is clean.`}
-          {...(error.requestId ? { requestId: error.requestId } : {})}
+    <div className="h-full overflow-y-auto">
+      <div className="mx-auto flex max-w-4xl flex-col gap-5 p-4 sm:p-6">
+        <PageHeader
+          title="Corridor outlook"
+          description={`Where along a route the air changes, ${String(horizon)} hours ahead. The estimator is a diurnal climatology, because it beat every learned model on a temporal holdout — so it resolves the daily cycle and the spatial gradient, and cannot say that tomorrow will be worse than today.`}
         />
-      ) : isLoading ? (
-        <StatusMessage kind="loading" title="Forecasting along the route…" />
-      ) : !data || data.point_count === 0 ? (
-        <StatusMessage
-          kind="empty"
-          title="No station supports this route"
-          detail="Nothing along it is within range of a monitor, so no forecast can be made. That is unknown ground, not clean air."
-        />
-      ) : (
-        <>
-          <section className="rounded border border-neutral-200 bg-white p-4">
-            <div className="flex items-baseline justify-between">
-              <h3 className="text-sm font-semibold">Forecast</h3>
-              <span className="text-xs text-neutral-600">
-                {data.covered_length_km.toFixed(1)} of {data.corridor_length_km.toFixed(1)} km
-                covered
-              </span>
-            </div>
 
-            <Strip
-              label="Forecast"
-              segments={segments}
-              valueOf={(point) => point.value}
-            />
-            <Strip
-              label="With uncertainty"
-              segments={segments}
-              valueOf={(point) => point.upper_bound}
-            />
+        <div className="flex flex-wrap gap-2">
+          {CORRIDORS.map((option) => (
+            <Button
+              key={option.key}
+              variant={corridorKey === option.key ? 'primary' : 'secondary'}
+              aria-pressed={corridorKey === option.key}
+              onClick={() => {
+                setCorridorKey(option.key);
+              }}
+            >
+              {option.name}
+            </Button>
+          ))}
+          <span aria-hidden className="mx-1 w-px self-stretch bg-border-strong" />
+          {HORIZONS.map((option) => (
+            <Button
+              key={option}
+              variant={horizon === option ? 'primary' : 'secondary'}
+              aria-pressed={horizon === option}
+              onClick={() => {
+                setHorizon(option);
+              }}
+            >
+              {option}h
+            </Button>
+          ))}
+        </div>
 
-            <p className="mt-3 text-xs text-neutral-600">
-              The second strip is the value plus its uncertainty, which is what a precautionary
-              decision uses. On this route the uncertainty is often larger than the value itself —
-              the forecast is more useful for <em>where</em> the air turns than for the absolute
-              level.
-            </p>
+        <p className="text-xs text-ink-muted">{corridor.note}</p>
 
-            {uncoveredKm > 1 && (
-              <p className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-900">
-                {uncoveredKm.toFixed(1)} km of this route returned no forecast at all, because no
-                station lies within range. That stretch is unknown, not clean.
+        {error ? (
+          <StatusMessage
+            kind="error"
+            title="Could not load the corridor forecast"
+            detail={`${error.message} An empty strip here would mean the request failed, not that the route is clean.`}
+            {...(error.requestId ? { requestId: error.requestId } : {})}
+          />
+        ) : isLoading ? (
+          <StatusMessage kind="loading" title="Forecasting along the route…" />
+        ) : !data || data.point_count === 0 ? (
+          <StatusMessage
+            kind="empty"
+            title="No station supports this route"
+            detail="Nothing along it is within range of a monitor, so no forecast can be made. That is unknown ground, not clean air."
+          />
+        ) : (
+          <>
+            <section className="rounded-[--radius-card] border border-border bg-surface p-4">
+              <div className="flex items-baseline justify-between">
+                <h3 className="text-sm font-semibold">Forecast</h3>
+                <span className="text-xs text-ink-muted">
+                  {data.covered_length_km.toFixed(1)} of {data.corridor_length_km.toFixed(1)} km
+                  covered
+                </span>
+              </div>
+
+              <Strip label="Forecast" segments={segments} valueOf={(point) => point.value} />
+              <Strip
+                label="With uncertainty"
+                segments={segments}
+                valueOf={(point) => point.upper_bound}
+              />
+
+              <p className="mt-3 text-xs text-ink-muted">
+                The second strip is the value plus its uncertainty, which is what a precautionary
+                decision uses. On this route the uncertainty is often larger than the value itself —
+                the forecast is more useful for <em>where</em> the air turns than for the absolute
+                level.
               </p>
-            )}
-          </section>
 
-          <ExposurePanel advisory={advisory.data} isLoading={advisory.isLoading} />
+              {uncoveredKm > 1 && (
+                <p className="mt-2 rounded bg-warn-subtle px-2 py-1 text-xs text-warn">
+                  {uncoveredKm.toFixed(1)} km of this route returned no forecast at all, because no
+                  station lies within range. That stretch is unknown, not clean.
+                </p>
+              )}
+            </section>
 
-          <section className="rounded border border-neutral-200 bg-white">
-            <table className="w-full text-sm">
-              <thead className="border-b border-neutral-200 text-left text-xs text-neutral-600">
-                <tr>
-                  <th className="px-3 py-2 font-medium">km</th>
-                  <th className="px-3 py-2 font-medium">Forecast</th>
-                  <th className="px-3 py-2 font-medium">Upper bound</th>
-                  <th className="px-3 py-2 font-medium">Band</th>
-                </tr>
-              </thead>
-              <tbody>
-                {segments.map(({ point, gapBefore }) => (
-                  <tr key={point.distance_along_km} className="border-b border-neutral-100">
-                    <td className="px-3 py-1.5 tabular-nums">
-                      {point.distance_along_km.toFixed(1)}
-                      {gapBefore && (
-                        <span className="ml-2 text-xs text-amber-800">after a gap</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-1.5 tabular-nums">
-                      {point.value.toFixed(0)} ± {point.uncertainty.toFixed(0)}
-                    </td>
-                    <td className="px-3 py-1.5 tabular-nums">{point.upper_bound.toFixed(0)}</td>
-                    <td className="px-3 py-1.5">{point.category}</td>
+            <ExposurePanel advisory={advisory.data} isLoading={advisory.isLoading} />
+
+            <section className="rounded-[--radius-card] border border-border bg-surface">
+              <table className="w-full text-sm">
+                <thead className="border-b border-border text-left text-xs text-ink-muted">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">km</th>
+                    <th className="px-3 py-2 font-medium">Forecast</th>
+                    <th className="px-3 py-2 font-medium">Upper bound</th>
+                    <th className="px-3 py-2 font-medium">Band</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        </>
-      )}
+                </thead>
+                <tbody>
+                  {segments.map(({ point, gapBefore }) => (
+                    <tr key={point.distance_along_km} className="border-b border-border">
+                      <td className="px-3 py-1.5 tabular-nums">
+                        {point.distance_along_km.toFixed(1)}
+                        {gapBefore && <span className="ml-2 text-xs text-warn">after a gap</span>}
+                      </td>
+                      <td className="px-3 py-1.5 tabular-nums">
+                        {point.value.toFixed(0)} ± {point.uncertainty.toFixed(0)}
+                      </td>
+                      <td className="px-3 py-1.5 tabular-nums">{point.upper_bound.toFixed(0)}</td>
+                      <td className="px-3 py-1.5">{point.category}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -256,15 +241,15 @@ function Strip({
 }) {
   return (
     <div className="mt-3">
-      <p className="mb-1 text-xs text-neutral-600">{label}</p>
-      <div className="flex h-8 overflow-hidden rounded border border-neutral-300">
+      <p className="mb-1 text-xs text-ink-muted">{label}</p>
+      <div className="flex h-8 overflow-hidden rounded border border-border-strong">
         {segments.map(({ point, gapBefore }) => {
           const value = valueOf(point);
           return (
             <div key={point.distance_along_km} className="flex h-full flex-1">
               {gapBefore && (
                 <div
-                  className="h-full w-3 bg-neutral-200"
+                  className="h-full w-3 bg-surface-sunken"
                   title="No station in range — unknown, not clean"
                 />
               )}
@@ -303,7 +288,7 @@ function ExposurePanel({
 }) {
   if (isLoading) {
     return (
-      <div className="rounded border border-neutral-200 bg-white p-4">
+      <div className="rounded-[--radius-card] border border-border bg-surface p-4">
         <StatusMessage kind="loading" title="Comparing departure times…" />
       </div>
     );
@@ -313,14 +298,12 @@ function ExposurePanel({
   const peak = Math.max(...advisory.options.map((option) => option.exposure), 1);
 
   return (
-    <section className="rounded border border-neutral-200 bg-white p-4">
+    <section className="rounded-[--radius-card] border border-border bg-surface p-4">
       <h3 className="text-sm font-semibold">When to travel</h3>
 
       <p
         className={`mt-2 rounded px-2 py-1.5 text-sm ${
-          advisory.is_actionable
-            ? 'bg-emerald-50 text-emerald-900'
-            : 'bg-neutral-100 text-neutral-700'
+          advisory.is_actionable ? 'bg-ok-subtle text-ok' : 'bg-surface-sunken text-ink'
         }`}
       >
         {advisory.explanation}
@@ -332,19 +315,21 @@ function ExposurePanel({
           const isWorst = advisory.is_actionable && option.hour === advisory.worst_hour;
           return (
             <div key={option.hour} className="flex items-center gap-2">
-              <span className="w-12 shrink-0 text-xs tabular-nums text-neutral-600">
+              <span className="w-12 shrink-0 text-xs tabular-nums text-ink-muted">
                 {String(option.hour).padStart(2, '0')}:00
               </span>
-              <div className="h-4 flex-1 overflow-hidden rounded bg-neutral-100">
+              <div className="h-4 flex-1 overflow-hidden rounded bg-surface-sunken">
                 <div
                   className={`h-full ${
-                    isBest ? 'bg-emerald-500' : isWorst ? 'bg-red-400' : 'bg-neutral-400'
+                    isBest ? 'bg-ok-subtle0' : isWorst ? 'bg-danger' : 'bg-ink-subtle'
                   }`}
-                  style={{ width: `${String((option.exposure / peak) * 100)}%` }}
+                  style={{
+                    width: `${String((option.exposure / peak) * 100)}%`,
+                  }}
                   title={`${option.mean_concentration.toFixed(0)} µg/m³ average over ${option.travel_minutes.toFixed(0)} minutes`}
                 />
               </div>
-              <span className="w-28 shrink-0 text-right text-xs tabular-nums text-neutral-600">
+              <span className="w-28 shrink-0 text-right text-xs tabular-nums text-ink-muted">
                 {option.mean_concentration.toFixed(0)} µg/m³ avg
               </span>
             </div>
@@ -352,7 +337,7 @@ function ExposurePanel({
         })}
       </div>
 
-      <p className="mt-3 text-xs text-neutral-600">
+      <p className="mt-3 text-xs text-ink-muted">
         Bars are exposure: concentration multiplied by the time spent in it, assuming a{' '}
         {advisory.options[0]
           ? `${advisory.options[0].travel_minutes.toFixed(0)}-minute`

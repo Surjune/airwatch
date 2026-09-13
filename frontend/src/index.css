@@ -1,8 +1,105 @@
 @import 'tailwindcss';
 @import 'leaflet/dist/leaflet.css';
 
+/*
+ * Design tokens.
+ *
+ * Defined here rather than scattered through components so a colour has one
+ * definition. The CPCB band colours are the exception worth calling out: they
+ * are duplicated in `lib/aqi.ts` because Leaflet markers need them as
+ * JavaScript values, and they are the same six hex codes in both places on
+ * purpose -- the band a reading falls in must look identical wherever it is
+ * drawn, or two views of the same number appear to disagree.
+ *
+ * The palette is deliberately restrained. This is a tool someone uses to decide
+ * whether to send an inspector somewhere, and the only colours that should pull
+ * the eye are the ones carrying air-quality meaning.
+ */
+@theme {
+  /* Neutral scale: cool grey, so the warm AQI bands stay visually separate. */
+  --color-surface: #ffffff;
+  --color-surface-sunken: #f6f7f9;
+  --color-surface-raised: #ffffff;
+  --color-border: #e3e6ea;
+  --color-border-strong: #cbd1d8;
+
+  --color-ink: #14181d;
+  --color-ink-muted: #5b646f;
+  --color-ink-subtle: #869099;
+
+  /* One accent, used for interaction only -- never to encode data. */
+  --color-accent: #0f5c6e;
+  --color-accent-hover: #0c4a59;
+  --color-accent-subtle: #e6f1f4;
+
+  /* State colours, for the three outcomes that must never look alike. */
+  --color-danger: #b3261e;
+  --color-danger-subtle: #fdecea;
+  --color-warn: #8a5300;
+  --color-warn-subtle: #fdf3e3;
+  --color-ok: #1f6b4a;
+  --color-ok-subtle: #e8f5ee;
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Menlo, Consolas, monospace;
+
+  --radius-card: 0.625rem;
+}
+
 /* The map fills its container; Leaflet needs an explicit height to render. */
 .leaflet-container {
   height: 100%;
   width: 100%;
+  font-family: var(--font-sans);
+  background: var(--color-surface-sunken);
+}
+
+/* Leaflet's default popup chrome is heavier than the rest of the interface. */
+.leaflet-popup-content-wrapper {
+  border-radius: var(--radius-card);
+  box-shadow: 0 6px 24px rgb(20 24 29 / 0.14);
+}
+
+.leaflet-popup-content {
+  margin: 0.75rem 0.875rem;
+  line-height: 1.45;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-surface-sunken);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    /* Tabular figures everywhere: columns of concentrations are read by
+       comparing digits in place, and proportional numerals make that harder. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  /*
+   * A visible focus ring on every interactive element. Keyboard operation is
+   * not optional for a console an official may use all day, and the browser
+   * default ring disappears against the accent colour.
+   */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+
+  /* Respect a stated preference for less motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }

@@ -3,7 +3,7 @@ import { MapContainer, TileLayer } from 'react-leaflet';
 import { HotspotMarkers } from '@/components/map/HotspotMarkers';
 import { StationMarkers } from '@/components/map/StationMarkers';
 import type { Hotspot, StationReading } from '@/hooks/useAnalysis';
-import { aqiBands } from '@/lib/aqi';
+import { Legend } from '@/components/ui/Legend';
 import { toLeaflet, type LonLat } from '@/lib/geo';
 
 /** Delhi, as (lon, lat). Converted once, at this boundary. */
@@ -31,21 +31,18 @@ export function MapView({ readings, hotspots, onSelectHotspot }: MapViewProps) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <StationMarkers readings={readings} />
-        <HotspotMarkers hotspots={hotspots} {...(onSelectHotspot ? { onSelect: onSelectHotspot } : {})} />
+        <HotspotMarkers
+          hotspots={hotspots}
+          {...(onSelectHotspot ? { onSelect: onSelectHotspot } : {})}
+        />
       </MapContainer>
 
-      <div className="pointer-events-none absolute bottom-4 left-4 z-[1000] rounded bg-white/95 p-3 text-xs shadow">
-        <p className="mb-2 font-medium">CPCB band</p>
-        {aqiBands().map((band) => (
-          <div key={band.name} className="flex items-center gap-2">
-            <span
-              className="inline-block h-3 w-3 rounded-full"
-              style={{ backgroundColor: band.colour }}
-            />
-            <span>{band.name}</span>
-          </div>
-        ))}
-        <p className="mt-2 max-w-[13rem] border-t border-neutral-200 pt-2 text-neutral-600">
+      {/* Above Leaflet's panes, so it stays readable over any tile. On a phone only the
+          colour scale is shown: the ring explanation is already in the header strap, and
+          repeating it here would cover half the map. */}
+      <div className="pointer-events-none absolute bottom-3 left-3 z-[1000] max-w-[calc(100%-1.5rem)] rounded-[--radius-card] border border-border bg-surface/95 px-3 py-2.5 shadow-sm sm:max-w-sm">
+        <Legend />
+        <p className="mt-2 hidden border-t border-border pt-2 text-xs leading-relaxed text-ink-muted sm:block">
           Rings mark places dirtier than their neighbourhood predicts, sized by excess — not by how
           dirty the city is.
         </p>

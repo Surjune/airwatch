@@ -31,7 +31,7 @@ export function StationMarkers({ readings }: StationMarkersProps) {
                 {reading.value.toFixed(0)} {reading.unit} · AQI {reading.aqi.toFixed(0)} (
                 {reading.category})
               </p>
-              <p className="mt-1 text-xs text-neutral-500">
+              <p className="mt-1 text-xs text-ink-subtle">
                 {new Date(reading.observed_at).toLocaleString()}
               </p>
             </div>

@@ -22,9 +22,9 @@ export function RangeBar({ value, spread, max, colour }: RangeBarProps) {
   const high = value + spread;
 
   return (
-    <div className="relative h-3 w-full overflow-hidden rounded bg-neutral-200">
+    <div className="relative h-3 w-full overflow-hidden rounded bg-surface-sunken">
       <div
-        className="absolute h-full bg-neutral-400/50"
+        className="absolute h-full bg-ink-subtle/50"
         style={{ left: scale(low), width: scale(high - low) }}
         title={`plausible range ${low.toFixed(0)}–${high.toFixed(0)}`}
       />

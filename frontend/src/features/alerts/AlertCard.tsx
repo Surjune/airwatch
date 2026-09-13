@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import type { Alert } from '@/hooks/useAlerts';
 
 interface AlertCardProps {
@@ -10,16 +12,15 @@ interface AlertCardProps {
   readonly onResolve: (alertId: number, note: string) => void;
 }
 
-const STATUS_STYLES: Record<string, string> = {
-  sent: 'bg-red-100 text-red-800',
-  acknowledged: 'bg-amber-100 text-amber-900',
-  resolved: 'bg-emerald-100 text-emerald-800',
-  escalated: 'bg-purple-100 text-purple-900',
-};
+/** Tone per lifecycle state. Carries meaning, so it is not chosen for looks. */
+const STATUS_TONES = {
+  sent: 'danger',
+  acknowledged: 'warn',
+  resolved: 'ok',
+  escalated: 'accent',
+} as const;
 
-const FALLBACK_STATUS_STYLE = 'bg-neutral-100 text-neutral-700';
-
-/** Render a UTC timestamp in IST, which is the only timezone an operator here reads. */
+/** Render a UTC timestamp in IST, the only timezone an operator here works in. */
 function istTime(iso: string): string {
   return new Date(iso).toLocaleString('en-IN', {
     timeZone: 'Asia/Kolkata',
@@ -39,60 +40,76 @@ function istTime(iso: string): string {
  *
  * Resolution requires a note, enforced here and again on the server. A
  * resolution with no explanation records that someone clicked a button, which is
- * not the same as recording that something was done -- and the difference is the
+ * not the same as recording that something was done — and the difference is the
  * entire value of the trail.
+ *
+ * Overdue alerts get a red edge rather than a red fill. When most of the inbox is
+ * overdue — the normal state of an ignored queue — filling every card makes the
+ * whole list one undifferentiated alarm and nothing in it can be scanned.
+ *
+ * Delivery is shown separately from recording. An alert that exists in the trail
+ * but reached nobody is a different finding from one that was delivered and
+ * ignored, and an operator chasing the second should not be shown the first.
  */
-export function AlertCard({
-  alert,
-  isOverdue,
-  isBusy,
-  onAcknowledge,
-  onResolve,
-}: AlertCardProps) {
+export function AlertCard({ alert, isOverdue, isBusy, onAcknowledge, onResolve }: AlertCardProps) {
   const [note, setNote] = useState('');
   const [isResolving, setIsResolving] = useState(false);
+  const noteId = useId();
 
   const isResolved = alert.status === 'resolved';
   const canResolve = note.trim().length > 0 && !isBusy;
+  const tone = STATUS_TONES[alert.status];
 
   return (
     <article
-      className={`border-b border-neutral-200 p-4 ${isOverdue ? 'bg-red-50/60' : 'bg-white'}`}
+      className={`border-b border-l-4 border-b-border bg-surface p-4 ${
+        isOverdue ? 'border-l-danger' : 'border-l-transparent'
+      }`}
     >
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate text-sm font-semibold">
+          <h3 className="truncate text-sm font-semibold text-ink">
             {alert.station_name ?? 'Unmonitored location'}
           </h3>
-          <p className="truncate text-xs text-neutral-600">{alert.authority_name}</p>
+          <p className="truncate text-xs text-ink-muted">{alert.authority_name}</p>
         </div>
-        <span
-          className={`shrink-0 rounded px-2 py-0.5 text-xs font-medium ${
-            STATUS_STYLES[alert.status] ?? FALLBACK_STATUS_STYLE
-          }`}
-        >
-          {alert.status}
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <Badge tone={tone} dot>
+            {alert.status}
+          </Badge>
+          {alert.delivered_at === null && !isResolved && (
+            <span className="text-xs text-ink-subtle" title="Recorded, but no endpoint accepted it">
+              not delivered
+            </span>
+          )}
+        </div>
       </header>
 
-      <p className="mt-2 text-sm">
-        <strong>{alert.peak_observed.toFixed(0)} µg/m³</strong> where the surrounding network
-        predicted <strong>{alert.peak_expected.toFixed(0)}</strong> — an excess of{' '}
+      <p className="mt-2.5 text-sm leading-relaxed text-ink">
+        <strong className="text-base font-semibold">{alert.peak_observed.toFixed(0)} µg/m³</strong>{' '}
+        where the surrounding network predicted{' '}
+        <strong>{alert.peak_expected.toFixed(0)}</strong> — an excess of{' '}
         <strong>{alert.peak_excess.toFixed(0)} µg/m³</strong>
       </p>
-      <p className="mt-1 text-xs text-neutral-600">
-        {alert.peak_z.toFixed(1)}× the expected error here · first seen {istTime(alert.first_seen_at)}{' '}
-        IST
+      <p className="mt-1 text-xs text-ink-muted">
+        {alert.peak_z.toFixed(1)}× the expected error here · first seen{' '}
+        {istTime(alert.first_seen_at)} IST
       </p>
 
       {isOverdue && (
-        <p className="mt-2 rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+        <p className="mt-2.5 rounded-md bg-danger/10 px-2.5 py-1.5 text-xs font-medium text-danger">
           Past its response deadline. An alert sent and never answered is itself a finding.
         </p>
       )}
 
-      {alert.resolution_note && (
-        <p className="mt-2 rounded bg-emerald-50 px-2 py-1 text-xs text-emerald-900">
+      {alert.delivery_error !== null && alert.delivery_error !== undefined && (
+        <p className="mt-2 rounded-md bg-warn-subtle px-2.5 py-1.5 text-xs text-warn">
+          Delivery failed: {alert.delivery_error}. It stays queued.
+        </p>
+      )}
+
+      {alert.resolution_note !== null && alert.resolution_note !== undefined && (
+        <p className="mt-2.5 rounded-md bg-ok-subtle px-2.5 py-1.5 text-xs leading-relaxed text-ok">
           <span className="font-medium">Resolved:</span> {alert.resolution_note}
         </p>
       )}
@@ -100,57 +117,60 @@ export function AlertCard({
       {!isResolved && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {alert.status === 'sent' && (
-            <button
-              type="button"
-              disabled={isBusy}
+            <Button
+              isBusy={isBusy}
+              busyLabel="Working…"
               onClick={() => {
                 onAcknowledge(alert.alert_id);
               }}
-              className="rounded border border-neutral-300 px-3 py-1 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50"
             >
               Acknowledge
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
+          <Button
+            variant={isResolving ? 'ghost' : 'secondary'}
             disabled={isBusy}
+            aria-expanded={isResolving}
+            aria-controls={noteId}
             onClick={() => {
               setIsResolving((open) => !open);
             }}
-            className="rounded border border-neutral-300 px-3 py-1 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50"
           >
             {isResolving ? 'Cancel' : 'Resolve'}
-          </button>
+          </Button>
         </div>
       )}
 
       {isResolving && !isResolved && (
-        <div className="mt-2">
-          <label className="block text-xs text-neutral-600" htmlFor={`note-${String(alert.alert_id)}`}>
-            What was found or done? Required.
+        <div id={noteId} className="mt-3 rounded-md border border-border bg-surface-sunken p-3">
+          <label className="block text-xs font-medium text-ink" htmlFor={`${noteId}-field`}>
+            What was found or done?{' '}
+            <span className="font-normal text-ink-muted">
+              Required — a resolution with no explanation records only that a button was pressed.
+            </span>
           </label>
           <textarea
-            id={`note-${String(alert.alert_id)}`}
+            id={`${noteId}-field`}
             value={note}
             onChange={(event) => {
               setNote(event.target.value);
             }}
-            rows={2}
-            className="mt-1 w-full rounded border border-neutral-300 p-2 text-sm"
+            rows={3}
+            className="mt-1.5 w-full rounded-md border border-border-strong bg-surface p-2 text-sm text-ink placeholder:text-ink-subtle"
             placeholder="e.g. Open waste burning behind the terminal, extinguished and fined."
           />
-          <button
-            type="button"
+          <Button
+            variant="primary"
+            size="md"
             disabled={!canResolve}
             onClick={() => {
               onResolve(alert.alert_id, note);
               setIsResolving(false);
               setNote('');
             }}
-            className="mt-2 rounded bg-neutral-800 px-3 py-1 text-xs font-medium text-white hover:bg-neutral-700 disabled:opacity-40"
           >
             Close alert
-          </button>
+          </Button>
         </div>
       )}
     </article>

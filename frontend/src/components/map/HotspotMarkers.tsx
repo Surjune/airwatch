@@ -48,7 +48,7 @@ export function HotspotMarkers({ hotspots, onSelect }: HotspotMarkersProps) {
                 {hotspot.peak_observed.toFixed(0)} µg/m³ against a neighbourhood at{' '}
                 {hotspot.peak_expected.toFixed(0)}
               </p>
-              <p className="mt-1 text-xs text-neutral-600">
+              <p className="mt-1 text-xs text-ink-muted">
                 excess {hotspot.peak_excess.toFixed(0)} µg/m³ · {hotspot.peak_z.toFixed(1)}× the
                 expected error · {hotspot.intervals}h
               </p>
