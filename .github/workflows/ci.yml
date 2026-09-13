@@ -118,3 +118,23 @@ jobs:
 
       - name: Build
         run: npm --workspace frontend run build
+
+  images:
+    name: Docker images build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build the API image
+        run: docker build -f backend/Dockerfile -t airwatch-api:ci .
+
+      - name: Build the web image
+        run: docker build -f infra/web/Dockerfile -t airwatch-web:ci .
+
+      - name: Validate the production compose file
+        run: |
+          echo "POSTGRES_PASSWORD=ci" > ci.env
+          echo "SITE_ADDRESS=:80" >> ci.env
+          touch .env
+          docker compose -f infra/docker-compose.prod.yml --env-file ci.env config --quiet

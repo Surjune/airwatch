@@ -532,6 +532,23 @@ weights match to floating-point precision.
 Tests marked `integration` need a reachable PostgreSQL and skip with a reported
 reason when there is none, so `npm run check` is green on a clean clone.
 
+## Deploying it
+
+A single server runs the whole stack with Docker Compose -- Caddy for HTTPS and the
+web app, the API, the hourly worker, and TimescaleDB with PostGIS -- defined in
+`infra/docker-compose.prod.yml`. Only Caddy publishes ports; the database and API
+stay on the private network.
+
+- **AWS, step by step:** [`docs/DEPLOY_AWS.md`](docs/DEPLOY_AWS.md). One `t3.small`
+  in Mumbai, about US$20 a month, set up with two scripts and no access keys.
+- **Any other Ubuntu server:** run `infra/deploy/bootstrap.sh`, fill in `.env` from
+  [`.env.production.example`](.env.production.example), then
+  `infra/deploy/deploy.sh --first-load`.
+- **Backups:** `infra/deploy/backup.sh`, nightly from cron, optionally copied to S3.
+
+Before a deployment is public, set `OPERATOR_API_KEY`: without it every operator
+action is refused, and with a weak one the authority console is guessable.
+
 ## Known limitations
 
 Deferred deliberately, and tracked here rather than as TODOs in the code.

@@ -1,0 +1,93 @@
+# Production stack for a single server. Run from the repository root:
+#   docker compose -f infra/docker-compose.prod.yml --env-file .env up -d --build
+#
+# Only Caddy publishes ports. The database and the API are reachable solely on
+# the private compose network, so neither is exposed to the internet.
+
+name: airwatch-prod
+
+x-app: &app
+  image: airwatch-api:latest
+  # Built once, by the migrate service below; never pulled from a registry.
+  pull_policy: never
+  env_file: ../.env
+  environment:
+    ENVIRONMENT: production
+    DATABASE_URL: postgresql+psycopg://airwatch:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/airwatch
+  volumes:
+    # Secret files (the Earth Engine key) stay on the server, mounted read-only
+    # and never copied into an image. Point GEE_PRIVATE_KEY_PATH in .env at
+    # /run/secrets/airwatch/<file>; leave it empty to skip satellite steps.
+    - ../secrets:/run/secrets/airwatch:ro
+  restart: unless-stopped
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  db:
+    image: timescale/timescaledb-ha:pg16
+    environment:
+      POSTGRES_USER: airwatch
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: airwatch
+    volumes:
+      - db-data:/home/postgres/pgdata/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airwatch -d airwatch"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+    shm_size: 256mb
+
+  # Applies migrations and loads the seed registries, then exits. The API and
+  # worker wait for it, so they never start against an out-of-date schema.
+  migrate:
+    <<: *app
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    pull_policy: build
+    command: ["sh", "-c", "alembic upgrade head && python -m app.cli seed"]
+    restart: "no"
+
+  api:
+    <<: *app
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # The hourly cycle: ingest, official AQI, satellite at noon UTC, detect, deliver.
+  worker:
+    <<: *app
+    command: ["python", "-m", "app.worker"]
+    healthcheck:
+      disable: true
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/web/Dockerfile
+    image: airwatch-web:latest
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+    depends_on:
+      - api
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

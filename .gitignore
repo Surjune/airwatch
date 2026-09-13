@@ -2,6 +2,11 @@
 .env
 .env.*
 !.env.example
+!.env.production.example
+
+# --- Deployment secrets and backups (server-side only) ---
+secrets/
+backups/
 *.pem
 *.key
 service-account*.json

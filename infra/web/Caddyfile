@@ -1,0 +1,38 @@
+# Caddy obtains and renews a Let's Encrypt certificate for SITE_ADDRESS
+# automatically. Set it to your domain (airwatch.example.in); set it to :80 to
+# run over plain HTTP, for a local test only.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	header {
+		# HTTPS only, for a year, once a certificate exists.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(self), camera=(), microphone=()"
+		-Server
+	}
+
+	# FastAPI's documentation pages load Swagger UI and ReDoc from jsDelivr with an
+	# inline bootstrap script, so they get a policy allowing exactly that.
+	@docs path /docs /docs/* /redoc
+	header @docs Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://fastapi.tiangolo.com https://cdn.redoc.ly; worker-src blob:; connect-src 'self'; frame-ancestors 'none'"
+
+	# Everything else keeps the strict policy: map tiles come from OpenStreetMap,
+	# and Leaflet and React set inline styles; no script loads from anywhere else.
+	@app not path /docs /docs/* /redoc
+	header @app Content-Security-Policy "default-src 'self'; img-src 'self' data: blob: https://*.tile.openstreetmap.org; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
+	# The API, and its interactive documentation for partner cities.
+	@api path /v1/* /docs /docs/* /redoc /openapi.json
+	handle @api {
+		reverse_proxy api:8000
+	}
+
+	# Everything else is the single-page app; unknown paths fall back to it.
+	handle {
+		root * /srv/www
+		try_files {path} /index.html
+		file_server
+	}
+}

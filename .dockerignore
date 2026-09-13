@@ -1,0 +1,16 @@
+# Keep secrets, local state and build output out of every image.
+.env
+.env.*
+!.env.example
+secrets/
+backups/
+.git/
+**/node_modules/
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+backend/.venv/
+frontend/dist/
+ml/artifacts/
+*.log
