@@ -170,9 +170,7 @@ def load_observations(
             )
 
         for weather in session.execute(
-            select(WeatherObservation).where(
-                WeatherObservation.observed_at < VALIDATION_DATA_UNTIL
-            )
+            select(WeatherObservation).where(WeatherObservation.observed_at < VALIDATION_DATA_UNTIL)
         ).scalars():
             weather_by_hour[weather.observed_at] = WeatherContext(
                 wind_u=weather.wind_u,

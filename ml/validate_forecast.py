@@ -138,9 +138,7 @@ def load_series(
             series[station_id][observed_at] = float(value)
 
         for record in session.execute(
-            select(WeatherObservation).where(
-                WeatherObservation.observed_at < VALIDATION_DATA_UNTIL
-            )
+            select(WeatherObservation).where(WeatherObservation.observed_at < VALIDATION_DATA_UNTIL)
         ).scalars():
             weather[record.observed_at] = WeatherContext(
                 wind_u=record.wind_u,
@@ -294,9 +292,6 @@ def evaluate_horizon(train: list[Sample], test: list[Sample], columns: tuple[str
             np.array([s.climatology for s in climatology_rows]),
         )
         print(f"  {climatology_metrics.render('climatology')}")
-        best_baseline = min(persistence_metrics.mae, climatology_metrics.mae)
-    else:
-        best_baseline = persistence_metrics.mae
 
     outcomes: dict[str, Metrics] = {}
     has_climatology = np.array([s.climatology is not None for s in test])
