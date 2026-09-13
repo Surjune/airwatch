@@ -11,12 +11,12 @@ partly on unreliable pairs is unreliable everywhere, not just near them.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import Row, func, select
 from sqlalchemy.orm import Session
 
-from app.core.constants import CITIZEN_COLOCATION_RADIUS_M
+from app.core.constants import CITIZEN_COLOCATION_RADIUS_M, CITIZEN_REFERENCE_MAX_GAP_MINUTES
 from app.core.enums import Pollutant
 from app.core.geo import LonLat
 from app.core.h3_grid import H3Cell
@@ -63,18 +63,25 @@ def nearest_station_reading(
     session: Session,
     point: LonLat,
     pollutant: Pollutant,
+    at: datetime,
     *,
     radius_m: int = CITIZEN_COLOCATION_RADIUS_M,
+    max_gap: timedelta = timedelta(minutes=CITIZEN_REFERENCE_MAX_GAP_MINUTES),
 ) -> NearestReading | None:
-    """The most recent plausible reading from the nearest station within range.
+    """The plausible reading closest in time to ``at``, from the nearest station in range.
 
-    Returns None when no monitor is close enough. That is the common case away
-    from a city centre, and it is the case the citizen tier exists for: no
-    comparison is available, so the submission extends coverage rather than
-    calibrating it.
+    Only readings within ``max_gap`` of the photograph count: a pair compares a
+    photo with the air a monitor measured at the same moment, and a reading from
+    another day describes different air.
+
+    Returns None when no monitor is close enough, or none reported near that
+    time. That is the common case away from a city centre, and it is the case the
+    citizen tier exists for: no comparison is available, so the submission
+    extends coverage rather than calibrating it.
     """
     origin = func.ST_GeomFromEWKT(_point_wkt(point))
     distance = func.ST_DistanceSphere(Station.geom, origin)
+    gap = func.abs(func.extract("epoch", Measurement.observed_at - at))
 
     statement = (
         select(
@@ -89,8 +96,10 @@ def nearest_station_reading(
             Measurement.pollutant == pollutant,
             Measurement.is_plausible.is_(True),
             distance <= radius_m,
+            Measurement.observed_at >= at - max_gap,
+            Measurement.observed_at <= at + max_gap,
         )
-        .order_by(distance, Measurement.observed_at.desc())
+        .order_by(distance, gap)
         .limit(1)
     )
 

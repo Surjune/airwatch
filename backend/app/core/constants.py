@@ -740,6 +740,14 @@ HAZE_MIN_LAPLACIAN_VARIANCE: Final[float] = 15.0
 #: the same air mass, not of the same 0.46 km cell.
 CITIZEN_COLOCATION_RADIUS_M: Final[int] = 3000
 
+#: Longest gap, in minutes, between a photograph and the monitor reading it is
+#: paired with. A pair only means something if both saw the same air: reference
+#: readings are hourly averages, so 90 minutes covers the averaging hour the photo
+#: falls in and its neighbour, and nothing older. Without this bound a photo taken
+#: today was paired with whatever the monitor last reported -- days earlier for a
+#: station whose feed had lagged, months for one that had gone silent.
+CITIZEN_REFERENCE_MAX_GAP_MINUTES: Final[int] = 90
+
 #: Co-located pairs needed before a haze index is converted to a concentration.
 #: Thirty is the smallest sample from which a single-predictor fit reports an
 #: error worth publishing; below it the fit's own uncertainty exceeds the signal.

@@ -302,7 +302,9 @@ def _store(
     provenance: PhotoProvenance,
 ) -> AcceptedReport:
     """Persist an analysed submission and describe what it supports."""
-    reference = citizen_repository.nearest_station_reading(session, position, pollutant)
+    reference = citizen_repository.nearest_station_reading(
+        session, position, pollutant, capture_time
+    )
     calibration, status = calibration_status(session)
 
     estimate = calibration.estimate(analysis.haze_index) if calibration else None
