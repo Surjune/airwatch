@@ -21,19 +21,29 @@ from sqlalchemy.orm import Session
 
 from app.core.alerting import (
     AlertRecord,
+    CoordinationTarget,
     SlaBreach,
+    SourceJurisdiction,
     acknowledge,
     choose_authority,
+    coordination_targets,
     find_sla_breaches,
     resolve,
     should_suppress,
 )
 from app.core.cities import in_city
-from app.core.enums import AlertStatus, PilotCity, Pollutant
+from app.core.enums import AlertKind, AlertStatus, PilotCity, Pollutant
 from app.core.exceptions import NotFoundError
 from app.core.logging import get_logger
+from app.ml.attribution import (
+    CandidateSource,
+    WindRecord,
+    attribute,
+    back_trajectory,
+    wind_field_near,
+)
 from app.ml.hotspot_detection import Hotspot, detect_over_window
-from app.repositories import alert_repository, observation_repository
+from app.repositories import alert_repository, attribution_repository, observation_repository
 from app.repositories.alert_repository import AlertDetail, HotspotRow
 
 logger = get_logger(__name__)
@@ -56,6 +66,8 @@ class DispatchOutcome:
     raised: list[AlertRecord]
     suppressed: int
     unrouted: int
+    #: How many of ``raised`` ask a neighbouring jurisdiction to act on a source.
+    coordination_requests: int = 0
 
 
 def dispatch(
@@ -66,6 +78,11 @@ def dispatch(
     now: datetime | None = None,
 ) -> DispatchOutcome:
     """Detect hotspots over a recent window and route alerts for them.
+
+    Each hotspot alerts the authority whose ground it is on. It is then traced
+    upwind, and when its likeliest source sits in a different jurisdiction, that
+    jurisdiction receives a coordination request: the body able to inspect the
+    source is asked to act for its neighbour.
 
     Args:
         session: Database session.
@@ -82,33 +99,49 @@ def dispatch(
     readings = observation_repository.observed_readings_in_window(session, pollutant, since)
     hotspots = detect_over_window(readings)
 
+    wind_records = attribution_repository.wind_records(session, since) if hotspots else []
+    sources = attribution_repository.candidate_sources(session, since) if hotspots else []
+
     raised: list[AlertRecord] = []
     suppressed = 0
     unrouted = 0
+    coordination = 0
 
-    for hotspot in hotspots:
-        hotspot_id = alert_repository.upsert_hotspot(session, _hotspot_row(hotspot, pollutant))
-
-        authority_id = choose_authority(
-            alert_repository.authorities_containing(session, hotspot.coordinates)
-        )
-        if authority_id is None:
-            unrouted += 1
-            continue
-
+    def raise_once(hotspot_id: int, authority_id: int, target: CoordinationTarget | None) -> None:
+        nonlocal suppressed
         existing = alert_repository.alerts_for(session, hotspot_id, authority_id)
         if should_suppress(existing, reference):
             suppressed += 1
-            continue
-
+            return
         raised.append(
             alert_repository.create_alert(
                 session,
                 hotspot_id=hotspot_id,
                 authority_id=authority_id,
                 sent_at=reference,
+                kind=AlertKind.LOCAL if target is None else AlertKind.COORDINATION,
+                source_name=None if target is None else target.source_name,
+                source_confidence=None if target is None else target.confidence,
             )
         )
+
+    for hotspot in hotspots:
+        hotspot_id = alert_repository.upsert_hotspot(session, _hotspot_row(hotspot, pollutant))
+
+        local_authority = choose_authority(
+            alert_repository.authorities_containing(session, hotspot.coordinates)
+        )
+        if local_authority is None:
+            unrouted += 1
+        else:
+            raise_once(hotspot_id, local_authority, None)
+
+        for target in _coordination_targets(
+            session, hotspot, local_authority, wind_records, sources
+        ):
+            before = len(raised)
+            raise_once(hotspot_id, target.authority_id, target)
+            coordination += len(raised) - before
 
     logger.info(
         "alerts.dispatched",
@@ -116,6 +149,7 @@ def dispatch(
         window_hours=window_hours,
         detected=len(hotspots),
         raised=len(raised),
+        coordination_requests=coordination,
         suppressed=suppressed,
         unrouted=unrouted,
     )
@@ -126,6 +160,38 @@ def dispatch(
         raised=raised,
         suppressed=suppressed,
         unrouted=unrouted,
+        coordination_requests=coordination,
+    )
+
+
+def _coordination_targets(
+    session: Session,
+    hotspot: Hotspot,
+    local_authority: int | None,
+    wind_records: list[WindRecord],
+    sources: list[CandidateSource],
+) -> list[CoordinationTarget]:
+    """Trace a hotspot upwind and find the other jurisdictions holding its likely sources."""
+    if not sources:
+        return []
+    trajectory = back_trajectory(
+        hotspot.coordinates,
+        hotspot.last_seen_at,
+        wind_field_near(wind_records, hotspot.coordinates),
+    )
+    ranked = attribute(hotspot.coordinates, hotspot.last_seen_at, trajectory, sources)
+    return coordination_targets(
+        local_authority,
+        [
+            SourceJurisdiction(
+                source_name=candidate.source.name,
+                confidence=candidate.confidence,
+                authority_id=choose_authority(
+                    alert_repository.authorities_containing(session, candidate.source.coordinates)
+                ),
+            )
+            for candidate in ranked
+        ],
     )
 
 

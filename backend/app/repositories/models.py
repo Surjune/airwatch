@@ -43,6 +43,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from app.core.constants import SRID_WGS84
 from app.core.enums import (
+    AlertKind,
     AlertStatus,
     HotspotStatus,
     Pollutant,
@@ -563,6 +564,19 @@ class Alert(Base):
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     resolution_note: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+
+    #: Whether the hotspot is on this authority's ground, or its likeliest source
+    #: is. Existing alerts are all local, which the server default records.
+    kind: Mapped[AlertKind] = mapped_column(
+        SqlEnum(AlertKind, name="alert_kind", native_enum=True, values_callable=_enum_values),
+        nullable=False,
+        default=AlertKind.LOCAL,
+        server_default=AlertKind.LOCAL.value,
+    )
+    #: For a coordination request: the source this authority is asked to check,
+    #: and how plausible attribution judged it. Null on a local alert.
+    source_name: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    source_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     hotspot: Mapped[Hotspot] = relationship(back_populates="alerts")
 

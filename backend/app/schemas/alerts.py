@@ -13,7 +13,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.core.enums import AlertStatus, Pollutant
+from app.core.enums import AlertKind, AlertStatus, Pollutant
 from app.schemas.analysis import Position
 
 
@@ -69,6 +69,24 @@ class AlertResponse(BaseModel):
     acknowledged_at: datetime | None = None
     resolved_at: datetime | None = None
     resolution_note: str | None = None
+    kind: AlertKind = Field(
+        default=AlertKind.LOCAL,
+        description=(
+            "local: the hotspot is on this authority's ground. coordination: the "
+            "hotspot is on a neighbour's ground, and this authority holds its "
+            "likeliest upwind source."
+        ),
+    )
+    source_name: str | None = Field(
+        default=None, description="For a coordination request, the source to inspect."
+    )
+    source_confidence: float | None = Field(
+        default=None,
+        description=(
+            "How plausible attribution judged that source, in [0, 1). A ranked "
+            "candidate, never an established cause."
+        ),
+    )
 
 
 class AlertsResponse(BaseModel):
@@ -94,6 +112,13 @@ class DispatchResponse(BaseModel):
             "Hotspots inside no registered jurisdiction. Reported rather than "
             "dropped: an incomplete authority registry must not read as a quiet day."
         )
+    )
+    coordination_requests: int = Field(
+        default=0,
+        description=(
+            "Of the alerts raised, how many ask a neighbouring jurisdiction to act "
+            "on a source on its ground."
+        ),
     )
 
 

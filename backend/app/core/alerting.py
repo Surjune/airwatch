@@ -10,7 +10,8 @@ chain depends on — that alerts keep being read.
 
 * **Route geographically, not per station.** A hotspot can appear anywhere on
   the grid, including ground no monitor covers, so responsibility is decided by
-  which jurisdiction contains it.
+  which jurisdiction contains it -- and, when the likeliest source lies across a
+  boundary, the jurisdiction containing the source is asked to act as well.
 * **Alert once per episode.** A source that burns for eight hours is one event.
   Emitting an alert every detection interval turns a console into noise, and a
   console that is noise is a console nobody opens.
@@ -28,6 +29,7 @@ from app.core.constants import (
     ALERT_ACK_SLA_HOURS,
     ALERT_RESOLUTION_SLA_HOURS,
     ALERT_SUPPRESSION_HOURS,
+    COORDINATION_MIN_CONFIDENCE,
 )
 from app.core.enums import AlertStatus
 from app.core.exceptions import ValidationError
@@ -80,6 +82,75 @@ def choose_authority(
     if not candidates:
         return None
     return min(candidates, key=lambda pair: pair[1])[0]
+
+
+@dataclass(frozen=True, slots=True)
+class SourceJurisdiction:
+    """A ranked candidate source, and the authority whose ground it sits on."""
+
+    source_name: str
+    confidence: float
+    #: The responsible authority chosen by :func:`choose_authority` for the
+    #: source's position, or None when no registered jurisdiction contains it.
+    authority_id: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class CoordinationTarget:
+    """An authority asked to act on a source for a neighbouring jurisdiction."""
+
+    authority_id: int
+    source_name: str
+    confidence: float
+
+
+def coordination_targets(
+    local_authority_id: int | None,
+    candidates: list[SourceJurisdiction],
+    *,
+    min_confidence: float = COORDINATION_MIN_CONFIDENCE,
+) -> list[CoordinationTarget]:
+    """Decide which other jurisdictions to ask for help with one hotspot.
+
+    The authority a hotspot sits in often cannot act on its cause: the kiln, the
+    depot or the fire is across a district or state line. The body that can is
+    the one whose ground holds the source, so it receives a coordination request
+    alongside the local alert.
+
+    Args:
+        local_authority_id: The authority already alerted for the hotspot itself,
+            or None when the hotspot fell inside no jurisdiction.
+        candidates: Ranked sources with the authority containing each.
+        min_confidence: Candidates below this do not justify spending another
+            body's inspection capacity.
+
+    Returns:
+        One target per authority, for its most plausible source, most plausible
+        first. The local authority is never a target -- it already has the
+        alert -- and a source on unregistered ground has nobody to ask.
+    """
+    best: dict[int, SourceJurisdiction] = {}
+    for candidate in candidates:
+        if candidate.authority_id is None or candidate.authority_id == local_authority_id:
+            continue
+        if candidate.confidence < min_confidence:
+            continue
+        current = best.get(candidate.authority_id)
+        if current is None or candidate.confidence > current.confidence:
+            best[candidate.authority_id] = candidate
+
+    return sorted(
+        (
+            CoordinationTarget(
+                authority_id=authority_id,
+                source_name=candidate.source_name,
+                confidence=candidate.confidence,
+            )
+            for authority_id, candidate in best.items()
+        ),
+        key=lambda target: target.confidence,
+        reverse=True,
+    )
 
 
 def should_suppress(

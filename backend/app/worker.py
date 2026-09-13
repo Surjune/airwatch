@@ -163,7 +163,8 @@ def run_cycle(settings: Settings, *, now: datetime | None = None) -> CycleReport
                 session, Pollutant.PM25, window_hours=WORKER_DETECTION_WINDOW_HOURS
             )
         return (
-            f"{outcome.detected} detected, {len(outcome.raised)} raised, "
+            f"{outcome.detected} detected, {len(outcome.raised)} raised "
+            f"({outcome.coordination_requests} to neighbouring jurisdictions), "
             f"{outcome.suppressed} suppressed, {outcome.unrouted} unrouted"
         )
 

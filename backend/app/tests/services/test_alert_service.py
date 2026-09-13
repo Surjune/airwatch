@@ -17,10 +17,11 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.core.constants import ALERT_ACK_SLA_HOURS
-from app.core.enums import AlertStatus, Pollutant, StationTier
+from app.core.enums import AlertKind, AlertStatus, Pollutant, SourceType, StationTier
 from app.core.exceptions import NotFoundError, ValidationError
+from app.core.h3_grid import point_to_cell
 from app.repositories import alert_repository, observation_repository, station_repository
-from app.repositories.observation_repository import MeasurementRow
+from app.repositories.observation_repository import MeasurementRow, WeatherRow
 from app.services import alert_service
 
 pytestmark = pytest.mark.integration
@@ -90,6 +91,32 @@ def _seed_network(session: Session, hours: int = 4, anchor: datetime = NOW) -> N
     session.flush()
 
 
+def _seed_wind(session: Session, hours: int = 6) -> None:
+    """A steady westerly over the network: air arriving from the west.
+
+    Attribution names nothing without a wind field, so a test about where the
+    source lies has to supply one.
+    """
+    observation_repository.upsert_weather(
+        session,
+        [
+            WeatherRow(
+                h3_cell=point_to_cell(POSITIONS["dirty"]),
+                observed_at=NOW - timedelta(hours=hour),
+                wind_u=2.0,
+                wind_v=0.0,
+                temperature_c=24.0,
+                relative_humidity_pct=60.0,
+                pbl_height_m=None,
+                precipitation_mm=0.0,
+                is_forecast=False,
+            )
+            for hour in range(hours)
+        ],
+    )
+    session.flush()
+
+
 def _seed_authority(session: Session, name: str = "Delhi Pollution Control Committee") -> int:
     return alert_repository.upsert_authority(
         session,
@@ -131,6 +158,61 @@ class TestDispatch:
         assert outcome.detected == 1
         assert outcome.raised == []
         assert outcome.unrouted == 1
+
+    def test_the_jurisdiction_holding_the_source_is_asked_to_act(self, session: Session) -> None:
+        # The hotspot is east of a district line; the depot beside it is west of
+        # it. East is alerted for the hotspot, and West -- the only body able to
+        # inspect the depot -- receives a coordination request.
+        _seed_network(session)
+        _seed_wind(session)
+        east = alert_repository.upsert_authority(
+            session,
+            name="East District",
+            jurisdiction=[(77.195, 28.4), (77.4, 28.4), (77.4, 28.8), (77.195, 28.8)],
+        )
+        west = alert_repository.upsert_authority(
+            session,
+            name="West District",
+            jurisdiction=[(77.0, 28.4), (77.195, 28.4), (77.195, 28.8), (77.0, 28.8)],
+        )
+        station_repository.upsert_pollution_source(
+            session,
+            name="Bus depot across the line",
+            source_type=SourceType.ROAD_SEGMENT,
+            coordinates=(77.1905, 28.600),
+            emission_prior=1.0,
+        )
+        session.flush()
+
+        outcome = alert_service.dispatch(session, Pollutant.PM25, window_hours=24, now=NOW)
+
+        by_authority = {alert.authority_id: alert for alert in outcome.raised}
+        assert set(by_authority) == {east, west}
+        assert outcome.coordination_requests == 1
+
+        details = {detail.authority_id: detail for detail in alert_service.list_alerts(session)}
+        assert details[east].kind is AlertKind.LOCAL
+        assert details[west].kind is AlertKind.COORDINATION
+        assert details[west].source_name == "Bus depot across the line"
+        assert details[west].source_confidence is not None
+
+    def test_a_source_in_the_same_jurisdiction_needs_no_request(self, session: Session) -> None:
+        _seed_network(session)
+        _seed_wind(session)
+        _seed_authority(session)
+        station_repository.upsert_pollution_source(
+            session,
+            name="Depot next door",
+            source_type=SourceType.ROAD_SEGMENT,
+            coordinates=(77.2005, 28.600),
+            emission_prior=1.0,
+        )
+        session.flush()
+
+        outcome = alert_service.dispatch(session, Pollutant.PM25, window_hours=24, now=NOW)
+
+        assert len(outcome.raised) == 1
+        assert outcome.coordination_requests == 0
 
     def test_the_lowest_tier_authority_is_notified(self, session: Session) -> None:
         # Overlapping jurisdictions must not both be alerted, or each assumes the

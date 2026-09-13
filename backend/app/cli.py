@@ -297,6 +297,7 @@ def main(argv: list[str] | None = None) -> int:
         print("")
         print(f"hotspots detected : {outcome.detected}")
         print(f"alerts raised     : {len(outcome.raised)}")
+        print(f"  to neighbours   : {outcome.coordination_requests}")
         print(f"suppressed        : {outcome.suppressed}")
         # An unrouted hotspot is a gap in the authority registry, not a quiet
         # day, so it is reported rather than left implicit in the difference.

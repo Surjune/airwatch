@@ -22,7 +22,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.core.alerting import AlertRecord
-from app.core.enums import AlertStatus, HotspotStatus, Pollutant
+from app.core.enums import AlertKind, AlertStatus, HotspotStatus, Pollutant
 from app.core.geo import LonLat
 from app.core.h3_grid import H3Cell
 from app.repositories.models import Alert, Authority, Hotspot, Station
@@ -72,6 +72,9 @@ class AlertDetail:
     peak_observed: float
     peak_excess: float
     peak_z: float
+    kind: AlertKind = AlertKind.LOCAL
+    source_name: str | None = None
+    source_confidence: float | None = None
 
 
 def _point_wkt(point: LonLat) -> str:
@@ -246,7 +249,14 @@ def alerts_for(session: Session, hotspot_id: int, authority_id: int) -> list[Ale
 
 
 def create_alert(
-    session: Session, *, hotspot_id: int, authority_id: int, sent_at: datetime
+    session: Session,
+    *,
+    hotspot_id: int,
+    authority_id: int,
+    sent_at: datetime,
+    kind: AlertKind = AlertKind.LOCAL,
+    source_name: str | None = None,
+    source_confidence: float | None = None,
 ) -> AlertRecord:
     """Record that an alert was routed to an authority."""
     alert = Alert(
@@ -254,6 +264,9 @@ def create_alert(
         authority_id=authority_id,
         status=AlertStatus.SENT,
         sent_at=sent_at,
+        kind=kind,
+        source_name=source_name,
+        source_confidence=source_confidence,
     )
     session.add(alert)
     session.flush()
@@ -312,6 +325,9 @@ def list_alert_details(session: Session, *, status: AlertStatus | None = None) -
             Hotspot.peak_observed,
             Hotspot.peak_residual,
             Hotspot.peak_z,
+            Alert.kind,
+            Alert.source_name,
+            Alert.source_confidence,
         )
         .join(Authority, Authority.id == Alert.authority_id)
         .join(Hotspot, Hotspot.id == Alert.hotspot_id)
@@ -347,6 +363,9 @@ def _to_detail(row: Row[tuple[object, ...]]) -> AlertDetail:
         peak_observed,
         peak_residual,
         peak_z,
+        kind,
+        source_name,
+        source_confidence,
     ) = row
     return AlertDetail(
         alert_id=int(alert_id),
@@ -368,6 +387,9 @@ def _to_detail(row: Row[tuple[object, ...]]) -> AlertDetail:
         peak_observed=float(peak_observed),
         peak_excess=float(peak_residual),
         peak_z=float(peak_z),
+        kind=AlertKind(kind),
+        source_name=None if source_name is None else str(source_name),
+        source_confidence=None if source_confidence is None else float(source_confidence),
     )
 
 
@@ -388,6 +410,9 @@ class UndeliveredAlert:
     peak_observed: float
     peak_excess: float
     peak_z: float
+    kind: AlertKind = AlertKind.LOCAL
+    source_name: str | None = None
+    source_confidence: float | None = None
 
 
 def undelivered(session: Session, *, limit: int) -> list[UndeliveredAlert]:
@@ -412,6 +437,9 @@ def undelivered(session: Session, *, limit: int) -> list[UndeliveredAlert]:
             Hotspot.peak_observed,
             Hotspot.peak_residual,
             Hotspot.peak_z,
+            Alert.kind,
+            Alert.source_name,
+            Alert.source_confidence,
         )
         .join(Authority, Authority.id == Alert.authority_id)
         .join(Hotspot, Hotspot.id == Alert.hotspot_id)
@@ -436,6 +464,9 @@ def undelivered(session: Session, *, limit: int) -> list[UndeliveredAlert]:
             peak_observed=float(row[11]),
             peak_excess=float(row[12]),
             peak_z=float(row[13]),
+            kind=AlertKind(row[14]),
+            source_name=None if row[15] is None else str(row[15]),
+            source_confidence=None if row[16] is None else float(row[16]),
         )
         for row in session.execute(statement).all()
     ]

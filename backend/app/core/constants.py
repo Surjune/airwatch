@@ -648,6 +648,13 @@ ALERT_RESOLUTION_SLA_HOURS: Final[int] = 24
 #: an alert every detection interval and the console becomes unusable.
 ALERT_SUPPRESSION_HOURS: Final[int] = 6
 
+#: Confidence a ranked source needs before the authority whose ground it sits on
+#: is asked to act for a neighbouring jurisdiction. Higher than
+#: ATTRIBUTION_MIN_CONFIDENCE, which only decides what is shown: a coordination
+#: request spends another body's inspection capacity on the strength of a
+#: trajectory, so it is sent only for a candidate better than an even call.
+COORDINATION_MIN_CONFIDENCE: Final[float] = 0.5
+
 
 # ---------------------------------------------------------------------------
 # API

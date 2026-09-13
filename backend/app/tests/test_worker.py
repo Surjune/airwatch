@@ -42,6 +42,7 @@ class FakeDispatch:
     raised: tuple[object, ...] = (object(),)
     suppressed: int = 0
     unrouted: int = 0
+    coordination_requests: int = 0
 
 
 @dataclass(frozen=True)

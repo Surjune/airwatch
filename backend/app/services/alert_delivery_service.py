@@ -24,6 +24,7 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
+from app.core.enums import AlertKind
 from app.core.exceptions import AirWatchError
 from app.core.logging import get_logger
 from app.external.base import JsonValue
@@ -64,10 +65,25 @@ def _payload(alert: UndeliveredAlert) -> JsonValue:
     city, and only one of those is theirs to act on.
     """
     longitude, latitude = alert.coordinates
+    is_coordination = alert.kind is AlertKind.COORDINATION
     return {
-        "event": "airwatch.hotspot_alert",
+        "event": ("airwatch.coordination_request" if is_coordination else "airwatch.hotspot_alert"),
         "alert_id": alert.alert_id,
+        "kind": alert.kind.value,
         "authority": {"id": alert.authority_id, "name": alert.authority_name},
+        "requested_action": (
+            {
+                "inspect_source": alert.source_name,
+                "attribution_confidence": alert.source_confidence,
+                "reason": (
+                    "The hotspot is in a neighbouring jurisdiction; the likeliest "
+                    "upwind source is on your ground. The confidence ranks a "
+                    "candidate and does not establish a cause."
+                ),
+            }
+            if is_coordination
+            else None
+        ),
         "location": {
             "type": "Point",
             "coordinates": [longitude, latitude],

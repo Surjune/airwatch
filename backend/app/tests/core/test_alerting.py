@@ -8,12 +8,16 @@ import pytest
 
 from app.core.alerting import (
     AlertRecord,
+    CoordinationTarget,
+    SourceJurisdiction,
     acknowledge,
     choose_authority,
+    coordination_targets,
     find_sla_breaches,
     resolve,
     should_suppress,
 )
+from app.core.constants import COORDINATION_MIN_CONFIDENCE
 from app.core.enums import AlertStatus
 from app.core.exceptions import ValidationError
 
@@ -52,6 +56,55 @@ class TestRouting:
         # Returning None rather than a nearest guess: sending an inspector to
         # somewhere outside their remit wastes the alert and their time.
         assert choose_authority([]) is None
+
+
+class TestCoordination:
+    LOCAL = 1
+
+    def test_asks_the_jurisdiction_that_holds_the_source(self) -> None:
+        targets = coordination_targets(
+            self.LOCAL, [SourceJurisdiction("Brick kiln cluster", 0.72, authority_id=2)]
+        )
+
+        assert targets == [
+            CoordinationTarget(authority_id=2, source_name="Brick kiln cluster", confidence=0.72)
+        ]
+
+    def test_never_asks_the_local_authority_twice(self) -> None:
+        # It already has the alert for the hotspot itself.
+        assert coordination_targets(self.LOCAL, [SourceJurisdiction("Depot", 0.9, 1)]) == []
+
+    def test_a_source_on_unregistered_ground_has_nobody_to_ask(self) -> None:
+        assert coordination_targets(self.LOCAL, [SourceJurisdiction("Fire", 0.9, None)]) == []
+
+    def test_a_weak_candidate_does_not_spend_a_neighbours_inspectors(self) -> None:
+        weak = SourceJurisdiction("Landfill", COORDINATION_MIN_CONFIDENCE - 0.01, 2)
+
+        assert coordination_targets(self.LOCAL, [weak]) == []
+
+    def test_a_candidate_at_the_threshold_is_sent(self) -> None:
+        edge = SourceJurisdiction("Landfill", COORDINATION_MIN_CONFIDENCE, 2)
+
+        assert len(coordination_targets(self.LOCAL, [edge])) == 1
+
+    def test_one_request_per_authority_for_its_most_plausible_source(self) -> None:
+        targets = coordination_targets(
+            self.LOCAL,
+            [
+                SourceJurisdiction("Kiln A", 0.55, 2),
+                SourceJurisdiction("Kiln B", 0.81, 2),
+                SourceJurisdiction("Fire", 0.66, 3),
+            ],
+        )
+
+        assert [(t.authority_id, t.source_name) for t in targets] == [(2, "Kiln B"), (3, "Fire")]
+
+    def test_an_unrouted_hotspot_can_still_reach_the_sources_authority(self) -> None:
+        # No jurisdiction holds the hotspot, but one holds the source: that body
+        # is still the one able to act.
+        targets = coordination_targets(None, [SourceJurisdiction("Kiln", 0.7, 4)])
+
+        assert [target.authority_id for target in targets] == [4]
 
 
 class TestSuppression:

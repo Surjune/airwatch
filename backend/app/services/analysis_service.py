@@ -28,21 +28,13 @@ from app.core.constants import (
 )
 from app.core.enums import PilotCity, Pollutant, StationTier
 from app.core.geo import LonLat
-from app.core.h3_grid import H3Cell, cell_centroid
+from app.core.h3_grid import H3Cell
 from app.core.logging import get_logger
-from app.ml.attribution import (
-    Attribution,
-    CandidateSource,
-    WindRecord,
-    attribute,
-    back_trajectory,
-    fire_to_candidate,
-    wind_field_near,
-)
+from app.ml.attribution import Attribution, attribute, back_trajectory, wind_field_near
 from app.ml.exposure import Advisory, DepartureOption, RouteSample, advise, route_exposure
 from app.ml.forecasting import ForecastPoint, forecast_corridor, sample_corridor
 from app.ml.hotspot_detection import Hotspot, detect_over_window
-from app.repositories import observation_repository, station_repository
+from app.repositories import attribution_repository, observation_repository
 
 logger = get_logger(__name__)
 
@@ -202,8 +194,8 @@ def detect_and_attribute(
     if not hotspots:
         return []
 
-    wind_records = _load_wind(session, since)
-    sources = _load_sources(session, since)
+    wind_records = attribution_repository.wind_records(session, since)
+    sources = attribution_repository.candidate_sources(session, since)
 
     attributed: list[AttributedHotspot] = []
     for hotspot in hotspots:
@@ -227,53 +219,6 @@ def detect_and_attribute(
         with_attribution=sum(1 for item in attributed if item.attributions),
     )
     return attributed
-
-
-def _load_wind(session: Session, since: datetime) -> list[WindRecord]:
-    """Load every city's stored wind, placed at its weather cell's centre."""
-    return [
-        WindRecord(
-            coordinates=cell_centroid(record.h3_cell),
-            observed_at=record.observed_at,
-            wind_u=record.wind_u,
-            wind_v=record.wind_v,
-        )
-        for record in observation_repository.weather_in_window(session, since)
-    ]
-
-
-def _load_sources(session: Session, since: datetime) -> list[CandidateSource]:
-    """Load registered sources and recent fire detections as candidates."""
-    sources: list[CandidateSource] = [
-        CandidateSource(
-            identifier=str(source.id),
-            name=source.name,
-            source_type=source.source_type,
-            coordinates=(float(lon), float(lat)),
-            emission_prior=source.emission_prior,
-        )
-        for source, lon, lat in station_repository.list_sources_with_coordinates(session)
-    ]
-
-    for (
-        fire_id,
-        lon,
-        lat,
-        observed_at,
-        frp_mw,
-        confidence,
-    ) in observation_repository.fire_detections_in_window(session, since):
-        sources.append(
-            fire_to_candidate(
-                identifier=f"fire-{fire_id}",
-                coordinates=(float(lon), float(lat)),
-                observed_at=observed_at,
-                frp_mw=float(frp_mw),
-                confidence=float(confidence),
-            )
-        )
-
-    return sources
 
 
 def corridor_outlook(

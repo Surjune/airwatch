@@ -105,3 +105,16 @@ class AlertStatus(StrEnum):
     ACKNOWLEDGED = "acknowledged"
     RESOLVED = "resolved"
     ESCALATED = "escalated"
+
+
+class AlertKind(StrEnum):
+    """Why an authority received an alert.
+
+    ``local``: the hotspot is on its ground. ``coordination``: the hotspot is on
+    someone else's ground, but the likeliest upwind source is on this one, so the
+    body able to inspect the source is asked to act for a neighbour. Pollution
+    does not stop at a district line, and neither can the response.
+    """
+
+    LOCAL = "local"
+    COORDINATION = "coordination"

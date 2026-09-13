@@ -61,6 +61,9 @@ def _to_response(detail: AlertDetail) -> AlertResponse:
         acknowledged_at=detail.acknowledged_at,
         resolved_at=detail.resolved_at,
         resolution_note=detail.resolution_note,
+        kind=detail.kind,
+        source_name=detail.source_name,
+        source_confidence=detail.source_confidence,
     )
 
 
@@ -98,6 +101,7 @@ def dispatch(
         raised=len(outcome.raised),
         suppressed=outcome.suppressed,
         unrouted=outcome.unrouted,
+        coordination_requests=outcome.coordination_requests,
     )
 
 
