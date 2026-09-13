@@ -43,12 +43,16 @@ if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
 from app.core.constants import (  # noqa: E402
+    BOOTSTRAP_CONFIDENCE,
     FORECAST_HORIZONS_HOURS,
     FORECAST_LAG_HOURS_SHORT,
     FORECAST_TEST_FRACTION,
+    MODEL_COMPARISON_TOLERANCE,
     RANDOM_SEED,
+    VALIDATION_DATA_UNTIL,
 )
 from app.core.enums import Pollutant  # noqa: E402
+from app.core.evidence import classify, paired_cluster_bootstrap  # noqa: E402
 from app.core.logging import configure_logging  # noqa: E402
 from app.ml.forecast_features import (  # noqa: E402
     ForecastInputs,
@@ -127,12 +131,17 @@ def load_series(
             select(Measurement.station_id, Measurement.observed_at, Measurement.value_raw).where(
                 Measurement.pollutant == pollutant,
                 Measurement.is_plausible.is_(True),
+                Measurement.observed_at < VALIDATION_DATA_UNTIL,
             )
         ).all()
         for station_id, observed_at, value in rows:
             series[station_id][observed_at] = float(value)
 
-        for record in session.execute(select(WeatherObservation)).scalars():
+        for record in session.execute(
+            select(WeatherObservation).where(
+                WeatherObservation.observed_at < VALIDATION_DATA_UNTIL
+            )
+        ).scalars():
             weather[record.observed_at] = WeatherContext(
                 wind_u=record.wind_u,
                 wind_v=record.wind_v,
@@ -290,6 +299,19 @@ def evaluate_horizon(train: list[Sample], test: list[Sample], columns: tuple[str
         best_baseline = persistence_metrics.mae
 
     outcomes: dict[str, Metrics] = {}
+    has_climatology = np.array([s.climatology is not None for s in test])
+    # Absolute errors on the rows every method can be scored on, so each
+    # comparison against climatology is paired row for row.
+    paired_errors: dict[str, np.ndarray] = {}
+    if climatology_rows:
+        truth_rows = np.array([s.actual for s in climatology_rows])
+        paired_errors["climatology"] = np.abs(
+            np.array([float(s.climatology or 0.0) for s in climatology_rows]) - truth_rows
+        )
+        paired_errors["persistence"] = np.abs(
+            np.array([s.persistence for s in climatology_rows]) - truth_rows
+        )
+    station_ids = np.array([s.station_id for s in climatology_rows])
 
     for mode in ("absolute", "residual"):
         if mode == "residual":
@@ -316,15 +338,37 @@ def evaluate_horizon(train: list[Sample], test: list[Sample], columns: tuple[str
         predicted = offsets + np.asarray(model.predict(xs_test))
         outcomes[mode] = evaluate(truth, predicted)
         print(f"  {outcomes[mode].render(f'LightGBM ({mode})')}")
+        if climatology_rows:
+            # The residual model is scored only on climatology rows already; the
+            # absolute model is narrowed to them so the pairing holds.
+            on_rows = predicted if mode == "residual" else predicted[has_climatology]
+            paired_errors[f"LightGBM ({mode})"] = np.abs(on_rows - truth_rows)
 
-    best_mode = min(outcomes, key=lambda mode: outcomes[mode].mae)
-    best = outcomes[best_mode]
-    change = (best_baseline - best.mae) / best_baseline * 100
-    if best.mae < best_baseline:
-        print(f"  -> best model ({best_mode}) beats the best baseline by {change:.1f}% MAE")
-    else:
+    if "climatology" not in paired_errors:
+        return
+
+    # Every other method against climatology, resampling whole stations: a
+    # station's forecasts share its climate and its sensor, so the effective
+    # sample is the station count rather than the row count.
+    print(
+        f"  against climatology  (station-level bootstrap, {BOOTSTRAP_CONFIDENCE:.0%} "
+        "interval; positive gain means better than climatology)"
+    )
+    for name, errors in paired_errors.items():
+        if name == "climatology":
+            continue
+        estimate = paired_cluster_bootstrap(
+            paired_errors["climatology"], errors, station_ids, seed=RANDOM_SEED
+        )
+        effect = classify(
+            estimate,
+            baseline_error=float(paired_errors["climatology"].mean()),
+            tolerance=MODEL_COMPARISON_TOLERANCE,
+        )
         print(
-            f"  -> every model is worse than the baseline (best {-change:.1f}%); ship the baseline"
+            f"    {name:<22} gain {estimate.gain:+.3f}  "
+            f"[{estimate.low:+.3f}, {estimate.high:+.3f}]  over {estimate.samples} stations  "
+            f"{effect.value}"
         )
 
 

@@ -12,7 +12,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from app.core.evidence import Effect, EffectEstimate, classify, paired_bootstrap
+from app.core.evidence import (
+    Effect,
+    EffectEstimate,
+    classify,
+    paired_bootstrap,
+    paired_cluster_bootstrap,
+)
 
 SEED = 20260913
 RNG = np.random.default_rng(SEED)
@@ -111,3 +117,40 @@ class TestClassify:
         estimate = _estimate(gain=1.0, low=0.0, high=2.0)
 
         assert classify(estimate, baseline_error=10.0, tolerance=0.02) is Effect.INCONCLUSIVE
+
+
+class TestClusterBootstrap:
+    def test_correlated_rows_give_a_wider_interval_than_pretending_independence(self) -> None:
+        # Ten stations, each with a persistent station-level effect across 300
+        # hours. Row resampling sees 3000 independent draws; the evidence is ten.
+        stations = np.repeat(np.arange(10), 300)
+        station_effect = RNG.normal(0.5, 3.0, size=10)[stations]
+        baseline = RNG.uniform(5.0, 15.0, size=stations.size)
+        candidate = baseline - station_effect - RNG.normal(0.0, 0.5, size=stations.size)
+
+        rows = paired_bootstrap(baseline, candidate, seed=SEED)
+        clustered = paired_cluster_bootstrap(baseline, candidate, stations, seed=SEED)
+
+        assert (clustered.high - clustered.low) > 3 * (rows.high - rows.low)
+
+    def test_reports_the_cluster_count_as_the_sample(self) -> None:
+        stations = np.repeat(np.arange(7), 40)
+        errors = RNG.uniform(0.0, 10.0, size=stations.size)
+
+        estimate = paired_cluster_bootstrap(errors, errors - 1.0, stations, seed=SEED)
+
+        assert estimate.samples == 7
+        assert estimate.gain == pytest.approx(1.0)
+
+    def test_a_uniform_improvement_is_certain_whatever_the_clustering(self) -> None:
+        stations = np.repeat(np.arange(12), 50)
+        errors = RNG.uniform(5.0, 15.0, size=stations.size)
+
+        estimate = paired_cluster_bootstrap(errors, errors - 2.0, stations, seed=SEED)
+
+        assert estimate.low == pytest.approx(2.0)
+        assert estimate.high == pytest.approx(2.0)
+
+    def test_rejects_mismatched_clusters(self) -> None:
+        with pytest.raises(ValueError, match="same rows"):
+            paired_cluster_bootstrap(np.ones(4), np.ones(4), np.ones(3), seed=SEED)

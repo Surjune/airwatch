@@ -104,6 +104,64 @@ def paired_bootstrap(
     )
 
 
+def paired_cluster_bootstrap(
+    baseline_errors: np.ndarray,
+    candidate_errors: np.ndarray,
+    clusters: np.ndarray,
+    *,
+    resamples: int = BOOTSTRAP_RESAMPLES,
+    confidence: float = BOOTSTRAP_CONFIDENCE,
+    seed: int,
+) -> EffectEstimate:
+    """Interval on a candidate's gain when rows come in correlated groups.
+
+    Resamples whole clusters -- stations, for spatial validation -- rather than
+    rows. Fourteen days of hourly readings from one station are not fourteen
+    days' worth of independent evidence: a station that is hard to reconstruct is
+    hard in every hour. Resampling rows would treat each hour as a fresh draw and
+    report an interval far narrower than the data supports, which is the same
+    overconfidence as quoting a point estimate, only better hidden.
+
+    ``samples`` on the result is the number of clusters, since that is the
+    effective sample size.
+
+    Args:
+        baseline_errors: Absolute error of the baseline on each row.
+        candidate_errors: Absolute error of the candidate on the same rows.
+        clusters: The group each row belongs to.
+        resamples: Bootstrap draws.
+        confidence: Two-sided coverage of the interval.
+        seed: Required, so every published interval can be reproduced.
+
+    Raises:
+        ValueError: The arrays differ in length or are empty.
+    """
+    if not (baseline_errors.shape == candidate_errors.shape == clusters.shape):
+        raise ValueError("Paired errors and clusters must describe the same rows.")
+    if baseline_errors.size == 0:
+        raise ValueError("Cannot bootstrap an empty holdout.")
+
+    differences = baseline_errors - candidate_errors
+    labels, index = np.unique(clusters, return_inverse=True)
+    sums = np.bincount(index, weights=differences)
+    counts = np.bincount(index).astype(float)
+
+    rng = np.random.default_rng(seed)
+    draws = rng.integers(0, labels.size, size=(resamples, labels.size))
+    # A resampled dataset's mean gain is its total difference over its total
+    # rows, so clusters with more rows keep their weight.
+    means = sums[draws].sum(axis=1) / counts[draws].sum(axis=1)
+
+    tail = (1.0 - confidence) / 2.0 * _PERCENT
+    low, high = np.percentile(means, [tail, _PERCENT - tail])
+    return EffectEstimate(
+        gain=float(differences.mean()),
+        low=float(low),
+        high=float(high),
+        samples=int(labels.size),
+    )
+
+
 def classify(estimate: EffectEstimate, *, baseline_error: float, tolerance: float) -> Effect:
     """What an estimate supports, requiring both significance and size.
 

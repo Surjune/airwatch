@@ -42,8 +42,15 @@ BACKEND = Path(__file__).resolve().parents[1] / "backend"
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
-from app.core.constants import RANDOM_SEED  # noqa: E402
+from app.core.constants import (  # noqa: E402
+    BOOTSTRAP_CONFIDENCE,
+    BOOTSTRAP_RESAMPLES,
+    MODEL_COMPARISON_TOLERANCE,
+    RANDOM_SEED,
+    VALIDATION_DATA_UNTIL,
+)
 from app.core.enums import Pollutant  # noqa: E402
+from app.core.evidence import Effect, classify, paired_cluster_bootstrap  # noqa: E402
 from app.core.logging import configure_logging  # noqa: E402
 from app.ml.fusion_features import (  # noqa: E402
     FEATURE_NAMES,
@@ -135,7 +142,11 @@ def load_observations(
                 Station.geom,
             )
             .join(Station, Station.id == Measurement.station_id)
-            .where(Measurement.pollutant == pollutant, Measurement.is_plausible.is_(True))
+            .where(
+                Measurement.pollutant == pollutant,
+                Measurement.is_plausible.is_(True),
+                Measurement.observed_at < VALIDATION_DATA_UNTIL,
+            )
         ).all()
 
         # Coordinates come back as WKB; ask PostGIS for them as numbers instead.
@@ -158,7 +169,11 @@ def load_observations(
                 StationReading(station_id=station_id, coordinates=position, value=float(value))
             )
 
-        for weather in session.execute(select(WeatherObservation)).scalars():
+        for weather in session.execute(
+            select(WeatherObservation).where(
+                WeatherObservation.observed_at < VALIDATION_DATA_UNTIL
+            )
+        ).scalars():
             weather_by_hour[weather.observed_at] = WeatherContext(
                 wind_u=weather.wind_u,
                 wind_v=weather.wind_v,
@@ -219,9 +234,18 @@ def _nearest_weather(
     return None
 
 
+@dataclass(frozen=True, slots=True)
+class PooledErrors:
+    """Per-row absolute errors across every fold, with the station each came from."""
+
+    model: np.ndarray
+    baseline: np.ndarray
+    stations: np.ndarray
+
+
 def run_loso(
     samples: list[Sample], *, residual: bool
-) -> tuple[Metrics, Metrics, list[tuple[str, Metrics]]]:
+) -> tuple[Metrics, Metrics, list[tuple[str, Metrics]], PooledErrors]:
     """Run leave-one-station-out validation.
 
     Args:
@@ -242,8 +266,9 @@ def run_loso(
             correction on top.
 
     Returns:
-        Pooled model metrics, pooled IDW baseline metrics, and per-station model
-        metrics for the worst folds.
+        Pooled model metrics, pooled IDW baseline metrics, per-station model
+        metrics for the worst folds, and the per-row errors a comparison between
+        the two needs.
     """
     by_station: dict[int, list[Sample]] = defaultdict(list)
     for sample in samples:
@@ -259,6 +284,7 @@ def run_loso(
     all_predictions: list[float] = []
     all_actual: list[float] = []
     all_baseline: list[float] = []
+    all_stations: list[int] = []
     per_station: list[tuple[int, Metrics]] = []
 
     for held_out, test_rows in eligible.items():
@@ -287,6 +313,7 @@ def run_loso(
         all_predictions.extend(predicted)
         all_actual.extend(y_test)
         all_baseline.extend(baseline)
+        all_stations.extend([held_out] * len(y_test))
         per_station.append((held_out, evaluate(y_test, np.asarray(predicted))))
 
     actual = np.array(all_actual)
@@ -296,7 +323,12 @@ def run_loso(
     names = _station_names([station_id for station_id, _ in per_station])
     worst = sorted(per_station, key=lambda pair: pair[1].mae, reverse=True)[:5]
     labelled = [(names.get(station_id, str(station_id)), metrics) for station_id, metrics in worst]
-    return model_metrics, baseline_metrics, labelled
+    pooled = PooledErrors(
+        model=np.abs(np.array(all_predictions) - actual),
+        baseline=np.abs(np.array(all_baseline) - actual),
+        stations=np.array(all_stations),
+    )
+    return model_metrics, baseline_metrics, labelled, pooled
 
 
 def _station_names(station_ids: list[int]) -> dict[int, str]:
@@ -386,11 +418,14 @@ def main() -> int:
 
     modes = ["absolute", "residual"] if args.mode == "both" else [args.mode]
     outcomes: dict[str, Metrics] = {}
+    pooled: dict[str, PooledErrors] = {}
     baseline_metrics: Metrics | None = None
     worst: list[tuple[str, Metrics]] = []
 
     for mode in modes:
-        outcomes[mode], baseline_metrics, worst = run_loso(samples, residual=(mode == "residual"))
+        outcomes[mode], baseline_metrics, worst, pooled[mode] = run_loso(
+            samples, residual=(mode == "residual")
+        )
 
     if baseline_metrics is None:  # pragma: no cover - modes is never empty.
         return 1
@@ -402,17 +437,44 @@ def main() -> int:
     for mode, metrics in outcomes.items():
         print(metrics.render(f"LightGBM ({mode})"))
 
-    best_mode = min(outcomes, key=lambda mode: outcomes[mode].mae)
-    best = outcomes[best_mode]
-    improvement = (baseline_metrics.mae - best.mae) / baseline_metrics.mae * 100
+    # Each learned model against IDW, with the interval resampling whole held-out
+    # stations. Rows from one station are not independent -- a station that is
+    # hard to reconstruct is hard every hour -- so the effective sample is the
+    # station count, not the row count.
     print()
-    if best.mae < baseline_metrics.mae:
-        print(f"Best model ({best_mode}) beats IDW by {improvement:.1f}% MAE.")
-    else:
+    print(
+        f"AGAINST IDW  (station-level bootstrap, {BOOTSTRAP_RESAMPLES} resamples, "
+        f"{BOOTSTRAP_CONFIDENCE:.0%} interval; positive gain means the model is better)"
+    )
+    verdicts: dict[str, Effect] = {}
+    for mode, errors in pooled.items():
+        estimate = paired_cluster_bootstrap(
+            errors.baseline, errors.model, errors.stations, seed=RANDOM_SEED
+        )
+        verdicts[mode] = classify(
+            estimate, baseline_error=baseline_metrics.mae, tolerance=MODEL_COMPARISON_TOLERANCE
+        )
+        print(
+            f"  LightGBM ({mode:<8})  gain {estimate.gain:+.3f} ug/m3  "
+            f"[{estimate.low:+.3f}, {estimate.high:+.3f}]  over {estimate.samples} stations  "
+            f"{verdicts[mode].value}"
+        )
+
+    print()
+    if any(effect is Effect.HELPED for effect in verdicts.values()):
+        print("A learned model is established as better than IDW.")
+    elif all(effect is Effect.HARMED for effect in verdicts.values()):
         # Reported plainly rather than buried. A model that loses to
         # interpolation is complexity with no accuracy, and shipping it anyway
         # would mean publishing worse numbers with more confidence.
-        print(f"No model beats IDW (best is {-improvement:.1f}% worse). Ship IDW.")
+        print("Every learned model is established as worse than IDW. Ship IDW.")
+    else:
+        print(
+            "No learned model is established as better than IDW. Ship IDW: without "
+            "evidence of a gain, the simpler estimator is the one to trust."
+        )
+
+    best = min(outcomes.values(), key=lambda metrics: metrics.mae)
 
     report_error_conditions(samples)
 

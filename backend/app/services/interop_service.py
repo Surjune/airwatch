@@ -299,11 +299,12 @@ def models(settings: Settings) -> ModelCatalogue:
                 ],
                 weights_withheld_because=(
                     "The shipped estimator is interpolation and has no learned weights. "
-                    "The gradient-boosted alternative was trained and lost, so its "
-                    "weights are not offered."
+                    "The gradient-boosted alternative was trained and showed no evidence "
+                    "of improving on it -- one framing is established as worse, the other "
+                    "is inconclusive -- so its weights are not offered."
                 ),
                 limitations=[
-                    "R2 of 0.232 means neighbouring stations explain under a quarter of "
+                    "R2 of 0.233 means neighbouring stations explain under a quarter of "
                     "the variance at an unmonitored point, even in a dense network.",
                     "Uncertainty widens sharply where nearby monitors disagree; a cell "
                     "too poorly supported to estimate returns nothing rather than a number.",
@@ -323,7 +324,7 @@ def models(settings: Settings) -> ModelCatalogue:
                     ModelPerformance(
                         metric="MAE at 24h (ug/m3)",
                         value=PUBLISHED_FORECAST_MAE_UGM3,
-                        baseline="LightGBM on the same temporal holdout",
+                        baseline="LightGBM (residual to climatology), same holdout",
                         baseline_value=PUBLISHED_FORECAST_LEARNED_MAE_UGM3,
                         validation="Temporal holdout: trained on earliest days, tested on latest.",
                     ),

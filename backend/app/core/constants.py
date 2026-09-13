@@ -6,6 +6,7 @@ failure. Each constant below carries the source or the reasoning behind its valu
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Final
 
 # ---------------------------------------------------------------------------
@@ -456,6 +457,16 @@ FL_DP_NOISE_MULTIPLIER: Final[float] = 0.0
 #: negative transfer, so the federation claim stays honest.
 FL_NEGATIVE_TRANSFER_TOLERANCE: Final[float] = 0.02
 
+#: Observations after this instant are excluded from every validation run.
+#:
+#: Without a cutoff the experiments read the whole database, and the scheduled
+#: worker adds to it every hour, so every published figure would drift silently
+#: between one run and the next -- LightGBM's LOSO error had already moved from
+#: 12.84 to 12.44 before this was pinned. A result that changes when re-run with
+#: no change to the method is not reproducible, so the recorded window is fixed.
+#: It is the instant before the worker began collecting.
+VALIDATION_DATA_UNTIL: Final[datetime] = datetime(2026, 9, 12, tzinfo=UTC)
+
 #: Resamples for a bootstrap interval on a model comparison. Ten thousand keeps
 #: the interval endpoints stable to about two decimal places, finer than any
 #: difference worth reporting.
@@ -463,6 +474,11 @@ BOOTSTRAP_RESAMPLES: Final[int] = 10_000
 
 #: Two-sided coverage of a reported bootstrap interval.
 BOOTSTRAP_CONFIDENCE: Final[float] = 0.95
+
+#: Relative difference below which two models are treated as equivalent even
+#: when the interval excludes zero. On thousands of rows a 0.5% difference can be
+#: statistically certain and still change nothing anyone should do.
+MODEL_COMPARISON_TOLERANCE: Final[float] = 0.02
 
 #: Local steps a node takes when personalising the global model. Equal to one
 #: round of local training: enough to move toward the node's own regime, few
@@ -649,28 +665,33 @@ REQUEST_ID_HEADER: Final[str] = "X-Request-ID"
 # have no way to discover that. Sources are the validation runs in /ml.
 
 #: Mean absolute error, ug/m3, of the shipped inverse-distance surface under
-#: leave-one-station-out validation over 14,324 readings from 61 Delhi stations.
-#: Source: `npm run ml:validate-loso`.
+#: leave-one-station-out validation: 7,957 scored station-hours across 36 held-out
+#: stations, data before VALIDATION_DATA_UNTIL. Source: `npm run ml:validate-loso`.
 PUBLISHED_FUSION_MAE_UGM3: Final[float] = 11.48
 
 #: Coefficient of determination for the same run. Low by design of the problem,
 #: not of the method: even inside one of India's densest networks, neighbouring
 #: stations explain under a quarter of the variance at an unmonitored point.
-PUBLISHED_FUSION_R2: Final[float] = 0.232
+PUBLISHED_FUSION_R2: Final[float] = 0.233
 
 #: What gradient boosting scored on the identical split, having also received
-#: the interpolated estimate as an input feature. It lost, so it did not ship.
-PUBLISHED_FUSION_LEARNED_MAE_UGM3: Final[float] = 12.84
+#: the interpolated estimate as an input feature. Its deficit against IDW,
+#: -0.96 ug/m3 over a station-level interval of [-2.08, +0.06], is not established
+#: as worse -- but nothing establishes it as better either, so IDW ships.
+PUBLISHED_FUSION_LEARNED_MAE_UGM3: Final[float] = 12.44
 
 #: Mean absolute error, ug/m3, of the shipped diurnal climatology at 24 hours,
-#: on a temporal holdout. Source: `npm run ml:validate-forecast`.
-PUBLISHED_FORECAST_MAE_UGM3: Final[float] = 15.59
+#: on a temporal holdout, data before VALIDATION_DATA_UNTIL.
+#: Source: `npm run ml:validate-forecast`.
+PUBLISHED_FORECAST_MAE_UGM3: Final[float] = 15.24
 
-#: What gradient boosting scored at the same horizon on the same holdout.
-PUBLISHED_FORECAST_LEARNED_MAE_UGM3: Final[float] = 17.50
+#: The better of the two gradient-boosted framings (residual to climatology) at
+#: the same horizon on the same holdout. Established as worse than climatology:
+#: -1.55 ug/m3, station-level interval [-2.27, -0.67].
+PUBLISHED_FORECAST_LEARNED_MAE_UGM3: Final[float] = 16.79
 
 #: What persistence -- assuming the current value holds -- scored.
-PUBLISHED_FORECAST_PERSISTENCE_MAE_UGM3: Final[float] = 22.05
+PUBLISHED_FORECAST_PERSISTENCE_MAE_UGM3: Final[float] = 21.39
 
 
 # ---------------------------------------------------------------------------

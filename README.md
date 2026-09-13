@@ -83,10 +83,25 @@ through timing and routing, and build the evidence trail that makes accountabili
 
 ## Validated results
 
+### How these results are judged
+
+Every comparison below was re-run with two safeguards added after a published
+federation claim turned out to rest on noise (see *Federation*).
+
+- **Pinned data.** Validations read only observations before 12 September 2026
+  00:00 UTC. Without that cutoff every figure drifted as the hourly worker added
+  data — LightGBM's error here had already moved from the originally published
+  12.84 to 12.44 — so the tables below supersede the first published figures.
+- **Intervals, and a rule for reading them.** Each method is compared with the
+  baseline by a bootstrap that resamples **whole stations**, since a station that
+  is hard to predict is hard every hour and its rows are not independent. A
+  method is called better or worse only when the 95% interval excludes zero *and*
+  the difference exceeds 2%.
+
 ### Reconstructing unmonitored ground
 
-Numbers below come from `npm run ml:validate-loso` against 14,324 hourly PM2.5
-readings from 61 real CPCB/DPCC stations in Delhi, backfilled over 14 days.
+Numbers below come from `npm run ml:validate-loso`: 7,957 scored station-hours
+across 36 held-out CPCB/DPCC stations in Delhi.
 
 **Leave-one-station-out**: hide one real station completely — from the features
 *and* from training — estimate its location from the rest of the network, and
@@ -94,22 +109,29 @@ compare against what it actually recorded.
 
 | Method | MAE | RMSE | R² |
 | --- | --- | --- | --- |
-| Inverse-distance weighting | **11.48** | **17.30** | **0.232** |
-| LightGBM (absolute target) | 12.84 | 18.48 | 0.124 |
-| LightGBM (residual to IDW) | 12.95 | 18.55 | 0.117 |
+| Inverse-distance weighting | **11.48** | **17.29** | **0.233** |
+| LightGBM (absolute target) | 12.44 | 18.15 | 0.155 |
+| LightGBM (residual to IDW) | 12.61 | 18.34 | 0.137 |
 
-Two findings, both reported as they came out:
+| Against IDW (36 stations) | Difference (µg/m³) | 95% interval | Verdict |
+| --- | --- | --- | --- |
+| LightGBM (absolute) | −0.96 | [−2.08, +0.06] | inconclusive |
+| LightGBM (residual) | −1.14 | [−2.29, −0.10] | worse |
 
-**1. The learned model loses to plain interpolation, so IDW is what ships.**
-Gradient boosting was ~12% worse on MAE despite receiving the IDW estimate as an
-input feature. With 36 scorable stations it learns each site's idiosyncrasies
-instead of a spatial relationship that transfers to ground the network does not
-cover. Shipping it anyway would mean publishing worse numbers with more
-confidence. Predicting the residual to IDW instead of the concentration did not
-rescue it.
+Two findings:
 
-**2. R² of 0.232 is the headline, and it is a result about the problem, not
-about the method.** Even with 61 monitors inside 25 km — one of the densest
+**1. No learned model is established as better than interpolation, so IDW is
+what ships.** The residual framing is established as worse. The absolute
+framing's deficit is not established — its interval just crosses zero — though an
+earlier version of this section stated it flatly as "~12% worse" from a point
+estimate. Either way
+nothing shows a gain, and without evidence of one the simpler estimator is the
+one to trust. With 36 scorable stations the trees tend to learn each site's
+idiosyncrasies rather than a spatial relationship that transfers to ground the
+network does not cover.
+
+**2. R² of 0.233 is the headline, and it is a result about the problem, not
+about the method.** Even with more than 60 monitors inside 25 km — one of the densest
 networks in India — neighbouring stations explain under a quarter of the
 variance at an unmonitored point. This is the resolution mismatch in the
 problem statement above, measured rather than asserted. The hardest station to
@@ -122,7 +144,7 @@ between nearby monitors tracks error closely:
 | Spread among 3 nearest stations | Mean absolute error |
 | --- | --- |
 | 0–5 µg/m³ | 9.89 |
-| 5–15 µg/m³ | 11.39 |
+| 5–15 µg/m³ | 11.38 |
 | 15–30 µg/m³ | 13.66 |
 | 30+ µg/m³ | 24.47 |
 
@@ -143,18 +165,29 @@ both sides and let autocorrelation stand in for skill.
 
 | Method | 24h MAE | 48h MAE | 72h MAE |
 | --- | --- | --- | --- |
-| Persistence | 22.05 | 23.51 | 21.63 |
-| **Climatology** | **15.59** | **16.47** | **15.77** |
-| LightGBM (absolute) | 17.50 | 18.87 | 18.51 |
-| LightGBM (residual to climatology) | 17.39 | 18.59 | 18.33 |
+| Persistence | 21.39 | 22.87 | 20.27 |
+| **Climatology** | **15.24** | **16.12** | **14.62** |
+| LightGBM (absolute) | 17.12 | 18.32 | 17.50 |
+| LightGBM (residual to climatology) | 16.79 | 18.14 | 16.58 |
 
-**Climatology wins at every horizon, so climatology is what ships.** Knowing
-what a station is *usually* like at 3pm beats knowing what it is doing right now
-by a wide margin, which is a real statement about the pollutant: Delhi PM2.5 is
-dominated by its daily cycle.
+| Against climatology (62 stations) | 24h | 48h | 72h |
+| --- | --- | --- | --- |
+| Persistence | −6.15 [−7.34, −4.88] | −6.76 [−8.31, −5.34] | −5.65 [−6.86, −4.55] |
+| LightGBM (absolute) | −1.88 [−2.56, −1.05] | −2.20 [−3.00, −1.37] | −2.88 [−3.87, −1.90] |
+| LightGBM (residual) | −1.55 [−2.27, −0.67] | −2.02 [−2.81, −1.15] | −1.96 [−2.72, −1.27] |
 
-This is the second phase where a learned model lost to a simple baseline, and
-both point at the same cause rather than at the model. Around 2,800 training
+*Difference in MAE (µg/m³) with 95% station-level interval; negative means worse
+than climatology.*
+
+**Climatology wins at every horizon, and this one survives the stricter test,
+so climatology is what ships.** Every interval above excludes zero and every
+difference clears the practical threshold. Knowing what a station is
+*usually* like at 3pm beats knowing what it is doing right now by a wide margin,
+which is a real statement about the pollutant: Delhi PM2.5 is dominated by its
+daily cycle.
+
+This is the second phase where a learned model failed to beat a simple
+baseline, and both point at the same cause rather than at the model. Around 3,000 training
 rows drawn from fourteen days cannot support a twenty-feature gradient-boosted
 model against a strong prior. The next real improvement is months of history and
 denser inputs, not a different architecture.

@@ -59,6 +59,7 @@ from app.core.constants import (  # noqa: E402
     FORECAST_LAG_HOURS_SHORT,
     FORECAST_TEST_FRACTION,
     RANDOM_SEED,
+    VALIDATION_DATA_UNTIL,
 )
 from app.core.enums import Pollutant  # noqa: E402
 from app.core.geo import haversine_distance_m  # noqa: E402
@@ -149,6 +150,7 @@ def load_city_series(
             select(Measurement.station_id, Measurement.observed_at, Measurement.value_raw).where(
                 Measurement.pollutant == pollutant,
                 Measurement.is_plausible.is_(True),
+                Measurement.observed_at < VALIDATION_DATA_UNTIL,
             )
         ).all()
 
