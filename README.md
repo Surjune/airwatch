@@ -391,7 +391,7 @@ exits non-zero if any step failed, so a scheduler watching the exit code sees it
 On Windows, schedule it hourly with:
 
 ```powershell
-schtasks /Create /SC HOURLY /TN "AirWatch worker" /TR "cmd /c cd /d C:\path	oirwatch && npm run worker:once >> worker.log 2>&1"
+schtasks /Create /SC HOURLY /TN "AirWatch worker" /TR "cmd /c cd /d C:\path\to\airwatch && npm run worker:once >> worker.log 2>&1"
 ```
 
 A cycle stores each station's latest reading, so hotspot detection needs a few
