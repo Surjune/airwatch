@@ -24,7 +24,7 @@ export function TopHotspots({ hotspots }: { readonly hotspots: readonly Hotspot[
               where the neighbourhood predicted{' '}
               <span className="figure text-ink">{hotspot.peak_expected.toFixed(0)}</span>
               {hotspot.trajectory_unavailable ? (
-                ' · calm air, so no trajectory could be traced'
+                ' · no wind to trace a trajectory through'
               ) : lead ? (
                 <>
                   {' '}

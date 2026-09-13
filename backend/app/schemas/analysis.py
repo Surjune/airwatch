@@ -119,7 +119,8 @@ class HotspotResponse(BaseModel):
     attributions: list[AttributionResponse]
     trajectory_unavailable: bool = Field(
         description=(
-            "True when the air was calm and no back-trajectory could be traced. "
+            "True when no back-trajectory could be traced: the air was calm, or no wind "
+            "record near the hotspot covers that hour. "
             "Distinguishes 'nothing explains this' from 'we could not look'."
         )
     )

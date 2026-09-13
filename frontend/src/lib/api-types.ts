@@ -1244,7 +1244,7 @@ export interface components {
             attributions: components["schemas"]["AttributionResponse"][];
             /**
              * Trajectory Unavailable
-             * @description True when the air was calm and no back-trajectory could be traced. Distinguishes 'nothing explains this' from 'we could not look'.
+             * @description True when no back-trajectory could be traced: the air was calm, or no wind record near the hotspot covers that hour. Distinguishes 'nothing explains this' from 'we could not look'.
              */
             trajectory_unavailable: boolean;
         };

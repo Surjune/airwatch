@@ -79,7 +79,7 @@ function SourceList({ hotspot }: { readonly hotspot: Hotspot }) {
   if (hotspot.trajectory_unavailable) {
     return (
       <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">
-        The air was calm, so no back-trajectory could be traced.{' '}
+        No back-trajectory could be traced: the air was calm, or no wind record covers that hour.{' '}
         <span className="text-ink">That is not evidence that nothing caused it</span> — only that
         the wind could not point anywhere.
       </p>
