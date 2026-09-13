@@ -498,6 +498,29 @@ npm run alerts:dispatch    # detect and route from the command line
 npm run alerts:deliver     # send recorded alerts to the configured endpoint
 ```
 
+### Running the federation across processes
+
+`npm run fl:validate` measures federation in one process. The same protocol also
+runs with each city as its own process, over Flower's gRPC transport, so no
+party ever holds another's data:
+
+```bash
+npm run fl:server -- --nodes 2
+npm run fl:node -- --city delhi --pinned
+npm run fl:node -- --city kanpur --pinned
+```
+
+The server opens no database. The first round exchanges per-feature sums and
+counts, from which it builds the shared scaler; every round after that exchanges
+model weights only, and each node reports the global model's error on its own
+held-out rows. Membership is fixed at the first round, and a node that drops out
+stops the run rather than being averaged around.
+
+Training is deterministic, so the transport can be held to an exact standard:
+with `--pinned` it reproduces the in-process result — Delhi 16.84 and Kanpur 9.85
+µg/m³ after ten rounds — and a test drives Flower's own round loop and checks the
+weights match to floating-point precision.
+
 Tests marked `integration` need a reachable PostgreSQL and skip with a reported
 reason when there is none, so `npm run check` is green on a clean clone.
 
@@ -522,15 +545,18 @@ Deferred deliberately, and tracked here rather than as TODOs in the code.
   published with bootstrap intervals; Kanpur's 23-row holdout leaves every one of
   them inconclusive. The limiting factor is the size of that holdout, which only
   more history can fix.
-- **Nodes are not separate deployables.** Aggregation runs in one process against
-  one database. Flower would make each city an independent participant, which is
-  what the design calls for.
+- **Federation nodes share one database and one machine.** Each city runs as its
+  own process and reads only its own city's rows, but the pilot points every node
+  at the same PostgreSQL. Transport is loopback and unencrypted; a deployment
+  across state boundaries needs TLS and node authentication, which v1 does not set
+  up.
+- **The Flower entry points are deprecated.** Nodes use `start_server` and
+  `start_client`, which Flower 1.x supports but has superseded with its
+  SuperLink/SuperNode deployment. The dependency is capped below 2.0; moving to
+  SuperLink is packaging work, and the strategy and client carry over unchanged.
 - **Station-level activity is not pollutant-level activity.** A site whose
   PM2.5 sensor is dead still reports as active if any other sensor is live.
   Confirming a pollutant is reporting requires querying its sensor history.
-- **Flower is not yet wired in.** The FedAvg and FedProx aggregation is
-  implemented and validated in-process; the server and client transport that
-  would run nodes as separate deployables is not built.
 - **The forecast is climatological and has no day-to-day skill.** It resolves
   the daily cycle and the spatial gradient but predicts the same value for a
   given hour on consecutive days. Learned models were measured against it and

@@ -23,7 +23,7 @@ arrangement depends on.
 **Why a negative-transfer check.** Federation is asserted to help data-poor
 cities. That is a claim, and this module is built to be able to refute it: each
 node compares the global model against its own local one on its own held-out
-data, and a node that is made worse is reported rather than averaged over.
+data, and the result is reported per node rather than averaged into a headline.
 """
 
 from __future__ import annotations
@@ -229,9 +229,10 @@ def refit_intercept(
     in closed form, to the node's own mean residual, because the level of
     pollution is exactly what differs most between a clean city and a dirty one.
 
-    Kanpur's harm under plain averaging came from being pulled toward Delhi's
-    harder, dirtier regime, which is largely a difference of level; this is the
-    cheapest change that could undo that.
+    Kanpur's point estimates under plain averaging suggest it is pulled toward
+    Delhi's harder, dirtier regime -- not established, on 23 held-out rows -- and
+    that is largely a difference of level; this is the cheapest change that
+    could undo it.
 
     Args:
         global_weights: The federated model, whose last weight is the intercept.
@@ -247,6 +248,60 @@ def refit_intercept(
     # is the least-squares intercept for fixed slopes.
     weights[-1] = global_weights[-1] + float(np.mean(residual))
     return weights
+
+
+def run_in_process(
+    training_sets: Sequence[tuple[str, np.ndarray, np.ndarray]],
+    *,
+    rounds: int,
+    local_epochs: int,
+    learning_rate: float,
+    l2: float,
+    proximal_mu: float,
+) -> tuple[np.ndarray, GlobalScaler]:
+    """Run the whole federation in one process, with no transport.
+
+    The reference the Flower transport is held to: every step here is
+    deterministic, so a run across processes must reproduce these weights
+    exactly, and a transport that does not has a bug rather than a variance.
+
+    Args:
+        training_sets: ``(node, features, targets)`` per node, unscaled.
+        rounds: Training rounds after the statistics exchange.
+        local_epochs: Local steps per round.
+        learning_rate: Step size.
+        l2: Ridge penalty.
+        proximal_mu: FedProx strength.
+
+    Returns:
+        The global weights and the scaler they assume.
+    """
+    scaler = aggregate_statistics(
+        [compute_statistics(features) for _, features, _ in training_sets]
+    )
+    global_weights = np.zeros(len(scaler.mean) + 1)
+
+    for _ in range(rounds):
+        updates = [
+            LocalUpdate(
+                node=node,
+                weights=train_local(
+                    add_bias_column(scaler.transform(features)),
+                    targets,
+                    initial_weights=global_weights,
+                    global_weights=global_weights,
+                    epochs=local_epochs,
+                    learning_rate=learning_rate,
+                    l2=l2,
+                    proximal_mu=proximal_mu,
+                ),
+                sample_count=len(targets),
+            )
+            for node, features, targets in training_sets
+        ]
+        global_weights = federated_average(updates)
+
+    return global_weights, scaler
 
 
 def add_bias_column(features: np.ndarray) -> np.ndarray:

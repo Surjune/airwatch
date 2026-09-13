@@ -486,6 +486,49 @@ MODEL_COMPARISON_TOLERANCE: Final[float] = 0.02
 #: federated start point into a local-only model.
 FL_FINE_TUNE_EPOCHS: Final[int] = 30
 
+#: Local gradient steps per round. Enough for a node's update to carry its data,
+#: few enough that ten rounds still leave the average in charge rather than each
+#: node converging alone between aggregations.
+FL_LOCAL_EPOCHS: Final[int] = 30
+
+#: Gradient-descent step size on standardised features. Stable for a ridge
+#: objective whose features have unit variance by construction.
+FL_LEARNING_RATE: Final[float] = 0.05
+
+#: Ridge penalty on node models. Small: it keeps weights finite on a node whose
+#: lag features are nearly collinear, without shrinking the climatology signal.
+FL_L2: Final[float] = 0.01
+
+#: Distance, in metres, within which a station belongs to a federated node.
+#: Wider than PILOT_CITY_RADIUS_M, which scopes live coverage counts, because the
+#: federated task needs every usable series around a city; the published transfer
+#: results were measured with this radius, so it is not unified with that one.
+FL_NODE_RADIUS_M: Final[float] = 40_000.0
+
+#: The single horizon the federated forecast is trained and compared at. One
+#: horizon keeps the comparison between local and global models clean.
+FL_HORIZON_HOURS: Final[int] = 24
+
+#: Hours between issue times sampled from a station's history, matching the
+#: forecast validation so federated and centralised results are comparable.
+FL_ISSUE_STRIDE: Final[int] = 3
+
+#: Smallest number of usable rows for a node to participate. Below it a temporal
+#: split leaves a holdout too small to report anything about.
+FL_MIN_NODE_ROWS: Final[int] = 20
+
+#: How far from the target hour an observation may be and still count as the
+#: outcome. Inside the 1-hour reporting cadence, so it never borrows the next hour.
+FL_TARGET_MATCH_SECONDS: Final[int] = 2700
+
+#: Where the federation server listens. Loopback by default: exposing it beyond
+#: one machine is a deployment decision that needs TLS, which v1 does not set up.
+FL_SERVER_ADDRESS: Final[str] = "127.0.0.1:8080"
+
+#: How long, in seconds, the server waits for every expected node to connect
+#: before giving up. Long enough to start the nodes by hand in separate terminals.
+FL_NODE_WAIT_SECONDS: Final[int] = 300
+
 
 # ---------------------------------------------------------------------------
 # External clients

@@ -38,8 +38,10 @@ dev = [
     "pandas-stubs>=2.2",
     "types-redis>=4.6",
 ]
+# The nodes use Flower's start_server/start_client, deprecated in favour of the
+# SuperLink/SuperNode deployment; capped below 2 so they cannot disappear under us.
 federated = [
-    "flwr>=1.13",
+    "flwr>=1.36,<2",
 ]
 
 [build-system]
@@ -109,7 +111,7 @@ exclude = ["^build/", "^dist/"]
 
 [[tool.mypy.overrides]]
 # These ship without stubs.
-module = ["h3.*", "lightgbm.*", "geoalchemy2.*", "shapely.*", "flwr.*", "sklearn.*"]
+module = ["h3.*", "lightgbm.*", "geoalchemy2.*", "shapely.*", "sklearn.*"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------

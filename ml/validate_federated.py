@@ -23,13 +23,9 @@ from __future__ import annotations
 
 import argparse
 import sys
-from collections import defaultdict
-from dataclasses import dataclass
-from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
-from sqlalchemy import select
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "backend"
@@ -37,14 +33,19 @@ for path in (str(BACKEND), str(ROOT)):
     if path not in sys.path:
         sys.path.insert(0, path)
 
+from federated.node_data import (  # noqa: E402
+    NodeData,
+    build_node,
+    federated_columns,
+    load_city_series,
+)
 from federated.strategy import (  # noqa: E402
-    LocalUpdate,
     add_bias_column,
     aggregate_statistics,
     compute_statistics,
-    federated_average,
     fine_tune,
     refit_intercept,
+    run_in_process,
     train_local,
 )
 
@@ -52,229 +53,23 @@ from app.core.constants import (  # noqa: E402
     BOOTSTRAP_CONFIDENCE,
     BOOTSTRAP_RESAMPLES,
     FL_FINE_TUNE_EPOCHS,
+    FL_HORIZON_HOURS,
+    FL_L2,
+    FL_LEARNING_RATE,
+    FL_LOCAL_EPOCHS,
     FL_MIN_AVAILABLE_CLIENTS,
     FL_NEGATIVE_TRANSFER_TOLERANCE,
     FL_NUM_ROUNDS,
     FL_PROXIMAL_MU,
     FORECAST_LAG_HOURS_SHORT,
-    FORECAST_TEST_FRACTION,
+    PILOT_CITY_CENTRES,
     RANDOM_SEED,
     VALIDATION_DATA_UNTIL,
 )
 from app.core.enums import Pollutant  # noqa: E402
-from app.core.geo import haversine_distance_m  # noqa: E402
 from app.core.evidence import Effect, EffectEstimate, classify, paired_bootstrap  # noqa: E402
 from app.core.logging import configure_logging  # noqa: E402
-from app.ml.forecast_features import (  # noqa: E402
-    FEDERATED_EXCLUDED_PREFIXES,
-    ForecastInputs,
-    build_climatology,
-    build_features,
-    feature_names,
-)
-from app.repositories.models import Measurement, Station  # noqa: E402
-from app.repositories.session import session_scope  # noqa: E402
-
-#: City centres. A station belongs to the nearest centre within the radius.
-CITY_CENTRES: dict[str, tuple[float, float]] = {
-    "delhi": (77.2090, 28.6139),
-    "kanpur": (80.3319, 26.4499),
-    "coimbatore": (76.9558, 11.0168),
-}
-
-#: Radius, in metres, within which a station is assigned to a city.
-_CITY_RADIUS_M = 40_000.0
-
-#: Forecast horizon used for the federated task. One horizon keeps the
-#: comparison between local and global models clean.
-_HORIZON_HOURS = 24
-
-#: Issue-hour stride, matching the forecast validation.
-_ISSUE_STRIDE = 3
-
-
-_LOCAL_EPOCHS = 30
-_LEARNING_RATE = 0.05
-_L2 = 0.01
-
-
-@dataclass(slots=True)
-class NodeData:
-    """One city's training and test matrices."""
-
-    name: str
-    x_train: np.ndarray
-    y_train: np.ndarray
-    x_test: np.ndarray
-    y_test: np.ndarray
-    stations: int
-
-
-def federated_columns(columns: tuple[str, ...]) -> tuple[str, ...]:
-    """Restrict the feature set to what every node can compute.
-
-    The exclusion list is defined alongside the model in
-    ``app.ml.forecast_features`` so the schema this experiment trains on and the
-    schema a node publishes in its model card cannot drift apart.
-    """
-    return tuple(
-        name for name in columns if not name.startswith(FEDERATED_EXCLUDED_PREFIXES)
-    )
-
-
-def assign_city(position: tuple[float, float]) -> str | None:
-    """Assign a station to the nearest pilot city, if any is close enough."""
-    best: tuple[str, float] | None = None
-    for city, centre in CITY_CENTRES.items():
-        distance = haversine_distance_m(position, centre)
-        if distance <= _CITY_RADIUS_M and (best is None or distance < best[1]):
-            best = (city, distance)
-    return best[0] if best else None
-
-
-def load_city_series(
-    pollutant: Pollutant,
-) -> tuple[dict[str, dict[int, dict[datetime, float]]], dict[str, int]]:
-    """Load each city's per-station hourly series."""
-    by_city: dict[str, dict[int, dict[datetime, float]]] = defaultdict(lambda: defaultdict(dict))
-    station_counts: dict[str, int] = defaultdict(int)
-
-    with session_scope() as session:
-        positions = {
-            station_id: (float(lon), float(lat))
-            for station_id, lon, lat in session.execute(
-                select(Station.id, Station.geom.ST_X(), Station.geom.ST_Y())
-            ).all()
-        }
-        rows = session.execute(
-            select(Measurement.station_id, Measurement.observed_at, Measurement.value_raw).where(
-                Measurement.pollutant == pollutant,
-                Measurement.is_plausible.is_(True),
-                Measurement.observed_at < VALIDATION_DATA_UNTIL,
-            )
-        ).all()
-
-    seen: dict[str, set[int]] = defaultdict(set)
-    for station_id, observed_at, value in rows:
-        position = positions.get(station_id)
-        if position is None:
-            continue
-        city = assign_city(position)
-        if city is None:
-            continue
-        by_city[city][station_id][observed_at] = float(value)
-        seen[city].add(station_id)
-
-    for city, station_ids in seen.items():
-        station_counts[city] = len(station_ids)
-
-    return by_city, station_counts
-
-
-def build_node(
-    name: str,
-    series: dict[int, dict[datetime, float]],
-    columns: tuple[str, ...],
-    stations: int,
-) -> NodeData | None:
-    """Build one city's forecast matrices, split temporally."""
-    rows: list[tuple[datetime, list[float], float]] = []
-
-    for history in series.values():
-        if len(history) < 2:
-            continue
-        ordered = sorted(history)
-
-        for index in range(0, len(ordered), _ISSUE_STRIDE):
-            issued_at = ordered[index]
-            known = {when: value for when, value in history.items() if when <= issued_at}
-            if not known:
-                continue
-
-            target = _actual_near(history, issued_at, _HORIZON_HOURS)
-            if target is None:
-                continue
-
-            inputs = ForecastInputs(
-                history=known,
-                climatology=build_climatology(known),
-                issue_weather=None,
-                target_weather=None,
-            )
-            features = build_features(inputs, issued_at, _HORIZON_HOURS)
-            if features is None:
-                continue
-
-            vector = [features[name] for name in columns]
-            if any(np.isnan(vector)):
-                # A node cannot train on rows with missing lags, and imputing
-                # them would put invented history into a federated model that
-                # other cities then inherit.
-                continue
-            rows.append((issued_at, vector, target))
-
-    if len(rows) < 20:
-        return None
-
-    rows.sort(key=lambda row: row[0])
-    issue_times = sorted({row[0] for row in rows})
-    cutoff = issue_times[int(len(issue_times) * (1 - FORECAST_TEST_FRACTION))]
-
-    train = [row for row in rows if row[0] < cutoff]
-    test = [row for row in rows if row[0] >= cutoff]
-    if not train or not test:
-        return None
-
-    return NodeData(
-        name=name,
-        x_train=np.array([row[1] for row in train]),
-        y_train=np.array([row[2] for row in train]),
-        x_test=np.array([row[1] for row in test]),
-        y_test=np.array([row[2] for row in test]),
-        stations=stations,
-    )
-
-
-def _actual_near(
-    history: dict[datetime, float], issued_at: datetime, horizon_hours: int
-) -> float | None:
-    """The observation nearest the target hour, within 45 minutes."""
-    target_time = issued_at + timedelta(hours=horizon_hours)
-    exact = history.get(target_time)
-    if exact is not None:
-        return exact
-    for observed_at, value in history.items():
-        if abs((observed_at - target_time).total_seconds()) <= 2700:
-            return value
-    return None
-
-
-def run_federation(nodes: list[NodeData], rounds: int, proximal_mu: float) -> np.ndarray:
-    """Run FedAvg across the nodes and return the global weights."""
-    scaler = aggregate_statistics([compute_statistics(node.x_train) for node in nodes])
-    n_features = nodes[0].x_train.shape[1] + 1  # plus the bias column
-    global_weights = np.zeros(n_features)
-
-    for _ in range(rounds):
-        updates = []
-        for node in nodes:
-            features = add_bias_column(scaler.transform(node.x_train))
-            weights = train_local(
-                features,
-                node.y_train,
-                initial_weights=global_weights,
-                global_weights=global_weights,
-                epochs=_LOCAL_EPOCHS,
-                learning_rate=_LEARNING_RATE,
-                l2=_L2,
-                proximal_mu=proximal_mu,
-            )
-            updates.append(
-                LocalUpdate(node=node.name, weights=weights, sample_count=len(node.y_train))
-            )
-        global_weights = federated_average(updates)
-
-    return global_weights
+from app.ml.forecast_features import feature_names  # noqa: E402
 
 
 def train_local_only(node: NodeData, scaler_source: list[NodeData]) -> np.ndarray:
@@ -285,9 +80,9 @@ def train_local_only(node: NodeData, scaler_source: list[NodeData]) -> np.ndarra
         features,
         node.y_train,
         initial_weights=np.zeros(features.shape[1]),
-        epochs=_LOCAL_EPOCHS * FL_NUM_ROUNDS,
-        learning_rate=_LEARNING_RATE,
-        l2=_L2,
+        epochs=FL_LOCAL_EPOCHS * FL_NUM_ROUNDS,
+        learning_rate=FL_LEARNING_RATE,
+        l2=FL_L2,
     )
     return weights
 
@@ -302,11 +97,11 @@ def main() -> int:
     np.random.seed(RANDOM_SEED)
 
     columns = federated_columns(feature_names(FORECAST_LAG_HOURS_SHORT))
-    series, station_counts = load_city_series(Pollutant.PM25)
+    series, station_counts = load_city_series(Pollutant.PM25, until=VALIDATION_DATA_UNTIL)
 
     print(f"shared feature schema: {len(columns)} features every node can compute")
     print("city data available:")
-    for city in CITY_CENTRES:
+    for city in PILOT_CITY_CENTRES:
         readings = sum(len(h) for h in series.get(city, {}).values())
         print(f"  {city:<12} stations={station_counts.get(city, 0):>3}  readings={readings:>6}")
 
@@ -323,13 +118,19 @@ def main() -> int:
         print(f"Need at least {FL_MIN_AVAILABLE_CLIENTS} nodes to federate; aborting.")
         return 1
 
-    global_weights = run_federation(nodes, args.rounds, args.proximal_mu)
-    scaler = aggregate_statistics([compute_statistics(node.x_train) for node in nodes])
+    global_weights, scaler = run_in_process(
+        [(node.name, node.x_train, node.y_train) for node in nodes],
+        rounds=args.rounds,
+        local_epochs=FL_LOCAL_EPOCHS,
+        learning_rate=FL_LEARNING_RATE,
+        l2=FL_L2,
+        proximal_mu=args.proximal_mu,
+    )
 
     print()
     print("=" * 78)
     print(
-        f"FEDERATED TRANSFER  (pm25, +{_HORIZON_HOURS}h, "
+        f"FEDERATED TRANSFER  (pm25, +{FL_HORIZON_HOURS}h, "
         f"{args.rounds} rounds, mu={args.proximal_mu}, fine-tune {FL_FINE_TUNE_EPOCHS} epochs)"
     )
     print("=" * 78)
@@ -352,8 +153,8 @@ def main() -> int:
                 train_features,
                 node.y_train,
                 epochs=FL_FINE_TUNE_EPOCHS,
-                learning_rate=_LEARNING_RATE,
-                l2=_L2,
+                learning_rate=FL_LEARNING_RATE,
+                l2=FL_L2,
                 proximal_mu=args.proximal_mu,
             ),
             "local head": refit_intercept(global_weights, train_features, node.y_train),
