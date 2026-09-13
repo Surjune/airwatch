@@ -21,6 +21,7 @@ from app.routes import (
     citizen_sensors,
     complaints,
     federation,
+    guide,
     health,
     interop,
     official_aqi,
@@ -116,6 +117,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(satellite.router, prefix=API_PREFIX)
     app.include_router(official_aqi.router, prefix=API_PREFIX)
     app.include_router(operator.router, prefix=API_PREFIX)
+    app.include_router(guide.router, prefix=API_PREFIX)
 
     if settings is not None:
         # Routes resolve settings through Depends(get_settings), which returns the

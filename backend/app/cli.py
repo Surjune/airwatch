@@ -29,6 +29,7 @@ from app.services import (
     plausibility_service,
     satellite_service,
     seed_service,
+    voice_guide_service,
 )
 from app.services.alert_service import DEFAULT_DISPATCH_WINDOW_HOURS
 from app.services.ingestion_service import IngestionReport, IngestionService, SourceResult
@@ -243,6 +244,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     replay.add_argument("--event", required=True, help="Fixture name under infra/fixtures")
 
+    subparsers.add_parser(
+        "voice-guide",
+        help="Generate the spoken guide's audio in advance, so no listener waits for it",
+    )
+
     args = parser.parse_args(argv)
     settings = get_settings()
     configure_logging(level=settings.log_level, json_output=False)
@@ -278,6 +284,15 @@ def main(argv: list[str] | None = None) -> int:
         for pollutant, count in flagged.items():
             print(f"{pollutant.value:<5} flagged implausible: {count}")
         return 0
+
+    if args.command == "voice-guide":
+        with session_scope() as session:
+            warmed = asyncio.run(voice_guide_service.warm(session, settings))
+        print("")
+        print(f"already stored : {warmed.already_stored}")
+        print(f"generated now  : {warmed.synthesised}")
+        print(f"failed         : {warmed.failed}")
+        return 0 if warmed.failed == 0 else _EXIT_PARTIAL_FAILURE
 
     if args.command == "seed":
         with session_scope() as session:

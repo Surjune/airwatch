@@ -28,6 +28,7 @@ CREDENTIAL_SOURCES: dict[str, tuple[str, str]] = {
     "cpcb_api_key": ("CPCB (data.gov.in)", "CPCB_API_KEY"),
     "firms_map_key": ("NASA FIRMS", "FIRMS_MAP_KEY"),
     "gee_service_account_email": ("Google Earth Engine", "GEE_SERVICE_ACCOUNT_EMAIL"),
+    "sarvam_api_key": ("Sarvam AI (voice guide)", "SARVAM_API_KEY"),
 }
 
 
@@ -101,6 +102,12 @@ class Settings(BaseSettings):
     #: Earth Engine has required a registered Cloud project since November 2024,
     #: and ee.Initialize() will not authenticate without it.
     gee_project_id: str = ""
+
+    # -- Voice guide ---------------------------------------------------------
+    #: Sarvam AI subscription key, used only to voice the spoken guide. Without
+    #: it the guide is still served as text, and any clip already synthesised
+    #: keeps playing, because clips are stored once generated.
+    sarvam_api_key: str = ""
 
     @field_validator("operator_api_key")
     @classmethod

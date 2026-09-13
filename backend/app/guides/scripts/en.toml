@@ -1,0 +1,279 @@
+# The voice guide in English.
+#
+# Each paragraph is shown as a transcript and synthesised on its own. Keep the
+# interface's own labels ("Open the map") exactly as they appear on screen, so a
+# listener can find what is being described. Terms that are written one way and
+# said another go in [spoken].
+
+language = "en"
+
+[spoken]
+"NO₂" = "N O 2"
+
+# --- Overview -----------------------------------------------------------------
+
+[screens.overview]
+title = "The Overview page"
+
+[[screens.overview.sections]]
+heading = "What this page is for"
+text = """
+This is the Overview, the best place to start. It shows the air in your chosen
+city right now. To change the city, use the city name at the top of the screen.
+To switch between fine dust, PM2.5, and coarser dust, PM10, use the buttons
+beside the heading.
+"""
+
+[[screens.overview.sections]]
+heading = "Right now"
+text = """
+Section one, Right now, shows the official Air Quality Index published by CPCB,
+and the latest reading at every government monitor in the city. The colours
+follow the national scale: green is good air, then yellow and orange, and dark
+red is severe.
+"""
+
+[[screens.overview.sections]]
+heading = "What the network can see"
+text = """
+Section two counts every kind of information this city has: accurate government
+monitors, cheaper community sensors, satellites, and readings sent in by
+residents. Each is kept separate, so you can see where the city is well watched,
+and where it is not.
+"""
+
+[[screens.overview.sections]]
+heading = "What is unexpected"
+text = """
+Section three lists hotspots. A hotspot is a monitor that reads far higher than
+its neighbours predict, for hours at a time. That is how a single fire, factory
+or building site shows up, even when the city average looks normal. Press Open
+the map to see where they are.
+"""
+
+[[screens.overview.sections]]
+heading = "Who has been told"
+text = """
+Section four shows the alerts sent to the authority responsible for each place.
+Section five explains the whole chain, step by step. To add a photograph or a
+sensor reading of your own, open Contribute.
+"""
+
+# --- Live map -----------------------------------------------------------------
+
+[screens.map]
+title = "The Live map"
+
+[[screens.map.sections]]
+heading = "Reading the map"
+text = """
+This is the live map. Each filled circle is a government monitor, coloured by its
+latest reading. Tap or click a circle to see the monitor's name, its reading, and
+when it was measured. To zoom, pinch with two fingers, or use the plus and minus
+buttons.
+"""
+
+[[screens.map.sections]]
+heading = "More layers"
+text = """
+The buttons above the map add less certain information. Community sensors appear
+as dashed rings, and residents' readings as small squares. Satellite NO₂ shades
+the map with nitrogen dioxide measured from space. Each is drawn differently, so
+none of them can be mistaken for a government monitor.
+"""
+
+[[screens.map.sections]]
+heading = "Hotspots"
+text = """
+Hotspots are places reading far above what their neighbourhood predicts. On a
+computer, the list is on the right. On a phone, tap the Detected hotspots bar at
+the bottom to open it. Each one shows the reading, what was expected, and how
+long it lasted.
+"""
+
+[[screens.map.sections]]
+heading = "Possible sources"
+text = """
+Under each hotspot, Possible sources traces the wind backwards, and ranks nearby
+fires, landfills and factories, each with a percentage. These are places worth
+inspecting, not proof of who caused the pollution.
+"""
+
+[[screens.map.sections]]
+heading = "If the map is empty"
+text = """
+If nothing appears, read the message on the screen. An empty map can mean the
+city has too few monitors, or that the data could not be loaded. It never means
+the air is clean.
+"""
+
+# --- Forecast -----------------------------------------------------------------
+
+[screens.corridor]
+title = "The Forecast page"
+
+[[screens.corridor.sections]]
+heading = "Choose a route"
+text = """
+This page forecasts the air along busy routes, such as highways and industrial
+roads. First, choose a route from the cards at the top. Then choose how far ahead
+to look: 24, 48 or 72 hours.
+"""
+
+[[screens.corridor.sections]]
+heading = "Reading the strips"
+text = """
+The coloured strip runs from the start of the route to its end, and each colour
+is an air quality band. The second strip is the upper bound: the forecast plus
+its uncertainty. When you are deciding for a child, an older person, or someone
+with asthma, go by the second strip.
+"""
+
+[[screens.corridor.sections]]
+heading = "Gaps in the route"
+text = """
+Where no monitor is close enough, that stretch has no forecast, and the page
+tells you how many kilometres are missing. Treat those stretches as unknown, not
+as clean.
+"""
+
+[[screens.corridor.sections]]
+heading = "When to travel"
+text = """
+The When to travel panel compares departure times through the day, and shows how
+much pollution you avoid by leaving at a better hour. If the difference is
+smaller than the forecast's own error, it does not suggest an hour at all.
+"""
+
+[[screens.corridor.sections]]
+heading = "What it cannot tell you"
+text = """
+This forecast knows the usual pattern of a day: when the air is normally better
+or worse. It cannot tell you that tomorrow will be worse than today.
+"""
+
+# --- Authority console ----------------------------------------------------------
+
+[screens.alerts]
+title = "The Authority console"
+
+[[screens.alerts.sections]]
+heading = "What this page is for"
+text = """
+This is the authority console, where a hotspot becomes someone's responsibility.
+Each alert goes to the district administration whose boundary the hotspot falls
+inside.
+"""
+
+[[screens.alerts.sections]]
+heading = "The four numbers"
+text = """
+The four numbers at the top count open alerts, alerts past their deadline with
+no answer, requests sent across a boundary, and alerts that were recorded but not
+yet delivered.
+"""
+
+[[screens.alerts.sections]]
+heading = "Across a boundary"
+text = """
+When the likely source of the pollution is in a neighbouring district or state,
+that authority is asked to act as well. To see only these requests, choose Across
+a boundary in the filter. The filter can also show open, resolved, or all alerts.
+"""
+
+[[screens.alerts.sections]]
+heading = "Acting on an alert"
+text = """
+Officials Sign in with the operator key. They can then Acknowledge an alert, and
+Resolve it with a note saying what was done. Everyone else can read every alert,
+but cannot change one.
+"""
+
+# --- Federation -----------------------------------------------------------------
+
+[screens.federation]
+title = "The Federation page"
+
+[[screens.federation.sections]]
+heading = "What this page is for"
+text = """
+This page shows how cities learn from each other without handing over their
+data. Each city trains a forecasting model on its own readings, and shares only
+what the model learned, never the readings themselves.
+"""
+
+[[screens.federation.sections]]
+heading = "Each city's node"
+text = """
+The diagram and the table show each city's node: how many monitors it has, how
+many reported recently, and how many readings it holds. A node marked stale, or
+with no data, cannot contribute much yet.
+"""
+
+[[screens.federation.sections]]
+heading = "Did sharing help?"
+text = """
+The cards below test, for each city, whether the shared model forecasts better
+than the city's own model, on data neither had seen before. Every result comes
+with a range, and the page says helped or harmed only when that range is clear.
+"""
+
+[[screens.federation.sections]]
+heading = "The honest answer"
+text = """
+For now, the data cannot show that sharing helps, and the page says so plainly.
+The last card explains what evidence would settle it.
+"""
+
+# --- Contribute -----------------------------------------------------------------
+
+[screens.citizen]
+title = "The Contribute page"
+
+[[screens.citizen.sections]]
+heading = "What this page is for"
+text = """
+This is where you add what you see around you. There are three tabs: Photograph,
+Sensor reading, and Your reports.
+"""
+
+[[screens.citizen.sections]]
+heading = "Sending a photograph"
+text = """
+To send a photograph, take a daytime picture that shows open sky and some
+distance. Dark, blurred or very bright photos are refused, because they make
+clean air look polluted. Then press Use my location, or type in the latitude and
+longitude.
+"""
+
+[[screens.citizen.sections]]
+heading = "Sending a sensor reading"
+text = """
+If you have an air quality sensor at home, choose Sensor reading. Enter whether
+it shows PM2.5 or PM10, the value, the sensor model, when it measured, and where
+it is. Your reading is compared with the nearest government monitor.
+"""
+
+[[screens.citizen.sections]]
+heading = "Describing your complaint"
+text = """
+With either one, you can choose what you saw, such as open burning, industrial
+smoke or construction dust, and describe it in your own words, in English, Hindi
+or Tamil.
+"""
+
+[[screens.citizen.sections]]
+heading = "Your PDF report"
+text = """
+After you submit, you get a reference number and a Download PDF report button.
+The report records what you reported, what was measured, the nearest monitor, and
+the authority responsible for that place, ready to attach to a complaint. The
+Your reports tab keeps everything sent from this device.
+"""
+
+[[screens.citizen.sections]]
+heading = "Who can see it"
+text = """
+Only this browser can open your reports. AirWatch does not send your complaint to
+any office by itself, so you decide where to file it.
+"""

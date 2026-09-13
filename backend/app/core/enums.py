@@ -142,3 +142,30 @@ class AlertKind(StrEnum):
 
     LOCAL = "local"
     COORDINATION = "coordination"
+
+
+class GuideScreen(StrEnum):
+    """A screen of the web interface that has a spoken guide.
+
+    Mirrors the frontend's screen keys, so a guide is addressed by the same word
+    the address bar shows.
+    """
+
+    OVERVIEW = "overview"
+    MAP = "map"
+    CORRIDOR = "corridor"
+    ALERTS = "alerts"
+    FEDERATION = "federation"
+    CITIZEN = "citizen"
+
+
+class GuideLanguage(StrEnum):
+    """A language the voice guide is written and spoken in.
+
+    Hindi and Tamil because the pilot cities are Delhi-NCR and Kanpur, and
+    Coimbatore; English for everyone else. Values are ISO 639-1 codes.
+    """
+
+    ENGLISH = "en"
+    HINDI = "hi"
+    TAMIL = "ta"

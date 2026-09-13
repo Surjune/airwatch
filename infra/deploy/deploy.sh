@@ -44,6 +44,13 @@ for _ in $(seq 1 60); do
   sleep 5
 done
 
+# The spoken guide is fixed text, so its audio is generated once here rather
+# than while a listener waits. Paragraphs already stored cost nothing.
+if grep -Eq "^SARVAM_API_KEY=.+" .env; then
+  say "Preparing the spoken guide"
+  "${COMPOSE[@]}" exec -T api python -m app.cli voice-guide || true
+fi
+
 if [ "${1:-}" = "--first-load" ]; then
   say "Loading history: stations, 14 days of PM2.5 and PM10, official AQI, satellite"
   for city in delhi kanpur coimbatore; do

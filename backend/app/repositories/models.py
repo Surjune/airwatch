@@ -31,6 +31,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     UniqueConstraint,
     func,
@@ -731,4 +732,28 @@ class CitizenSensorReading(Base):
         CheckConstraint("value >= 0", name="ck_citizen_sensor_value_non_negative"),
         Index("ix_citizen_sensor_readings_observed", "observed_at"),
         Index("ix_citizen_sensor_readings_geom", "geom", postgresql_using="gist"),
+    )
+
+
+class VoiceGuideClip(Base):
+    """Synthesised speech for one paragraph of the voice guide.
+
+    Stored so each paragraph is paid for once, not once per listener: the guide
+    is fixed text, so the same words in the same voice always produce the same
+    clip. The key is a hash of everything that shapes the audio -- the words, the
+    language, the voice, the model and its settings -- so an edited paragraph
+    gets a new clip and the old one simply stops being asked for.
+    """
+
+    __tablename__ = "voice_guide_clips"
+
+    #: SHA-256 of the synthesis inputs, in hex.
+    cache_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    #: ISO 639-1 guide language, kept so stale clips can be found and pruned.
+    language: Mapped[str] = mapped_column(String(8), nullable=False)
+    model: Mapped[str] = mapped_column(String(32), nullable=False)
+    speaker: Mapped[str] = mapped_column(String(32), nullable=False)
+    audio: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )

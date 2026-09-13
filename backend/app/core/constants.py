@@ -1106,3 +1106,66 @@ PILOT_CITY_CPCB_NAMES: Final[dict[str, str]] = {
 #: neither does AirWatch -- the sub-indices are still shown, individually.
 #: Source: CPCB National Air Quality Index methodology (2014).
 AQI_MIN_POLLUTANTS: Final[int] = 3
+
+
+# ---------------------------------------------------------------------------
+# Voice guide (Sarvam AI text-to-speech)
+# ---------------------------------------------------------------------------
+
+#: Sarvam AI API root. Sarvam builds speech models for Indian languages, which is
+#: why it voices the guide: a general-purpose engine reads Tamil with an accent a
+#: Coimbatore resident notices in the first sentence.
+SARVAM_BASE_URL: Final[str] = "https://api.sarvam.ai"
+
+#: Text-to-speech endpoint, relative to the root.
+SARVAM_TTS_PATH: Final[str] = "/text-to-speech"
+
+#: Speech model. Bulbul v3 is Sarvam's current model and reads code-mixed text,
+#: so an English term left inside a Hindi sentence is still pronounced properly.
+SARVAM_TTS_MODEL: Final[str] = "bulbul:v3"
+
+#: Longest text Bulbul v3 accepts in one request, in characters (Sarvam API
+#: reference). Each guide paragraph is synthesised on its own, well below this.
+SARVAM_TTS_MAX_CHARACTERS: Final[int] = 2500
+
+#: Timeout for one synthesis request, in seconds. Longer than the default for
+#: data APIs: a paragraph of speech takes several seconds to generate.
+SARVAM_TTS_TIMEOUT_SECONDS: Final[float] = 60.0
+
+#: Audio format requested. MP3 rather than Sarvam's default WAV: about a tenth
+#: of the size, which matters on a phone on mobile data.
+VOICE_GUIDE_AUDIO_CODEC: Final[str] = "mp3"
+
+#: Media type the audio is served with, matching the codec.
+VOICE_GUIDE_MEDIA_TYPE: Final[str] = "audio/mpeg"
+
+#: Output sample rate, in hertz. Sarvam's default, and ample for speech.
+VOICE_GUIDE_SAMPLE_RATE_HZ: Final[int] = 24000
+
+#: Speaking pace, where 1.0 is the model's natural rate (v3 accepts 0.5-2.0).
+#: A little slower, because a guide is heard by someone meeting these words for
+#: the first time.
+VOICE_GUIDE_PACE: Final[float] = 0.95
+
+#: BCP-47 language code Sarvam expects, per guide language.
+VOICE_GUIDE_LANGUAGE_CODES: Final[dict[str, str]] = {
+    "en": "en-IN",
+    "hi": "hi-IN",
+    "ta": "ta-IN",
+}
+
+#: Bulbul v3 voice per guide language. One voice for English and Hindi, so a
+#: listener switching between them hears the same guide.
+VOICE_GUIDE_SPEAKERS: Final[dict[str, str]] = {
+    "en": "priya",
+    "hi": "priya",
+    "ta": "kavitha",
+}
+
+#: Characters of the clip hash used as its version in an audio URL. Twelve hex
+#: characters is 48 bits, beyond any chance of two scripts colliding.
+VOICE_GUIDE_VERSION_LENGTH: Final[int] = 12
+
+#: How long a browser may keep a versioned clip, in seconds (one year). Safe
+#: because the URL changes whenever the words or the voice do.
+VOICE_GUIDE_CACHE_MAX_AGE_SECONDS: Final[int] = 31_536_000
