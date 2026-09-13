@@ -80,6 +80,11 @@ TEST_DATABASE_URL = os.environ.get(
     "postgresql+psycopg://airwatch:airwatch@localhost:5433/airwatch_test",
 )
 
+#: Set in CI to turn an unreachable database from a skip into a failure. Locally
+#: a skip keeps a clean clone green; in CI it would let the integration suite
+#: silently not run while the build still reported success.
+REQUIRE_DATABASE = os.environ.get("AIRWATCH_REQUIRE_DATABASE", "").lower() in {"1", "true", "yes"}
+
 #: The maintenance database used only to create the test database itself.
 _ADMIN_DATABASE_URL = TEST_DATABASE_URL.rsplit("/", 1)[0] + "/postgres"
 
@@ -118,7 +123,13 @@ def engine() -> Iterator[Engine]:
         with created.connect():
             pass
     except SQLAlchemyError as error:
-        pytest.skip(f"no PostgreSQL with PostGIS at {TEST_DATABASE_URL}: {error}")
+        message = f"no PostgreSQL with PostGIS at {TEST_DATABASE_URL}: {error}"
+        if REQUIRE_DATABASE:
+            # In CI a skip would be indistinguishable from a pass at a glance, and
+            # the database tests are the ones that cover the SQL. Failing loudly is
+            # the only way to be sure they actually ran.
+            pytest.fail(message)
+        pytest.skip(message)
 
     # Tables are built from the ORM metadata rather than by running Alembic.
     # The migrations are the deployment path; what these tests need is a schema

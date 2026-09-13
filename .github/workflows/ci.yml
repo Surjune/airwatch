@@ -11,16 +11,41 @@ concurrency:
 
 jobs:
   backend:
-    name: Backend — lint, types, tests
+    name: Backend — lint, types, migrations, tests
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
 
-    steps:
-      - uses: actions/checkout@v4
+    services:
+      # The same image the compose stack runs, so the SQL under test is the SQL
+      # that deploys: PostGIS for spatial queries, TimescaleDB for hypertables.
+      postgres:
+        image: timescale/timescaledb-ha:pg16
+        env:
+          POSTGRES_USER: airwatch
+          POSTGRES_PASSWORD: airwatch
+          POSTGRES_DB: airwatch
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U airwatch -d airwatch"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
 
-      - uses: actions/setup-python@v5
+    env:
+      DATABASE_URL: postgresql+psycopg://airwatch:airwatch@localhost:5433/airwatch
+      AIRWATCH_TEST_DATABASE_URL: postgresql+psycopg://airwatch:airwatch@localhost:5433/airwatch_test
+      # Without this the integration tests skip when the database is missing,
+      # and a skipped suite reports green. Here they must run or fail.
+      AIRWATCH_REQUIRE_DATABASE: '1'
+      PGPASSWORD: airwatch
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
           cache: pip
@@ -40,21 +65,43 @@ jobs:
       - name: Types
         run: mypy app
 
+      - name: Database extensions
+        # Compose installs these from infra/db/init on first start; a service
+        # container cannot mount that directory, so they are created here.
+        run: psql -h localhost -p 5433 -U airwatch -d airwatch -f ../infra/db/init/01-extensions.sql
+
+      - name: Migrations apply, roll back, and re-apply
+        # The tests build their schema from the models, so without this step a
+        # migration that fails -- or a downgrade that cannot be re-applied --
+        # would never be caught before a deploy.
+        run: |
+          alembic upgrade head
+          alembic downgrade base
+          alembic upgrade head
+
+      - name: Models match migrations
+        run: alembic check
+
       - name: Tests
         # Tests never make real network calls, so no upstream credentials are
         # configured here. A test that needs one is a test that is wrong.
         run: pytest
 
+      - name: Recorded episode still detected
+        # The committed fixture replayed through the real detection. Fails the
+        # build if a change stops the system finding the Anand Vihar episode.
+        run: python -m app.cli replay --event delhi-anand-vihar-august
+
   frontend:
-    name: Frontend — lint, types, tests
+    name: Frontend — lint, types, tests, build
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
 
       - name: Install
