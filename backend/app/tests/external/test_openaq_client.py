@@ -246,7 +246,7 @@ class TestLatestReadings:
         location = OpenAQLocation.model_validate(ACTIVE_LOCATION)
 
         async with build_client() as client:
-            readings = await client.latest_readings(location)
+            readings = await client.latest_readings(location, as_of=NOW)
 
         by_pollutant = {reading.pollutant: reading for reading in readings}
         assert by_pollutant[Pollutant.PM25].value == pytest.approx(118.4)
@@ -262,7 +262,7 @@ class TestLatestReadings:
         location = OpenAQLocation.model_validate(ACTIVE_LOCATION)
 
         async with build_client() as client:
-            readings = await client.latest_readings(location)
+            readings = await client.latest_readings(location, as_of=NOW)
 
         assert len(readings) == 2
         assert all(reading.sensor_id != 999_999 for reading in readings)
@@ -277,7 +277,7 @@ class TestLatestReadings:
         location = OpenAQLocation.model_validate(ACTIVE_LOCATION)
 
         async with build_client() as client:
-            readings = await client.latest_readings(location)
+            readings = await client.latest_readings(location, as_of=NOW)
 
         co = next(reading for reading in readings if reading.pollutant is Pollutant.CO)
         assert co.unit == "ug/m3"
@@ -290,7 +290,7 @@ class TestLatestReadings:
         location = OpenAQLocation.model_validate(ACTIVE_LOCATION)
 
         async with build_client() as client:
-            readings = await client.latest_readings(location)
+            readings = await client.latest_readings(location, as_of=NOW)
 
         assert readings[0].observed_at == datetime(2026, 9, 5, 18, 15, tzinfo=UTC)
 
@@ -302,7 +302,7 @@ class TestLatestReadings:
         location = OpenAQLocation.model_validate(ACTIVE_LOCATION)
 
         async with build_client() as client:
-            readings = await client.latest_readings(location)
+            readings = await client.latest_readings(location, as_of=NOW)
 
         lon, lat = readings[0].coordinates
         assert lon == pytest.approx(77.3161)
@@ -317,7 +317,7 @@ class TestLatestReadings:
         location = OpenAQLocation.model_validate(ACTIVE_LOCATION)
 
         async with build_client() as client:
-            assert await client.latest_readings(location) == []
+            assert await client.latest_readings(location, as_of=NOW) == []
 
 
 class TestStaleReadingFilter:
