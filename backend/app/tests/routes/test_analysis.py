@@ -21,6 +21,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from app.core import aqi
+from app.core.enums import Pollutant
 from app.repositories import observation_repository, station_repository
 from app.repositories.session import get_db_session
 from app.tests.services.test_analysis_service import (
@@ -219,6 +221,20 @@ class TestCorridorForecast:
             assert point["uncertainty"] > 0
             assert point["upper_bound"] == pytest.approx(point["value"] + point["uncertainty"])
             assert point["category"]
+
+    def test_carries_the_index_so_a_client_never_colours_a_concentration(
+        self, api: TestClient
+    ) -> None:
+        # 40 ug/m3 of PM2.5 is a sub-index of about 67 (Satisfactory). Colouring
+        # the raw value on the index scale would call it Good.
+        body = api.get(
+            "/v1/forecast/corridor",
+            params={"points": "77.185,28.590;77.220,28.615", "horizon_hours": 24},
+        ).json()
+
+        for point in body["points"]:
+            assert point["aqi"] == pytest.approx(aqi.sub_index(Pollutant.PM25, point["value"]))
+            assert point["upper_bound_aqi"] >= point["aqi"]
 
     def test_reports_how_much_of_the_route_is_covered(self, api: TestClient) -> None:
         # The points alone cannot express this. A route whose western stretch

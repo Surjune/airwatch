@@ -231,6 +231,8 @@ def corridor_forecast(
                 uncertainty=point.uncertainty,
                 upper_bound=point.upper_bound,
                 category=aqi.category(aqi.sub_index(pollutant, point.value)),
+                aqi=aqi.sub_index(pollutant, point.value),
+                upper_bound_aqi=aqi.sub_index(pollutant, point.upper_bound),
             )
             for point in forecasts
         ],

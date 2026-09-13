@@ -155,6 +155,13 @@ class ForecastPointResponse(BaseModel):
         description="Value plus uncertainty, which is what a precautionary decision uses."
     )
     category: str
+    aqi: float = Field(
+        description=(
+            "CPCB sub-index of the forecast value. A concentration is not an index: "
+            "a client colouring by band must use this, not the value in ug/m3."
+        ),
+    )
+    upper_bound_aqi: float = Field(description="CPCB sub-index of the upper bound.")
 
 
 class CorridorForecastResponse(BaseModel):
