@@ -14,7 +14,16 @@ from app.core.logging import configure_logging, get_logger
 from app.core.rate_limit import TokenBucketLimiter
 from app.error_handlers import register_error_handlers
 from app.middleware import RateLimitMiddleware, RequestContextMiddleware
-from app.routes import alerts, analysis, citizen, federation, health, interop, satellite
+from app.routes import (
+    alerts,
+    analysis,
+    citizen,
+    federation,
+    health,
+    interop,
+    official_aqi,
+    satellite,
+)
 from app.services.health_service import APP_VERSION
 
 logger = get_logger(__name__)
@@ -100,6 +109,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(citizen.router, prefix=API_PREFIX)
     app.include_router(federation.router, prefix=API_PREFIX)
     app.include_router(satellite.router, prefix=API_PREFIX)
+    app.include_router(official_aqi.router, prefix=API_PREFIX)
 
     if settings is not None:
         # Routes resolve settings through Depends(get_settings), which returns the

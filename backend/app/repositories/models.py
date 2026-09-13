@@ -281,6 +281,41 @@ class FireDetection(Base):
     )
 
 
+class OfficialSubIndex(Base):
+    """A station's official CPCB sub-index for one pollutant, as CPCB published it.
+
+    Kept apart from ``measurements`` on purpose. These are indices averaged over
+    CPCB's own periods (24 hours for particulates), not hourly concentrations, and
+    mixing the two would let a daily average stand in for an hour in detection.
+    They exist to show what the official feed says right now, including for the
+    stations OpenAQ lags on by days.
+    """
+
+    __tablename__ = "official_sub_indices"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    station_name: Mapped[str] = mapped_column(String(256), nullable=False)
+    city: Mapped[str] = mapped_column(String(128), nullable=False)
+    state: Mapped[str] = mapped_column(String(128), nullable=False)
+    geom: Mapped[str] = _point_column()
+    pollutant: Mapped[Pollutant] = mapped_column(
+        SqlEnum(Pollutant, name="pollutant", create_type=False, values_callable=_enum_values),
+        nullable=False,
+    )
+    reported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    sub_index: Mapped[float] = mapped_column(Float, nullable=False)
+    sub_index_min: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sub_index_max: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "station_name", "pollutant", "reported_at", name="uq_official_station_pollutant_time"
+        ),
+        CheckConstraint("sub_index >= 0", name="ck_official_sub_index_non_negative"),
+        Index("ix_official_city_reported", "city", "reported_at"),
+    )
+
+
 class SatelliteObservation(Base):
     """A daily mean of one Sentinel-5P product over one coarse H3 cell.
 

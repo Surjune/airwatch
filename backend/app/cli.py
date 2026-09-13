@@ -25,6 +25,7 @@ from app.services import (
     alert_service,
     analysis_service,
     fixture_service,
+    official_aqi_service,
     plausibility_service,
     satellite_service,
     seed_service,
@@ -191,6 +192,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     backfill.add_argument("--days", type=int, default=BACKFILL_DAYS)
 
+    official = subparsers.add_parser(
+        "official-aqi", help="Fetch CPCB's live AQI for a city from data.gov.in"
+    )
+    official.add_argument("--city", choices=sorted(PILOT_CITIES), default="coimbatore")
+
     satellite = subparsers.add_parser(
         "satellite", help="Fetch Sentinel-5P daily column means from Earth Engine"
     )
@@ -240,6 +246,19 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     settings = get_settings()
     configure_logging(level=settings.log_level, json_output=False)
+
+    if args.command == "official-aqi":
+        with session_scope() as session:
+            stored = asyncio.run(
+                official_aqi_service.ingest_city(settings, session, PilotCity(args.city))
+            )
+            stations = official_aqi_service.latest_for_city(session, PilotCity(args.city))
+        print("")
+        print(f"official AQI {args.city}: {stored} sub-indices stored")
+        for station in stations:
+            figure = f"AQI {station.aqi:.0f}" if station.aqi is not None else "no AQI stated"
+            print(f"  {station.station_name:<48} {figure:<14} {station.reported_at.isoformat()}")
+        return 0
 
     if args.command == "satellite":
         with session_scope() as session:

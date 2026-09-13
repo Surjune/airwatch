@@ -531,6 +531,14 @@ OPENMETEO_MAX_FORECAST_DAYS: Final[int] = 16
 #: NASA FIRMS API root. The active-fire product is served as CSV, not JSON.
 FIRMS_BASE_URL: Final[str] = "https://firms.modaps.eosdis.nasa.gov/api"
 
+#: User-Agent sent to every upstream. Identifying the client is ordinary API
+#: etiquette, and one provider depends on it: data.gov.in's gateway answers
+#: requests carrying the default "python-httpx" agent with a 502 after a minute
+#: while serving the identical request from a named client in about two
+#: seconds. That gateway behaviour is why the CPCB portal looked down for this
+#: project's first weeks.
+UPSTREAM_USER_AGENT: Final[str] = "AirWatch/0.1 (+https://github.com/Surjune/airwatch)"
+
 #: data.gov.in API root, where CPCB publishes its real-time AQI feed.
 CPCB_AQI_BASE_URL: Final[str] = "https://api.data.gov.in"
 
@@ -989,3 +997,21 @@ SATELLITE_LOOKBACK_DAYS: Final[int] = 7
 #: Cloud and quality filtering routinely leave a cell with one or two pixels at
 #: its edge, and a mean of those describes a sliver, not the cell.
 SATELLITE_MIN_PIXELS: Final[int] = 5
+
+
+# ---------------------------------------------------------------------------
+# Official CPCB AQI feed
+# ---------------------------------------------------------------------------
+
+#: How each pilot city is named in CPCB's data.gov.in feed.
+PILOT_CITY_CPCB_NAMES: Final[dict[str, str]] = {
+    "delhi": "Delhi",
+    "kanpur": "Kanpur",
+    "coimbatore": "Coimbatore",
+}
+
+#: CPCB computes a station's overall AQI only when at least three pollutants are
+#: reported, one of them PM2.5 or PM10. Below that CPCB publishes no AQI, and
+#: neither does AirWatch -- the sub-indices are still shown, individually.
+#: Source: CPCB National Air Quality Index methodology (2014).
+AQI_MIN_POLLUTANTS: Final[int] = 3

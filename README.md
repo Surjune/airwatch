@@ -609,22 +609,21 @@ Deferred deliberately, and tracked here rather than as TODOs in the code.
 - **Stations carry duplicate sensors across generations.** A live station commonly exposes both a
   current sensor and a decommissioned one for the same pollutant, and the API returns the final
   value of each. Readings are filtered by observation recency per reading, not per station.
-- **There is no direct CPCB client.** `CPCB_API_KEY` is accepted by the configuration but nothing
-  reads it. A direct data.gov.in path was planned as redundancy and abandoned when the portal's API
-  gateway returned 502 across every endpoint during development. OpenAQ carries the same CPCB and
-  DPCC station data and is the only reference-tier source actually in use, so the network currently
-  has a single point of failure upstream.
-- **Sentinel-5P is not ingested, and the blocker is a permission rather than code.** The service
-  account authenticates, but Earth Engine refuses the project: the caller needs
-  `roles/serviceusage.serviceUsageConsumer` on the Google Cloud project, and the project itself must
-  be registered for Earth Engine with the API enabled. No client was written against an API that has
-  never answered — every other upstream here was verified against the live service before being
-  documented as working, and a client shipped on the strength of mocked tests alone would not meet
-  that bar.
-  When it is unblocked, the honest use is narrow: Sentinel-5P measures NO2 column density at ~7 km
-  with a daily revisit, so it would be published as NO2 in its own units and never converted into a
-  PM2.5 figure. It constrains covariates and covers ground no station reaches; it does not detect
-  hyperlocal hotspots.
+- **CPCB's live feed gives indices, not concentrations.** `npm run official:coimbatore` (and the
+  worker, for every city) stores CPCB's real-time AQI from data.gov.in, which is current for stations
+  OpenAQ lags on by days. The feed publishes per-pollutant *sub-indices*, so it is shown as the
+  official AQI and never converted back into concentrations for analysis. The portal looked down for
+  weeks; the cause was its gateway returning 502 to httpx's default User-Agent, fixed by naming the
+  client.
+- **Sentinel-5P is a regional covariate, not a hotspot detector.** Daily TROPOMI means of NO2, SO2,
+  CO and the absorbing aerosol index are stored per ~36 km² cell (`npm run satellite:coimbatore`),
+  in the units delivered and never converted into a PM2.5 figure. At that resolution it shows the
+  air between and beyond the monitors -- which matters most in Coimbatore -- but cannot locate a
+  single kiln or depot. Cloudy days and thinly observed cells are omitted rather than filled.
+- **Low-cost sensors are shown uncalibrated and kept out of analysis.** Five AirGradient units
+  around Delhi are ingested as their own tier and served by `/v1/sensors`; detection, fusion,
+  forecasting and validation read reference monitors only. Calibrating them against co-located
+  monitors is the next step and has not been done.
 - **Back-trajectory uses a single-layer wind field,** not full HYSPLIT dispersion.
 - **Citizen photo PM2.5 is a proxy** with wide error bars, and is never used as the sole evidence
   for a cell.

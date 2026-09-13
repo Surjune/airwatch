@@ -25,6 +25,7 @@ from app.core.constants import (
     HTTP_MAX_ATTEMPTS,
     HTTP_TIMEOUT_SECONDS,
     REQUEST_ID_HEADER,
+    UPSTREAM_USER_AGENT,
 )
 from app.core.exceptions import (
     UpstreamRateLimitedError,
@@ -129,7 +130,7 @@ class UpstreamClient:
         Passing the request's correlation ID upstream means a slow third-party
         call can be tied back to the user request that triggered it.
         """
-        headers = {"Accept": "application/json"}
+        headers = {"Accept": "application/json", "User-Agent": UPSTREAM_USER_AGENT}
         request_id = get_request_id()
         if request_id is not None:
             headers[REQUEST_ID_HEADER] = request_id
