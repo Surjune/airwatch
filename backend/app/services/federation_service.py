@@ -33,7 +33,7 @@ from app.core.constants import (
     FEDERATED_LOCAL_MAE_UGM3,
     FEDERATED_TEST_ROWS,
     FEDERATED_TRAIN_ROWS,
-    FL_NEGATIVE_TRANSFER_TOLERANCE,
+    MODEL_COMPARISON_TOLERANCE,
     PILOT_CITY_CENTRES,
     PILOT_REPORTING_WINDOW_HOURS,
 )
@@ -163,7 +163,7 @@ def transfer_results() -> list[TransferResult]:
                     effect=classify(
                         estimate,
                         baseline_error=local_mae,
-                        tolerance=FL_NEGATIVE_TRANSFER_TOLERANCE,
+                        tolerance=MODEL_COMPARISON_TOLERANCE,
                     ),
                 )
             )

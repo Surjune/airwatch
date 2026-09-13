@@ -179,42 +179,6 @@ MOLAR_MASS_G_PER_MOL: Final[dict[str, float]] = {
 #: Parts per billion in one part per million.
 PPB_PER_PPM: Final[float] = 1000.0
 
-#: WHO 2021 global air quality guideline, PM2.5 24-hour mean, in ug/m^3. Shown
-#: alongside the CPCB category because the Indian standard (60) is 4x higher and
-#: the gap matters for honest public communication.
-WHO_PM25_24H_GUIDELINE: Final[float] = 15.0
-
-#: CPCB National Ambient Air Quality Standard, PM2.5 24-hour mean, in ug/m^3.
-CPCB_PM25_24H_STANDARD: Final[float] = 60.0
-
-
-# ---------------------------------------------------------------------------
-# Sensor tiers and calibration
-# ---------------------------------------------------------------------------
-
-#: Minimum number of paired (sensor, reference) hourly observations before a
-#: per-sensor calibration model is trained. Below this the global fallback model
-#: is used instead. Indian colocation studies typically train on multi-week
-#: windows; 336 hours is two full weeks, enough to span a diurnal and a weekly
-#: cycle without waiting for a seasonal one.
-CALIBRATION_MIN_PAIRED_HOURS: Final[int] = 336
-
-#: A low-cost sensor is treated as colocated with a reference station when it is
-#: within this distance, in metres. Beyond it the pairing is no longer a
-#: like-for-like comparison of the same air mass.
-CALIBRATION_COLOCATION_RADIUS_M: Final[float] = 500.0
-
-#: Fraction of the paired record held out, chronologically, to report honest
-#: before/after calibration error. Chronological rather than random because a
-#: random split leaks future information through autocorrelation.
-CALIBRATION_HOLDOUT_FRACTION: Final[float] = 0.25
-
-#: Relative humidity above which uncorrected optical particle counters
-#: systematically over-read, because water uptake swells the particles they
-#: size. This is the dominant low-cost sensor bias in the Indian monsoon and is
-#: why RH is a mandatory calibration feature rather than an optional one.
-HYGROSCOPIC_GROWTH_RH_THRESHOLD_PCT: Final[float] = 70.0
-
 
 # ---------------------------------------------------------------------------
 # Fusion
@@ -278,11 +242,6 @@ FUSION_SPREAD_UNCERTAINTY_COEFFICIENT: Final[float] = 0.4
 #: validation set; it matters far more in a sparsely monitored city.
 FUSION_DISTANCE_UNCERTAINTY_PER_KM: Final[float] = 0.35
 
-#: A cell with no sensor inside FUSION_MAX_SENSOR_DISTANCE_M falls back to
-#: satellite and meteorology only. Its uncertainty is multiplied by this factor
-#: so the UI can never present an unsupported estimate as a confident one.
-FUSION_NO_SENSOR_UNCERTAINTY_MULTIPLIER: Final[float] = 2.5
-
 
 # ---------------------------------------------------------------------------
 # Hotspot detection
@@ -304,14 +263,6 @@ HOTSPOT_MIN_PERSISTENCE_INTERVALS: Final[int] = 2
 #: Contiguous candidate cells required. A real plume covers more than one r8 hex
 #: (~0.46 km^2); a lone flagged cell is far more likely to be a faulty sensor.
 HOTSPOT_MIN_CONTIGUOUS_CELLS: Final[int] = 2
-
-#: Days of history used to build the per-cell, per-hour-of-week baseline.
-#: 28 days spans four occurrences of each hour-of-week slot.
-HOTSPOT_BASELINE_WINDOW_DAYS: Final[int] = 28
-
-#: Minimum baseline observations for a cell before anomaly detection may run
-#: there. Below this the baseline variance is too poorly estimated to trust.
-HOTSPOT_BASELINE_MIN_OBSERVATIONS: Final[int] = 8
 
 
 # ---------------------------------------------------------------------------
@@ -388,11 +339,6 @@ FORECAST_HORIZONS_HOURS: Final[tuple[int, ...]] = (24, 48, 72)
 #: Longest horizon, used for validation bounds and API parameter limits.
 FORECAST_MAX_HORIZON_HOURS: Final[int] = 72
 
-#: Lagged observations fed to the forecast model, in hours. Covers the previous
-#: hour, the previous day at the same hour, and the previous week at the same
-#: hour, so the model sees the diurnal and weekly cycles directly.
-FORECAST_LAG_HOURS: Final[tuple[int, ...]] = (1, 2, 3, 6, 12, 24, 48, 168)
-
 #: Lags used when the record is too short to carry a weekly term. The 168-hour
 #: lag is the most informative single feature for urban PM2.5 -- traffic repeats
 #: weekly -- but requiring it discards the first seven days of a fourteen-day
@@ -446,16 +392,6 @@ FL_MIN_AVAILABLE_CLIENTS: Final[int] = 2
 #: November against Coimbatore in June -- from destabilising aggregation.
 #: 0.0 reduces the strategy to plain FedAvg.
 FL_PROXIMAL_MU: Final[float] = 0.01
-
-#: Gaussian noise multiplier for optional differential privacy on shared
-#: weights. Off by default: it costs accuracy, and the weights-not-data design
-#: already removes the raw-data disclosure that blocks inter-state sharing.
-FL_DP_NOISE_MULTIPLIER: Final[float] = 0.0
-
-#: A round is rejected if the aggregated model is worse than the previous global
-#: model on a node's held-out set by more than this fraction. Guards against
-#: negative transfer, so the federation claim stays honest.
-FL_NEGATIVE_TRANSFER_TOLERANCE: Final[float] = 0.02
 
 #: Observations after this instant are excluded from every validation run.
 #:
@@ -632,15 +568,6 @@ HTTP_MAX_ATTEMPTS: Final[int] = 3
 #: Exponential backoff base, in seconds: waits 1s, 2s, 4s between attempts.
 HTTP_BACKOFF_BASE_SECONDS: Final[float] = 1.0
 
-#: Cache lifetime for upstream responses, in seconds. One hour matches the
-#: native reporting cadence of CPCB and OpenAQ, so a shorter TTL would only add
-#: load without adding information.
-UPSTREAM_CACHE_TTL_SECONDS: Final[int] = 3600
-
-#: Cache lifetime for meteorological forecasts, in seconds. Open-Meteo refreshes
-#: its forecast roughly every three hours.
-FORECAST_CACHE_TTL_SECONDS: Final[int] = 10800
-
 
 # ---------------------------------------------------------------------------
 # Citizen reports
@@ -648,19 +575,6 @@ FORECAST_CACHE_TTL_SECONDS: Final[int] = 10800
 
 #: Maximum accepted photo upload size, in bytes.
 CITIZEN_PHOTO_MAX_BYTES: Final[int] = 10 * 1024 * 1024
-
-#: Reports accepted per device per hour, limiting flooding of the trust system.
-CITIZEN_REPORTS_PER_DEVICE_PER_HOUR: Final[int] = 10
-
-#: Starting trust score for a new device.
-CITIZEN_INITIAL_TRUST_SCORE: Final[float] = 0.5
-
-#: Trust below which a report is stored but excluded from fusion.
-CITIZEN_MIN_TRUST_FOR_FUSION: Final[float] = 0.3
-
-#: A photo-derived PM2.5 estimate is a proxy with wide error bars, so it enters
-#: fusion at this weight relative to a calibrated low-cost sensor reading.
-CITIZEN_PHOTO_FUSION_WEIGHT: Final[float] = 0.2
 
 
 # ---------------------------------------------------------------------------
@@ -687,8 +601,14 @@ ALERT_SUPPRESSION_HOURS: Final[int] = 6
 #: thing standing between the API and a scraper.
 RATE_LIMIT_REQUESTS_PER_MINUTE: Final[int] = 120
 
-#: Maximum cells returned by a single grid query, bounding response size.
-MAX_GRID_CELLS_PER_REQUEST: Final[int] = 5000
+#: Tracked clients above which the limiter forgets fully refilled buckets. A
+#: refilled bucket is identical to an unseen client, so the sweep changes no
+#: decision; the threshold only sets how often the sweep's cost is paid.
+RATE_LIMIT_SWEEP_THRESHOLD_CLIENTS: Final[int] = 10_000
+
+#: Paths exempt from the limit. A liveness probe polled by an orchestrator must
+#: never be refused, or a busy node would be restarted for being busy.
+RATE_LIMIT_EXEMPT_PATHS: Final[frozenset[str]] = frozenset({"/v1/health"})
 
 #: Longest rejected value echoed back in a validation error envelope. Repeating
 #: the input helps a client see what was refused, but a request body can be

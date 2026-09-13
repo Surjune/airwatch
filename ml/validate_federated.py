@@ -58,10 +58,10 @@ from app.core.constants import (  # noqa: E402
     FL_LEARNING_RATE,
     FL_LOCAL_EPOCHS,
     FL_MIN_AVAILABLE_CLIENTS,
-    FL_NEGATIVE_TRANSFER_TOLERANCE,
     FL_NUM_ROUNDS,
     FL_PROXIMAL_MU,
     FORECAST_LAG_HOURS_SHORT,
+    MODEL_COMPARISON_TOLERANCE,
     PILOT_CITY_CENTRES,
     RANDOM_SEED,
     VALIDATION_DATA_UNTIL,
@@ -174,7 +174,7 @@ def main() -> int:
         for name in ("global", "fine-tuned", "local head"):
             estimate = paired_bootstrap(errors["local"], errors[name], seed=RANDOM_SEED)
             effect = classify(
-                estimate, baseline_error=local_mae, tolerance=FL_NEGATIVE_TRANSFER_TOLERANCE
+                estimate, baseline_error=local_mae, tolerance=MODEL_COMPARISON_TOLERANCE
             )
             comparisons.append(
                 (node.name, name, local_mae, float(errors[name].mean()), estimate, effect)
