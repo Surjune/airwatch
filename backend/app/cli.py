@@ -25,6 +25,7 @@ from app.services import (
     alert_service,
     analysis_service,
     fixture_service,
+    plausibility_service,
     seed_service,
 )
 from app.services.alert_service import DEFAULT_DISPATCH_WINDOW_HOURS
@@ -190,6 +191,11 @@ def main(argv: list[str] | None = None) -> int:
     backfill.add_argument("--days", type=int, default=BACKFILL_DAYS)
 
     subparsers.add_parser(
+        "reflag",
+        help="Re-apply the plausibility bounds to every stored reading",
+    )
+
+    subparsers.add_parser(
         "seed",
         help="Load the source and authority registries from infra/seed",
     )
@@ -228,6 +234,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     settings = get_settings()
     configure_logging(level=settings.log_level, json_output=False)
+
+    if args.command == "reflag":
+        with session_scope() as session:
+            flagged = plausibility_service.reassess(session)
+        print("")
+        for pollutant, count in flagged.items():
+            print(f"{pollutant.value:<5} flagged implausible: {count}")
+        return 0
 
     if args.command == "seed":
         with session_scope() as session:

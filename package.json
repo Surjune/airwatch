@@ -36,6 +36,7 @@
     "worker:once": "node scripts/py.mjs -m app.worker --once",
     "backfill": "node scripts/py.mjs -m app.cli backfill",
     "seed": "node scripts/py.mjs -m app.cli seed",
+    "data:reflag": "node scripts/py.mjs -m app.cli reflag",
     "alerts:dispatch": "node scripts/py.mjs -m app.cli dispatch",
     "alerts:deliver": "node scripts/py.mjs -m app.cli deliver",
     "demo:replay": "node scripts/py.mjs -m app.cli replay --event delhi-anand-vihar-august",

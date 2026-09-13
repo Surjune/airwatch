@@ -584,9 +584,13 @@ Deferred deliberately, and tracked here rather than as TODOs in the code.
   reverse proxy the proxy must supply the real address (uvicorn `--proxy-headers`).
 - **Upstream CO units are not trustworthy at face value.** Several live Delhi stations declare CO
   in `ppb` while reporting values around 1.2 -- implausible as ppb (ambient CO runs in the hundreds)
-  and exactly right as ppm. The conversion is implemented correctly for the declared unit; a
-  per-pollutant plausibility guard that flags rather than ingests out-of-range values is still to be
-  added. Until then a CO sub-index from OpenAQ should be treated as unreliable.
+  and exactly right as ppm. Every one of the 114 CO readings in the pilot database had this error.
+  A plausibility guard now flags any reading outside physical bounds (`PLAUSIBLE_CONCENTRATION_RANGE`)
+  at ingestion, and `npm run data:reflag` re-applies the bounds to rows already stored; flagged rows
+  are kept but excluded from every estimate. The values are deliberately not "corrected" to ppm:
+  guessing what an instrument meant would be inventing a number. So there is currently no usable CO
+  data, rather than wrong CO data. Negative values, which some networks emit as "no data" sentinels,
+  are dropped at ingestion.
 - **Stations carry duplicate sensors across generations.** A live station commonly exposes both a
   current sensor and a decommissioned one for the same pollutant, and the API returns the final
   value of each. Readings are filtered by observation recency per reading, not per station.

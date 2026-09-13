@@ -319,3 +319,52 @@ class TestWeatherAndFires:
     def test_an_empty_window_returns_nothing(self, session: Session) -> None:
         assert observation_repository.weather_in_window(session, NOW) == []
         assert observation_repository.fire_detections_in_window(session, NOW) == []
+
+
+class TestReflagMeasurements:
+    def _store(self, session: Session, values: list[float], pollutant: Pollutant) -> int:
+        station_id = _station(session)
+        observation_repository.upsert_measurements(
+            session,
+            [
+                MeasurementRow(
+                    station_id=station_id,
+                    observed_at=NOW - timedelta(hours=index),
+                    pollutant=pollutant,
+                    value_raw=value,
+                    unit="mg/m3",
+                )
+                for index, value in enumerate(values)
+            ],
+        )
+        session.flush()
+        return station_id
+
+    def test_flags_readings_already_stored_outside_the_bounds(self, session: Session) -> None:
+        # The CO readings that arrived before the guard: 0.00137 is ppm stored as ppb.
+        self._store(session, [0.00137, 1.2, 60.0], Pollutant.CO)
+
+        flagged = observation_repository.reflag_measurements(session, Pollutant.CO, 0.05, 50.0)
+
+        assert flagged == 2
+        latest = observation_repository.latest_reading_per_station(session, Pollutant.CO)
+        assert [row[6] for row in latest] == [pytest.approx(1.2)]
+
+    def test_loosening_a_bound_restores_a_reading_and_never_edits_it(
+        self, session: Session
+    ) -> None:
+        self._store(session, [0.01], Pollutant.CO)
+        observation_repository.reflag_measurements(session, Pollutant.CO, 0.05, 50.0)
+
+        flagged = observation_repository.reflag_measurements(session, Pollutant.CO, 0.0, 50.0)
+
+        assert flagged == 0
+        latest = observation_repository.latest_reading_per_station(session, Pollutant.CO)
+        assert latest[0][6] == pytest.approx(0.01)
+
+    def test_leaves_other_pollutants_alone(self, session: Session) -> None:
+        self._store(session, [0.01], Pollutant.PM25)
+
+        observation_repository.reflag_measurements(session, Pollutant.CO, 0.05, 50.0)
+
+        assert len(observation_repository.latest_reading_per_station(session, Pollutant.PM25)) == 1

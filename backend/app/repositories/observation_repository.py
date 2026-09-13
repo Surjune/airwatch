@@ -15,7 +15,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import Row, func, select
+from sqlalchemy import Row, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -179,6 +179,29 @@ def upsert_fire_detections(session: Session, rows: Sequence[FireRow]) -> int:
     statement = statement.on_conflict_do_nothing(constraint="uq_fire_detection_identity")
     session.execute(statement)
     return len(payload)
+
+
+def reflag_measurements(session: Session, pollutant: Pollutant, low: float, high: float) -> int:
+    """Re-derive ``is_plausible`` for every stored reading of one pollutant.
+
+    Sets the flag in both directions, so tightening a bound flags rows and
+    loosening one restores them; the stored value itself is never touched.
+
+    Returns:
+        How many readings of the pollutant are flagged afterwards.
+    """
+    session.execute(
+        update(Measurement)
+        .where(Measurement.pollutant == pollutant)
+        .values(is_plausible=Measurement.value_raw.between(low, high))
+    )
+    return int(
+        session.execute(
+            select(func.count())
+            .select_from(Measurement)
+            .where(Measurement.pollutant == pollutant, Measurement.is_plausible.is_(False))
+        ).scalar_one()
+    )
 
 
 def count_measurements(session: Session) -> int:

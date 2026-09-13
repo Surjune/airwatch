@@ -179,6 +179,34 @@ MOLAR_MASS_G_PER_MOL: Final[dict[str, float]] = {
 #: Parts per billion in one part per million.
 PPB_PER_PPM: Final[float] = 1000.0
 
+#: Range, per pollutant, outside which a stored concentration is flagged rather
+#: than published. Values are in the unit each AQI table expects (mg/m^3 for CO,
+#: ug/m^3 for everything else), inclusive at both ends. The bounds are ceilings
+#: on what ambient air can hold, not on what is unhealthy: a reading of 700 PM2.5
+#: in a Delhi November is terrible and real, and must never be filtered.
+#:
+#: * PM2.5, 1000: the default range of the beta-attenuation monitors common in the
+#:   CAAQMS network; a larger value is saturation or a unit error.
+#: * PM10, 2000: dust storms over the Indo-Gangetic plain carry hourly PM10 above
+#:   1000, so the ceiling sits well clear of them.
+#: * Gases: the top of each CPCB breakpoint table, far beyond any recorded ambient
+#:   hourly value.
+#: * CO floor, 0.05 mg/m^3 (about 44 ppb): below the cleanest remote-background CO
+#:   on Earth, so an urban reading under it is a unit error. It exists for the
+#:   failure actually observed: Delhi stations reporting ppm while declaring ppb,
+#:   which lands every value a factor of 1000 too low and entirely below this.
+#:
+#: Zero is allowed for the others: a clean hour can read at the detection limit.
+PLAUSIBLE_CONCENTRATION_RANGE: Final[dict[str, tuple[float, float]]] = {
+    "pm25": (0.0, 1000.0),
+    "pm10": (0.0, 2000.0),
+    "no2": (0.0, 1000.0),
+    "so2": (0.0, 2400.0),
+    "o3": (0.0, 1000.0),
+    "nh3": (0.0, 2400.0),
+    "co": (0.05, 50.0),
+}
+
 
 # ---------------------------------------------------------------------------
 # Fusion

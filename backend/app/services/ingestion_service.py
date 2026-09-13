@@ -28,6 +28,7 @@ from app.core.exceptions import AirWatchError
 from app.core.geo import LonLat
 from app.core.h3_grid import point_to_cell
 from app.core.logging import get_logger
+from app.core.plausibility import is_plausible
 from app.external.firms_client import FirmsClient
 from app.external.openaq_client import OpenAQClient, OpenAQLocation, OpenAQReading
 from app.external.openmeteo_client import OpenMeteoClient
@@ -71,6 +72,32 @@ class IngestionReport:
     @property
     def failed_sources(self) -> list[str]:
         return [result.source for result in self.results if not result.succeeded]
+
+
+def _storable(value: float, pollutant: Pollutant) -> bool:
+    """Whether a converted value is a measurement at all.
+
+    A negative concentration is not an implausible reading but a sentinel -- the
+    ``-1`` or ``-9999`` some networks emit for "no data". It is dropped rather
+    than flagged: the schema forbids storing it, and one such value inside a
+    batch would otherwise fail the insert for every good reading beside it.
+    """
+    if value < 0:
+        logger.warning("ingestion.negative_reading_dropped", pollutant=pollutant.value)
+        return False
+    return True
+
+
+def _log_implausible(station: str, rows: list[MeasurementRow]) -> None:
+    """Record flagged readings loudly: a broken upstream should be noticed, not absorbed."""
+    flagged = sorted({row.pollutant.value for row in rows if not row.is_plausible})
+    if flagged:
+        logger.warning(
+            "ingestion.implausible_readings",
+            station=station,
+            pollutants=flagged,
+            count=sum(not row.is_plausible for row in rows),
+        )
 
 
 class IngestionService:
@@ -230,6 +257,8 @@ class IngestionService:
                     value = aqi.to_aqi_unit(pollutant, entry.value, unit)
                 except AirWatchError:
                     continue
+                if not _storable(value, pollutant):
+                    continue
                 rows.append(
                     MeasurementRow(
                         station_id=station_id,
@@ -237,11 +266,13 @@ class IngestionService:
                         pollutant=pollutant,
                         value_raw=value,
                         unit=aqi.CONCENTRATION_UNIT[pollutant],
+                        is_plausible=is_plausible(pollutant, value),
                     )
                 )
 
         if not rows:
             return 0
+        _log_implausible(location.name, rows)
         with session_scope() as session:
             return observation_repository.upsert_measurements(session, rows)
 
@@ -313,9 +344,11 @@ class IngestionService:
                         pollutant=reading.pollutant,
                         value_raw=value,
                         unit=unit,
+                        is_plausible=is_plausible(reading.pollutant, value),
                     )
                 )
 
+            _log_implausible(location.name, rows)
             return observation_repository.upsert_measurements(session, rows)
 
     def _to_storage_unit(self, reading: OpenAQReading) -> tuple[float, str] | None:
@@ -334,6 +367,8 @@ class IngestionService:
                 unit=reading.unit,
                 error_message=error.message,
             )
+            return None
+        if not _storable(value, reading.pollutant):
             return None
         return value, aqi.CONCENTRATION_UNIT[reading.pollutant]
 
