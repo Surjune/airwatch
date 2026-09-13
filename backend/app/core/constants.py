@@ -998,6 +998,16 @@ SATELLITE_LOOKBACK_DAYS: Final[int] = 7
 #: its edge, and a mean of those describes a sliver, not the cell.
 SATELLITE_MIN_PIXELS: Final[int] = 5
 
+#: UTC hour in which the worker fetches satellite data. TROPOMI crosses India
+#: around 13:30 local solar time (about 08:00 UTC) and near-real-time products
+#: arrive within about three hours, so noon UTC catches the day's overpass once.
+#: Fetching every hour would re-request the same days for nothing.
+SATELLITE_INGEST_HOUR_UTC: Final[int] = 12
+
+#: Days re-fetched by the worker's daily satellite step: enough to fill a day
+#: missed while the machine was off, without re-reading the whole archive.
+SATELLITE_WORKER_LOOKBACK_DAYS: Final[int] = 3
+
 
 # ---------------------------------------------------------------------------
 # Official CPCB AQI feed

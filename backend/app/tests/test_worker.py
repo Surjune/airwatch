@@ -20,7 +20,7 @@ from app import worker
 from app.core.config import Settings
 from app.core.constants import PILOT_CITY_CENTRES
 from app.core.exceptions import UpstreamUnavailableError
-from app.services import alert_delivery_service, alert_service
+from app.services import alert_delivery_service, alert_service, official_aqi_service
 from app.services.ingestion_service import IngestionReport, SourceResult
 
 NOW = datetime(2026, 9, 13, 3, 0, tzinfo=UTC)
@@ -61,7 +61,7 @@ def _report(*, failed_sources: tuple[str, ...] = ()) -> IngestionReport:
 
 
 @pytest.fixture
-def calls(monkeypatch: pytest.MonkeyPatch) -> Calls:
+def calls(monkeypatch: pytest.MonkeyPatch, settings: Settings) -> Calls:
     """Stub every service the worker drives, recording each call."""
     recorded = Calls()
 
@@ -88,6 +88,9 @@ def calls(monkeypatch: pytest.MonkeyPatch) -> Calls:
         yield object()
 
     monkeypatch.setattr(worker, "IngestionService", FakeIngestion)
+    # ``main`` resolves settings itself; without this it would read the developer's
+    # own .env and run whichever optional sources happen to be configured there.
+    monkeypatch.setattr(worker, "get_settings", lambda: settings)
     monkeypatch.setattr(worker, "session_scope", fake_session)
     monkeypatch.setattr(alert_service, "dispatch", fake_dispatch)
     monkeypatch.setattr(alert_delivery_service, "deliver_pending", fake_deliver)
@@ -116,6 +119,47 @@ class TestCycle:
         deliver = next(step for step in report.steps if step.name == "deliver")
         assert deliver.succeeded is True
         assert "no endpoint" in deliver.summary
+
+
+class TestOptionalSources:
+    def test_official_and_satellite_steps_are_skipped_when_unconfigured(
+        self, settings: Settings, calls: Calls
+    ) -> None:
+        report = worker.run_cycle(settings, now=NOW.replace(hour=12))
+
+        names = [step.name for step in report.steps]
+        assert not any(name.startswith(("official:", "satellite:")) for name in names)
+
+    def test_official_aqi_is_fetched_for_every_city_when_a_key_exists(
+        self, settings: Settings, calls: Calls, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fetched: list[str] = []
+
+        async def fake_official(_settings: Settings, _session: object, city: Any) -> int:
+            fetched.append(city.value)
+            return 7
+
+        monkeypatch.setattr(official_aqi_service, "ingest_city", fake_official)
+        keyed = settings.model_copy(update={"cpcb_api_key": "test-key"})
+
+        report = worker.run_cycle(keyed, now=NOW)
+
+        assert sorted(fetched) == sorted(PILOT_CITY_CENTRES)
+        assert all(step.succeeded for step in report.steps if step.name.startswith("official:"))
+
+    @pytest.mark.parametrize(("hour", "due"), [(12, True), (13, False), (3, False)])
+    def test_satellite_runs_once_a_day_when_configured(
+        self, settings: Settings, hour: int, due: bool
+    ) -> None:
+        configured = settings.model_copy(
+            update={
+                "gee_service_account_email": "svc@project.iam.gserviceaccount.com",
+                "gee_private_key_path": "C:/keys/key.json",
+                "gee_project_id": "project",
+            }
+        )
+        assert worker._satellite_due(configured, NOW.replace(hour=hour)) is due
+        assert worker._satellite_due(settings, NOW.replace(hour=hour)) is False
 
 
 class TestFires:

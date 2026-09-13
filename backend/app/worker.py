@@ -36,14 +36,22 @@ from app.core.constants import (
     PILOT_CITY_CENTRES,
     PILOT_CITY_FIRE_BOXES,
     PILOT_CITY_RADIUS_M,
+    SATELLITE_INGEST_HOUR_UTC,
+    SATELLITE_WORKER_LOOKBACK_DAYS,
     WORKER_DETECTION_WINDOW_HOURS,
     WORKER_INTERVAL_MINUTES,
 )
-from app.core.enums import Pollutant
+from app.core.enums import PilotCity, Pollutant
 from app.core.exceptions import AirWatchError
 from app.core.logging import configure_logging, get_logger
+from app.external.s5p_client import Sentinel5PClient
 from app.repositories.session import session_scope
-from app.services import alert_delivery_service, alert_service
+from app.services import (
+    alert_delivery_service,
+    alert_service,
+    official_aqi_service,
+    satellite_service,
+)
 from app.services.ingestion_service import IngestionService
 
 logger = get_logger(__name__)
@@ -121,6 +129,34 @@ def run_cycle(settings: Settings, *, now: datetime | None = None) -> CycleReport
 
         _run_step(report, f"ingest:{city}", ingest)
 
+    # CPCB's live feed is fetched only when a data.gov.in key is configured, for
+    # the same reason as fires: a step that cannot succeed must not fail hourly.
+    if settings.has("cpcb_api_key"):
+        for city in PilotCity:
+
+            def official(city: PilotCity = city) -> str:
+                with session_scope() as session:
+                    stored = asyncio.run(official_aqi_service.ingest_city(settings, session, city))
+                return f"{stored} sub-indices"
+
+            _run_step(report, f"official:{city.value}", official)
+
+    if _satellite_due(settings, report.started_at):
+        for city in PilotCity:
+
+            def satellite(city: PilotCity = city) -> str:
+                client = Sentinel5PClient(settings)
+                with session_scope() as session:
+                    summary = satellite_service.ingest_city(
+                        session,
+                        city,
+                        client.daily_cell_means,
+                        days=SATELLITE_WORKER_LOOKBACK_DAYS,
+                    )
+                return f"{summary.stored} cell-days"
+
+            _run_step(report, f"satellite:{city.value}", satellite)
+
     def dispatch() -> str:
         with session_scope() as session:
             outcome = alert_service.dispatch(
@@ -152,6 +188,15 @@ def run_cycle(settings: Settings, *, now: datetime | None = None) -> CycleReport
         steps={step.name: step.succeeded for step in report.steps},
     )
     return report
+
+
+def _satellite_due(settings: Settings, now: datetime) -> bool:
+    """Whether this cycle should fetch satellite data: configured, and the daily hour."""
+    configured = all(
+        settings.has(name)
+        for name in ("gee_service_account_email", "gee_private_key_path", "gee_project_id")
+    )
+    return configured and now.hour == SATELLITE_INGEST_HOUR_UTC
 
 
 class _PartialIngestionError(AirWatchError):
