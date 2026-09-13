@@ -64,7 +64,7 @@ class TestAudio:
         with bound_to(create_app(voiced), session) as client:
             yield client
 
-    @respx.mock(assert_all_mocked=False)
+    @respx.mock
     def test_a_current_version_is_cached_and_any_other_is_not(self, api: TestClient) -> None:
         clip = base64.b64encode(b"mp3 bytes").decode()
         respx.post(URL).mock(return_value=httpx.Response(200, json={"audios": [clip]}))
