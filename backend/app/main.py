@@ -18,6 +18,7 @@ from app.routes import (
     alerts,
     analysis,
     citizen,
+    citizen_sensors,
     federation,
     health,
     interop,
@@ -108,6 +109,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(alerts.router, prefix=API_PREFIX)
     app.include_router(interop.router, prefix=API_PREFIX)
     app.include_router(citizen.router, prefix=API_PREFIX)
+    app.include_router(citizen_sensors.router, prefix=API_PREFIX)
     app.include_router(federation.router, prefix=API_PREFIX)
     app.include_router(satellite.router, prefix=API_PREFIX)
     app.include_router(official_aqi.router, prefix=API_PREFIX)

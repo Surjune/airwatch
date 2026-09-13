@@ -632,3 +632,57 @@ class CitizenReport(Base):
         Index("ix_citizen_reports_captured", "captured_at"),
         Index("ix_citizen_reports_geom", "geom", postgresql_using="gist"),
     )
+
+
+class CitizenSensorReading(Base):
+    """A reading a member of the public took from their own low-cost sensor.
+
+    Stored as reported and never corrected. A household optical sensor over-reads
+    in humid air by an amount that varies by model and by day, so any correction
+    applied at storage would be a guess frozen into the record. The comparison
+    with the nearest reference monitor is stored instead, which is the evidence
+    a correction would eventually be fitted from.
+
+    Kept apart from ``measurements``: those are stations with a fixed identity and
+    a history, and every analysis query filters them to the reference tier. A
+    reading here is a single anonymous observation that must never reach
+    detection, fusion or forecasting by accident.
+    """
+
+    __tablename__ = "citizen_sensor_readings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    geom: Mapped[str] = _point_column()
+    h3_cell: Mapped[str] = mapped_column(String(H3_INDEX_LENGTH), nullable=False, index=True)
+
+    #: When the sensor measured, not when the reading was submitted.
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    submitted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    #: Opaque per-device identifier, for rate limiting. Not an account.
+    device_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    #: What the submitter says the instrument is, free text ("AirGradient ONE").
+    sensor_model: Mapped[str] = mapped_column(String(80), nullable=False)
+
+    pollutant: Mapped[Pollutant] = mapped_column(
+        SqlEnum(Pollutant, name="pollutant", create_type=False, values_callable=_enum_values),
+        nullable=False,
+    )
+    #: As reported, in ug/m3.
+    value: Mapped[float] = mapped_column(Float, nullable=False)
+
+    #: Nearest reference monitor reading in space and time, when one was in range.
+    reference_station_id: Mapped[int | None] = mapped_column(
+        ForeignKey("stations.id", ondelete="SET NULL"), nullable=True
+    )
+    reference_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    reference_distance_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("value >= 0", name="ck_citizen_sensor_value_non_negative"),
+        Index("ix_citizen_sensor_readings_observed", "observed_at"),
+        Index("ix_citizen_sensor_readings_geom", "geom", postgresql_using="gist"),
+    )

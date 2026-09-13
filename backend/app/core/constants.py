@@ -808,6 +808,36 @@ CITIZEN_DISAGREEMENT_TOLERANCE: Final[float] = 0.5
 
 
 # ---------------------------------------------------------------------------
+# Citizen sensor readings
+# ---------------------------------------------------------------------------
+# A household low-cost sensor (AirGradient, PurpleAir, Atmotube and similar) is an
+# optical particle counter. It is denser than a reference monitor and wrong in a
+# known direction -- it over-reads in humid air, when particles swell -- so its
+# readings are kept, shown as reported, and compared against the nearest monitor
+# rather than trusted or corrected by a factor nobody has measured.
+
+#: Pollutants a household sensor can report. Optical counters measure particles;
+#: consumer gas sensors are uncalibrated electrochemical cells whose drift makes
+#: their readings unusable even as a comparison.
+CITIZEN_SENSOR_POLLUTANTS: Final[frozenset[str]] = frozenset({"pm25", "pm10"})
+
+#: Readings one device may submit per hour. A connected sensor reports every few
+#: minutes, but an hourly reference average can only check one reading per hour,
+#: so twelve (one per five minutes) is ample and bounds what one device can flood.
+CITIZEN_SENSOR_MAX_READINGS_PER_DEVICE_PER_HOUR: Final[int] = 12
+
+#: Co-located pairs needed before a network-wide sensor-to-monitor ratio is
+#: published as a correction a reader could apply. The same thirty as the photo
+#: calibration, for the same reason: fewer pairs cannot separate a real bias from
+#: the scatter between one humid morning and one dry afternoon.
+CITIZEN_SENSOR_BIAS_MIN_PAIRS: Final[int] = 30
+
+#: How stale a sensor reading may be and still describe current air, in hours.
+#: The same window as a photograph: an episode lasts hours, not days.
+CITIZEN_SENSOR_MAX_AGE_HOURS: Final[int] = CITIZEN_MAX_CAPTURE_AGE_HOURS
+
+
+# ---------------------------------------------------------------------------
 # Photo provenance
 # ---------------------------------------------------------------------------
 # EXIF cannot be trusted as proof: it is trivially editable and most messaging
