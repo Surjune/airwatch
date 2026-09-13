@@ -32,6 +32,8 @@
     "ingest:once": "node scripts/py.mjs -m app.cli ingest",
     "ingest:delhi": "node scripts/py.mjs -m app.cli ingest --city delhi",
     "ingest:coimbatore": "node scripts/py.mjs -m app.cli ingest --city coimbatore",
+    "worker": "node scripts/py.mjs -m app.worker",
+    "worker:once": "node scripts/py.mjs -m app.worker --once",
     "backfill": "node scripts/py.mjs -m app.cli backfill",
     "seed": "node scripts/py.mjs -m app.cli seed",
     "alerts:dispatch": "node scripts/py.mjs -m app.cli dispatch",

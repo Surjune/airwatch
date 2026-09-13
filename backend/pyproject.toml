@@ -87,6 +87,8 @@ ignore = [
 # The no-print rule protects the structured log stream, which a CLI table is not
 # part of; routing this through the logger would make it less legible, not more.
 "app/cli.py" = ["T20"]
+# The worker prints the same per-cycle table, for a scheduler log a person reads.
+"app/worker.py" = ["T20"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

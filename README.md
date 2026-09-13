@@ -373,6 +373,31 @@ npm run backfill      # pull hourly history so forecasting has a series
 npm run dev           # API on :8000, web on :5173
 ```
 
+### Keeping it current
+
+Without a schedule the data goes stale within a day, and a hotspot that develops
+overnight goes unseen until someone runs ingestion by hand. The worker runs one
+cycle per hour -- ingest every pilot city, detect and route, deliver:
+
+```bash
+npm run worker        # long-running, one cycle per hour
+npm run worker:once   # a single cycle, for cron or Windows Task Scheduler
+```
+
+Each step is isolated, so an outage for one city or one upstream does not stop
+the others, and detection still runs over the data already held. `worker:once`
+exits non-zero if any step failed, so a scheduler watching the exit code sees it.
+
+On Windows, schedule it hourly with:
+
+```powershell
+schtasks /Create /SC HOURLY /TN "AirWatch worker" /TR "cmd /c cd /d C:\path	oirwatch && npm run worker:once >> worker.log 2>&1"
+```
+
+A cycle stores each station's latest reading, so hotspot detection needs a few
+hours of cycles before a persistent episode can appear. After a long gap, run
+`npm run backfill` once to restore the hourly history.
+
 ### Reproducing the headline result
 
 Every figure here came from live upstreams over a fourteen-day window, which

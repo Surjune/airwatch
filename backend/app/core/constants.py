@@ -788,6 +788,15 @@ PILOT_CITY_CENTRES: Final[dict[str, tuple[float, float]]] = {
     "coimbatore": (76.9558, 11.0168),
 }
 
+#: Fire search boxes per pilot city, as (west, south, east, north). Wider than the
+#: station radius on purpose: the fire being looked for is the one upwind of the
+#: city, not the one inside it.
+PILOT_CITY_FIRE_BOXES: Final[dict[str, tuple[float, float, float, float]]] = {
+    "delhi": (76.0, 27.8, 78.2, 29.3),
+    "kanpur": (79.8, 26.0, 80.9, 27.0),
+    "coimbatore": (76.4, 10.6, 77.5, 11.5),
+}
+
 #: Radius, in metres, within which a station counts as belonging to a city.
 PILOT_CITY_RADIUS_M: Final[int] = 25_000
 
@@ -839,3 +848,19 @@ EXPOSURE_CANDIDATE_HOURS: Final[tuple[int, ...]] = (6, 8, 10, 12, 14, 16, 18, 20
 #: The forecast error is frequently larger than the signal, so a difference of a
 #: few percent is not a recommendation -- it is noise wearing one.
 EXPOSURE_MEANINGFUL_REDUCTION: Final[float] = 0.10
+
+
+# ---------------------------------------------------------------------------
+# Scheduled worker
+# ---------------------------------------------------------------------------
+
+#: Minutes between worker cycles. OpenAQ publishes CPCB readings hourly, so a
+#: faster cycle re-reads the same values and spends the rate limit for nothing,
+#: while a slower one lets a developing episode go unseen for longer than the
+#: data actually requires.
+WORKER_INTERVAL_MINUTES: Final[int] = 60
+
+#: Hours of history each cycle's detection looks back over. Long enough to
+#: contain a persistent episode, short enough that a run reports what is
+#: happening rather than re-reporting last week.
+WORKER_DETECTION_WINDOW_HOURS: Final[int] = 24
