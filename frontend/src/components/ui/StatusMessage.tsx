@@ -1,5 +1,5 @@
 interface StatusMessageProps {
-  readonly kind: 'loading' | 'error' | 'empty';
+  readonly kind: 'loading' | 'error' | 'empty' | 'success';
   readonly title: string;
   readonly detail?: string;
   readonly requestId?: string;
@@ -9,6 +9,7 @@ const STYLES: Record<StatusMessageProps['kind'], string> = {
   loading: 'border-border bg-surface-sunken text-ink-muted',
   error: 'border-danger/30 bg-danger-subtle text-danger',
   empty: 'border-warn/30 bg-warn-subtle text-warn',
+  success: 'border-ok/30 bg-ok-subtle text-ok',
 };
 
 /** A glyph per state, so the three are distinguishable without relying on colour. */
@@ -16,18 +17,20 @@ const GLYPHS: Record<StatusMessageProps['kind'], string> = {
   loading: '···',
   error: '!',
   empty: '∅',
+  success: '✓',
 };
 
 const ROLES: Record<StatusMessageProps['kind'], 'status' | 'alert'> = {
   loading: 'status',
   error: 'alert',
   empty: 'status',
+  success: 'status',
 };
 
 /**
  * A loading, failed or empty state.
  *
- * These three must never look alike. A failed request that renders as an empty
+ * These must never look alike. A failed request that renders as an empty
  * map reads as clean air, which is the exact misreading this project exists to
  * remove — so each state gets its own colour *and* its own glyph, because
  * colour alone fails for a colour-blind reader and fails again in print.
@@ -39,7 +42,7 @@ export function StatusMessage({ kind, title, detail, requestId }: StatusMessageP
   return (
     <div
       role={ROLES[kind]}
-      className={`flex gap-3 rounded-[--radius-card] border p-3.5 text-sm ${STYLES[kind]}`}
+      className={`flex gap-3 rounded-card border p-3.5 text-sm ${STYLES[kind]}`}
     >
       <span
         aria-hidden

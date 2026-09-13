@@ -10,20 +10,20 @@ describe('StatusMessage', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Upstream timed out.');
   });
 
-  it.each(['loading', 'empty'] as const)('announces %s politely as a status', (kind) => {
+  it.each(['loading', 'empty', 'success'] as const)('announces %s politely as a status', (kind) => {
     render(<StatusMessage kind={kind} title="Nothing yet" />);
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('gives each state its own glyph, so colour is never the only signal', () => {
-    const glyphs = (['loading', 'error', 'empty'] as const).map((kind) => {
+    const glyphs = (['loading', 'error', 'empty', 'success'] as const).map((kind) => {
       const { container, unmount } = render(<StatusMessage kind={kind} title="t" />);
       const glyph = container.querySelector('[aria-hidden]')?.textContent;
       unmount();
       return glyph;
     });
-    expect(new Set(glyphs).size).toBe(3);
+    expect(new Set(glyphs).size).toBe(4);
   });
 
   it('shows the request id so a failure can be traced in the logs', () => {
