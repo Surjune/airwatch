@@ -40,7 +40,7 @@ export function MapView({ readings, hotspots, onSelectHotspot }: MapViewProps) {
       {/* Above Leaflet's panes, so it stays readable over any tile. On a phone only the
           colour scale is shown: the ring explanation is already in the header strap, and
           repeating it here would cover half the map. */}
-      <div className="pointer-events-none absolute bottom-3 left-3 z-[1000] max-w-[calc(100%-1.5rem)] rounded-[--radius-card] border border-border bg-surface/95 px-3 py-2.5 shadow-sm sm:max-w-sm">
+      <div className="pointer-events-none absolute bottom-3 left-3 z-[1000] max-w-[calc(100%-1.5rem)] rounded-card border border-border bg-surface/95 px-3.5 py-3 shadow-overlay backdrop-blur sm:max-w-sm">
         <Legend />
         <p className="mt-2 hidden border-t border-border pt-2 text-xs leading-relaxed text-ink-muted sm:block">
           Rings mark places dirtier than their neighbourhood predicts, sized by excess — not by how

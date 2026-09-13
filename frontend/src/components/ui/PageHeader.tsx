@@ -18,10 +18,10 @@ interface PageHeaderProps {
  */
 export function PageHeader({ title, description, actions }: PageHeaderProps) {
   return (
-    <header className="flex flex-wrap items-start justify-between gap-4">
+    <header className="flex flex-wrap items-end justify-between gap-4">
       <div className="max-w-2xl">
-        <h1 className="text-lg font-semibold tracking-tight text-ink">{title}</h1>
-        <p className="mt-1 text-sm leading-relaxed text-ink-muted">{description}</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">{title}</h1>
+        <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">{description}</p>
       </div>
       {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
     </header>

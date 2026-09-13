@@ -1,8 +1,10 @@
+import { Clock } from 'lucide-react';
 import { useId, useState } from 'react';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import type { Alert } from '@/hooks/useAlerts';
+import { istDateTime } from '@/lib/time';
 
 interface AlertCardProps {
   readonly alert: Alert;
@@ -20,17 +22,6 @@ const STATUS_TONES = {
   escalated: 'accent',
 } as const;
 
-/** Render a UTC timestamp in IST, the only timezone an operator here works in. */
-function istTime(iso: string): string {
-  return new Date(iso).toLocaleString('en-IN', {
-    timeZone: 'Asia/Kolkata',
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 /**
  * One alert in the console.
  *
@@ -43,9 +34,10 @@ function istTime(iso: string): string {
  * not the same as recording that something was done — and the difference is the
  * entire value of the trail.
  *
- * Overdue alerts get a red edge rather than a red fill. When most of the inbox is
- * overdue — the normal state of an ignored queue — filling every card makes the
- * whole list one undifferentiated alarm and nothing in it can be scanned.
+ * Overdue alerts get a red edge and a one-line marker rather than a red fill.
+ * When most of the inbox is overdue — the normal state of an ignored queue —
+ * filling every card makes the whole list one undifferentiated alarm and
+ * nothing in it can be scanned.
  *
  * Delivery is shown separately from recording. An alert that exists in the trail
  * but reached nobody is a different finding from one that was delivered and
@@ -62,8 +54,8 @@ export function AlertCard({ alert, isOverdue, isBusy, onAcknowledge, onResolve }
 
   return (
     <article
-      className={`border-b border-l-4 border-b-border bg-surface p-4 ${
-        isOverdue ? 'border-l-danger' : 'border-l-transparent'
+      className={`rounded-card border border-l-4 border-border bg-surface p-5 shadow-card ${
+        isOverdue ? 'border-l-danger' : 'border-l-border'
       }`}
     >
       <header className="flex items-start justify-between gap-3">
@@ -87,18 +79,21 @@ export function AlertCard({ alert, isOverdue, isBusy, onAcknowledge, onResolve }
 
       <p className="mt-2.5 text-sm leading-relaxed text-ink">
         <strong className="text-base font-semibold">{alert.peak_observed.toFixed(0)} µg/m³</strong>{' '}
-        where the surrounding network predicted{' '}
-        <strong>{alert.peak_expected.toFixed(0)}</strong> — an excess of{' '}
-        <strong>{alert.peak_excess.toFixed(0)} µg/m³</strong>
+        where the surrounding network predicted <strong>{alert.peak_expected.toFixed(0)}</strong> —
+        an excess of <strong>{alert.peak_excess.toFixed(0)} µg/m³</strong>
       </p>
       <p className="mt-1 text-xs text-ink-muted">
         {alert.peak_z.toFixed(1)}× the expected error here · first seen{' '}
-        {istTime(alert.first_seen_at)} IST
+        {istDateTime(alert.first_seen_at)} IST
       </p>
 
       {isOverdue && (
-        <p className="mt-2.5 rounded-md bg-danger/10 px-2.5 py-1.5 text-xs font-medium text-danger">
-          Past its response deadline. An alert sent and never answered is itself a finding.
+        <p
+          className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-danger"
+          title="An alert sent and never answered is itself a finding."
+        >
+          <Clock aria-hidden className="size-3.5" />
+          Past its response deadline
         </p>
       )}
 

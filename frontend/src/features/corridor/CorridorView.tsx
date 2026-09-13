@@ -151,7 +151,7 @@ export function CorridorView() {
           />
         ) : (
           <>
-            <section className="rounded-[--radius-card] border border-border bg-surface p-4">
+            <section className="rounded-card border border-border bg-surface p-4">
               <div className="flex items-baseline justify-between">
                 <h3 className="text-sm font-semibold">Forecast</h3>
                 <span className="text-xs text-ink-muted">
@@ -184,7 +184,7 @@ export function CorridorView() {
 
             <ExposurePanel advisory={advisory.data} isLoading={advisory.isLoading} />
 
-            <section className="rounded-[--radius-card] border border-border bg-surface">
+            <section className="rounded-card border border-border bg-surface">
               <table className="w-full text-sm">
                 <thead className="border-b border-border text-left text-xs text-ink-muted">
                   <tr>
@@ -288,7 +288,7 @@ function ExposurePanel({
 }) {
   if (isLoading) {
     return (
-      <div className="rounded-[--radius-card] border border-border bg-surface p-4">
+      <div className="rounded-card border border-border bg-surface p-4">
         <StatusMessage kind="loading" title="Comparing departure times…" />
       </div>
     );
@@ -298,7 +298,7 @@ function ExposurePanel({
   const peak = Math.max(...advisory.options.map((option) => option.exposure), 1);
 
   return (
-    <section className="rounded-[--radius-card] border border-border bg-surface p-4">
+    <section className="rounded-card border border-border bg-surface p-4">
       <h3 className="text-sm font-semibold">When to travel</h3>
 
       <p

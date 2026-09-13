@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/Badge';
 import { RangeBar } from '@/components/ui/RangeBar';
 import type { Attribution, Hotspot } from '@/hooks/useAnalysis';
 import { aqiColour } from '@/lib/aqi';
+import { istDateTime } from '@/lib/time';
 
 interface HotspotPanelProps {
   readonly hotspots: readonly Hotspot[];
@@ -12,17 +13,6 @@ function confidenceLabel(confidence: number): string {
   if (confidence >= 0.7) return 'strong candidate';
   if (confidence >= 0.5) return 'plausible';
   return 'weak candidate';
-}
-
-/** Render a UTC timestamp in IST, the only timezone a reader here works in. */
-function istDate(iso: string): string {
-  return new Date(iso).toLocaleString('en-IN', {
-    timeZone: 'Asia/Kolkata',
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 }
 
 /**
@@ -45,7 +35,7 @@ export function HotspotPanel({ hotspots }: HotspotPanelProps) {
             <div className="min-w-0">
               <h3 className="truncate text-sm font-semibold text-ink">{hotspot.station_name}</h3>
               <p className="mt-0.5 text-xs text-ink-subtle">
-                {istDate(hotspot.first_seen_at)} IST · {hotspot.intervals} intervals
+                {istDateTime(hotspot.first_seen_at)} IST · {hotspot.intervals} intervals
               </p>
             </div>
             <Badge tone="danger">{hotspot.peak_z.toFixed(1)}× expected error</Badge>

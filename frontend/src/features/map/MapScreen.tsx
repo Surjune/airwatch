@@ -1,5 +1,4 @@
 import { Skeleton } from '@/components/ui/Skeleton';
-import { Stat, StatRow } from '@/components/ui/Stat';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { HotspotPanel } from '@/features/hotspots/HotspotPanel';
 import { MapView } from '@/features/map/MapView';
@@ -31,20 +30,22 @@ export function MapScreen() {
   return (
     <div className="flex h-full min-h-0 flex-col lg:flex-row">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="shrink-0 border-b border-border bg-surface px-4 py-2.5 sm:px-6">
-          <StatRow>
-            <Stat
-              label="Stations reporting"
-              value={stations.data?.station_count ?? '—'}
-              note="Most recent reading per site"
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-border bg-surface px-4 py-3 sm:px-6">
+          <div>
+            <h1 className="text-lg font-semibold tracking-tight text-ink">Live map</h1>
+            <p className="text-xs text-ink-muted">
+              Latest PM2.5 at each station · hotspots over the last{' '}
+              {String(Math.round(DETECTION_WINDOW_HOURS / 24))} days
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Pill label="Stations reporting" value={stations.data?.station_count} />
+            <Pill
+              label="Hotspots"
+              value={hotspots.data?.hotspot_count}
+              danger={detected.length > 0}
             />
-            <Stat
-              label="Hotspots detected"
-              value={hotspots.data?.hotspot_count ?? '—'}
-              note={`Over the last ${String(Math.round(DETECTION_WINDOW_HOURS / 24))} days`}
-              tone={detected.length > 0 ? 'danger' : 'neutral'}
-            />
-          </StatRow>
+          </div>
         </div>
 
         <div className="min-h-0 flex-1">
@@ -110,5 +111,25 @@ export function MapScreen() {
         </div>
       </aside>
     </div>
+  );
+}
+
+/** A compact figure for the map toolbar, where a full stat block would cost map height. */
+function Pill({
+  label,
+  value,
+  danger = false,
+}: {
+  readonly label: string;
+  readonly value: number | undefined;
+  readonly danger?: boolean;
+}) {
+  return (
+    <span className="inline-flex items-baseline gap-2 rounded-lg border border-border bg-surface-sunken px-3 py-1.5">
+      <span className={`text-base font-semibold ${danger ? 'text-danger' : 'text-ink'}`}>
+        {value ?? '—'}
+      </span>
+      <span className="text-xs text-ink-muted">{label}</span>
+    </span>
   );
 }

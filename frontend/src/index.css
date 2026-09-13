@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import 'leaflet/dist/leaflet.css';
+@import '@fontsource-variable/inter';
 
 /*
  * Design tokens.
@@ -32,6 +33,14 @@
   --color-accent-hover: #0c4a59;
   --color-accent-subtle: #e6f1f4;
 
+  /* Navigation chrome: a deep teal-slate, so the shell recedes and the data
+     surfaces -- white, with the AQI colours on them -- carry the eye. */
+  --color-chrome: #0b2530;
+  --color-chrome-raised: #12333f;
+  --color-chrome-border: #1d4250;
+  --color-chrome-ink: #e8f1f3;
+  --color-chrome-muted: #93acb4;
+
   /* State colours, for the three outcomes that must never look alike. */
   --color-danger: #b3261e;
   --color-danger-subtle: #fdecea;
@@ -41,11 +50,15 @@
   --color-ok-subtle: #e8f5ee;
 
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    sans-serif;
+    'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
   --font-mono: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Menlo, Consolas, monospace;
 
-  --radius-card: 0.625rem;
+  --radius-card: 0.75rem;
+
+  --shadow-card: 0 1px 2px rgb(16 24 32 / 0.04), 0 1px 3px rgb(16 24 32 / 0.06);
+  --shadow-raised: 0 4px 12px rgb(16 24 32 / 0.08), 0 1px 3px rgb(16 24 32 / 0.06);
+  --shadow-overlay: 0 12px 32px rgb(16 24 32 / 0.16);
 }
 
 /* The map fills its container; Leaflet needs an explicit height to render. */
@@ -79,6 +92,9 @@
     /* Tabular figures everywhere: columns of concentrations are read by
        comparing digits in place, and proportional numerals make that harder. */
     font-variant-numeric: tabular-nums;
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /*
