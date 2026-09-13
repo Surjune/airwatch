@@ -36,13 +36,14 @@ Resilience* challenge. Piloted in Delhi-NCR, Kanpur and Coimbatore.
   - forecasts 24–72 hours ahead along economic corridors;
   - alerts the district that holds the hotspot, and asks the jurisdiction that holds the source to
     act too;
-  - lets cities train a model together by sharing weights, never raw data.
+  - lets cities train a model together by sharing weights, never raw data;
+  - explains every screen aloud in English, Hindi or Tamil, with the words on screen as it speaks.
 - **What makes it credible.** Every figure is validated against held-out real monitors and published
   with its uncertainty, including the results where a learned model lost to a simple baseline. The
   system says "we cannot see here" rather than drawing unmonitored ground as clean.
 - **Is it real?** Yes: it is deployed, updates hourly, and has already produced a cross-state
   coordination request from live data (see [§3.6](#36-coordinating-across-cities-and-states)).
-  Tests: 843 backend, 101 frontend, all run in CI together with a replay of a recorded pollution
+  Tests: 907 backend, 120 frontend, all run in CI together with a replay of a recorded pollution
   episode.
 
 ## Contents
@@ -321,6 +322,18 @@ The overview reads as a numbered argument rather than a wall of widgets:
 
 A shared link such as `/?city=delhi&pollutant=pm25#/map` opens on that city and pollutant.
 
+**A spoken guide on every screen.** The resident most exposed to bad air is the least likely to read
+an English dashboard. So **Listen**, in the masthead of every screen, explains what that screen shows
+and how to use it, spoken in **English, हिन्दी or தமிழ்** by an Indian-language voice (Sarvam AI,
+Bulbul v3):
+- A first visit offers the guide once, each language written in its own script, so one tap both
+  picks the language and starts it. The choice is remembered, and a phone set to Tamil opens in Tamil.
+- The transcript is on screen and follows the voice paragraph by paragraph. Tapping a paragraph plays
+  from there, and the guide works in full with the sound off.
+- The panel sits beside the page, not over it, because it describes what is behind it.
+- Speech is generated once per paragraph at deploy time and stored, so listeners never wait and the
+  guide keeps talking even if the speech service is down. Without a key, the text guide still works.
+
 **Design choices that carry meaning:**
 - The six CPCB band colours are the only saturated colour, so a "Poor" reading is never competing
   with decoration.
@@ -400,17 +413,19 @@ Details: [docs/VALIDATION.md](docs/VALIDATION.md).
 - **CI on every push:**
   - lint, format and type checks;
   - migrations applied, rolled back and re-applied, then `alembic check`;
-  - 843 backend and 101 frontend tests;
+  - 907 backend and 120 frontend tests;
   - the Anand Vihar replay;
   - both Docker images built and the production compose file validated.
 
 ```
 backend/app/
   core/          constants, AQI math, geo, H3, alerting and evidence rules
-  external/      OpenAQ, CPCB, FIRMS, Open-Meteo, Sentinel-5P, webhook clients
+  external/      OpenAQ, CPCB, FIRMS, Open-Meteo, Sentinel-5P, Sarvam AI speech, webhook clients
   repositories/  the only place SQL and PostGIS appear
   ml/            detection, attribution, forecasting, fusion, vision, co-location
-  services/      one per pillar: ingestion, analysis, alerts, citizen, satellite, federation, interop
+  services/      one per pillar: ingestion, analysis, alerts, citizen, satellite, federation, interop, voice guide
+  documents/     the PDF complaint report's layout
+  guides/        the spoken guide's scripts, one TOML file per language
   routes/        thin HTTP layer
 federated/       Flower client, server and protocol
 ml/              validation scripts that produced every published figure
@@ -481,6 +496,7 @@ carries its uncertainty or confidence, and every error returns the same envelope
 | `POST` · `GET /v1/citizen/sensor-readings` | Household sensor readings and the tier's measured bias |
 | `GET /v1/citizen/complaints` · `/{reference}/pdf` | This browser's own submissions, and the PDF complaint report for each (`X-Device-ID` header) |
 | `GET /v1/federation/status` | Node coverage and whether federating helped |
+| `GET /v1/guide/{screen}?language=hi` · `/sections/{index}/audio` | A screen's spoken guide: the transcript, and each paragraph as MP3 (English, Hindi, Tamil) |
 | `GET /v1/interop/capabilities` · `/observations` · `/hotspots` · `/models` | The exchange a partner city consumes |
 
 ## 10. Known limitations
@@ -531,6 +547,10 @@ These are deferred deliberately and recorded here rather than as TODOs in the co
   authorities keep their history.
 - **Coordination requests depend on the source registry and wind history.** A source not in the
   registry, or an hour with no wind record, produces no request.
+- **The voice guide is scripted, not conversational.** It explains the screens; it does not read out
+  today's figures or answer questions. The Hindi and Tamil scripts were written by the team and should
+  be reviewed by native speakers working in air quality before a public launch; they live in
+  `backend/app/guides/scripts` so that review needs no code.
 - **Delivery is a webhook only.** There is no email or SMS gateway; without an endpoint, alerts are
   recorded and shown as not delivered.
 - **Operators share one key; there are no named accounts.** The trail records what was done, not

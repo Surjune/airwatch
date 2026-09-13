@@ -185,6 +185,28 @@ The layout lives in `app/documents/complaint_pdf.py`, a leaf that receives
 already-worded sections; every sentence is decided in `complaint_service`, where
 the rules about what can be claimed are.
 
+## The spoken guide, and why it is scripted
+
+A resident who photographs smoke is exactly the person the dashboard's English prose fails. The
+guide explains each screen aloud in English, Hindi or Tamil, and four decisions shape it:
+
+- **Written, not generated.** A language model asked to explain a screen would sometimes describe a
+  button that does not exist, or promise that a complaint is forwarded. The scripts are fixed text in
+  `app/guides/scripts/<language>.toml`, reviewed like code, and a loader refuses a language that is
+  missing a screen, so no screen goes silent in Tamil.
+- **Said the way people say it.** Interface labels stay in English inside a Hindi or Tamil sentence
+  ("Open the map दबाएँ"), because that is the word on the button the listener has to find. Terms a
+  voice would misread are rewritten only in what is spoken: "PM2.5" becomes "पीएम टू पॉइंट फाइव".
+- **One clip per paragraph, stored once.** Each paragraph is synthesised by Sarvam AI's Bulbul v3,
+  keyed by a hash of the words, voice, model and settings, and kept in `voice_guide_clips`. A
+  corrected sentence gets a new clip and a new URL, so browsers may cache a clip for a year.
+  `deploy.sh` generates every clip in advance, and a stored clip plays even if the key is removed or
+  Sarvam is down. There are 87 clips across the three languages, generated once, so the
+  cost does not grow with visitors.
+- **The words are always on screen.** The transcript highlights the paragraph being spoken and each
+  paragraph plays on a tap. The guide works for someone who is hard of hearing, in a quiet office,
+  and on a deployment with no key, which shows the transcript and says the voice is not set up.
+
 ## Interoperability, and why weights are withheld
 
 No state hands another its raw database, so a national data lake stalls on

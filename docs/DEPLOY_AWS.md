@@ -71,6 +71,8 @@ nano ~/airwatch/.env
 - `OPERATOR_API_KEY` — paste the output of `openssl rand -hex 32`, and keep a copy:
   operators sign in to the authority console with it.
 - Your OpenAQ, data.gov.in and FIRMS keys.
+- `SARVAM_API_KEY` (optional) — voices the spoken guide in English, Hindi and Tamil. `deploy.sh`
+  generates every paragraph once after it starts the stack; without a key the guide is text only.
 - Earth Engine (optional): the service-account email and project id. Then copy the
   key file from **your computer**:
 

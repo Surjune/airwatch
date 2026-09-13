@@ -30,6 +30,7 @@ routes  ->  services  ->  repositories  ->  database
               +--> external ----+
               +--> ml
               +--> documents
+              +--> guides
               +--> core (importable by everything)
 ```
 
@@ -50,6 +51,9 @@ routes  ->  services  ->  repositories  ->  database
 - `documents/` lays out files AirWatch hands to people, such as the PDF complaint report. It receives
   content already worded by a service and imports only `core`; what a document may claim is
   decided in the service, never in the layout.
+- `guides/` holds the spoken guide's scripts as TOML, one file per language, and the loader that
+  validates them. Wording lives in data, not code, so a translator can correct a sentence without a
+  code change. Imports only `core`.
 - `core/` is leaf-level: config, logging, exceptions, constants and every shared calculation. It
   imports nothing from the layers above.
 
