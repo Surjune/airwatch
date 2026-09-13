@@ -40,5 +40,8 @@ class SatelliteResponse(BaseModel):
             "roughly 36 km^2 cells, not a ground concentration."
         )
     )
+    total_cells: int = Field(
+        description="Cells covering the city, so a day's observed count reads as coverage."
+    )
     series: list[SatelliteDayResponse]
     cells: list[SatelliteCellResponse]

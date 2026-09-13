@@ -39,6 +39,7 @@ def city_satellite(
         product=picture.product,
         unit=picture.unit,
         source=_SOURCE,
+        total_cells=picture.total_cells,
         series=[
             SatelliteDayResponse(observed_on=day.observed_on, value=day.value, cells=day.cells)
             for day in picture.series

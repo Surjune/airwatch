@@ -51,6 +51,7 @@ def test_returns_the_series_and_the_latest_cells_with_outlines(api: TestClient) 
     body = api.get("/v1/satellite", params={"city": "coimbatore", "product": "no2"}).json()
 
     assert body["unit"] == "mol/m2"
+    assert body["total_cells"] == len(satellite_service.city_cells(PilotCity.COIMBATORE))
     assert "Sentinel-5P" in body["source"]
     assert body["series"] == [{"observed_on": "2026-09-12", "value": 5.7e-5, "cells": 120}]
     cell = body["cells"][0]

@@ -64,6 +64,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/sensors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Latest raw readings from low-cost sensors
+         * @description Uncalibrated low-cost sensor readings, kept apart from the reference network.
+         */
+        get: operations["list_low_cost_sensors_v1_sensors_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/hotspots": {
         parameters: {
             query?: never;
@@ -391,6 +411,46 @@ export interface paths {
          * @description Report live monitoring coverage and the measured transfer result.
          */
         get: operations["status_v1_federation_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/satellite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A Sentinel-5P product over a city
+         * @description Daily means over the city, and each coarse cell's latest value.
+         */
+        get: operations["city_satellite_v1_satellite_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/official-aqi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * CPCB's latest AQI in a city
+         * @description What CPCB most recently published for each station in the city.
+         */
+        get: operations["official_aqi_v1_official_aqi_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1097,6 +1157,22 @@ export interface components {
             hotspots: components["schemas"]["HotspotResponse"][];
         };
         /**
+         * LowCostSensorsResponse
+         * @description Latest raw readings from low-cost optical sensors.
+         */
+        LowCostSensorsResponse: {
+            pollutant: components["schemas"]["Pollutant"];
+            /** Sensor Count */
+            sensor_count: number;
+            /**
+             * Calibrated
+             * @description Always false in this version. Optical sensors read high in humid air and drift with age; these values are shown as reported and are never used in hotspot detection, fusion or forecasting.
+             */
+            calibrated: boolean;
+            /** Readings */
+            readings: components["schemas"]["StationReadingResponse"][];
+        };
+        /**
          * ModelCard
          * @description What a partner city needs in order to decide whether to adopt a model.
          *
@@ -1336,6 +1412,48 @@ export interface components {
             definition: string;
         };
         /**
+         * OfficialAqiResponse
+         * @description CPCB's latest published AQI for every station in a city.
+         */
+        OfficialAqiResponse: {
+            city: components["schemas"]["PilotCity"];
+            /** Source */
+            source: string;
+            /** Station Count */
+            station_count: number;
+            /** Stations */
+            stations: components["schemas"]["OfficialStationResponse"][];
+        };
+        /**
+         * OfficialStationResponse
+         * @description One station's latest official figures.
+         */
+        OfficialStationResponse: {
+            /** Station Name */
+            station_name: string;
+            position: components["schemas"]["Position"];
+            /**
+             * Reported At
+             * Format: date-time
+             */
+            reported_at: string;
+            /**
+             * Sub Indices
+             * @description CPCB sub-index per pollutant from the station's latest report.
+             */
+            sub_indices: {
+                [key: string]: number;
+            };
+            /**
+             * Aqi
+             * @description The highest sub-index, stated only when CPCB would state one: at least three pollutants reported, one of them PM2.5 or PM10.
+             */
+            aqi: number | null;
+            /** Category */
+            category: string | null;
+            dominant_pollutant: components["schemas"]["Pollutant"] | null;
+        };
+        /**
          * PilotCity
          * @description A city this deployment ingests, analyses and can scope a view to.
          * @enum {string}
@@ -1453,6 +1571,73 @@ export interface components {
              * @description What was found or done. Required: a resolution with no explanation records that someone clicked a button, which is not the same as recording that something was done.
              */
             note: string;
+        };
+        /**
+         * SatelliteCellResponse
+         * @description One coarse cell's latest value, with its outline.
+         */
+        SatelliteCellResponse: {
+            /** H3 Cell */
+            h3_cell: string;
+            /** Boundary */
+            boundary: components["schemas"]["Position"][];
+            /**
+             * Observed On
+             * Format: date
+             */
+            observed_on: string;
+            /** Value */
+            value: number;
+            /** Pixel Count */
+            pixel_count: number;
+        };
+        /**
+         * SatelliteDayResponse
+         * @description One day's mean across the city's cells.
+         */
+        SatelliteDayResponse: {
+            /**
+             * Observed On
+             * Format: date
+             */
+            observed_on: string;
+            /** Value */
+            value: number;
+            /**
+             * Cells
+             * @description Cells with enough valid pixels that day to be averaged.
+             */
+            cells: number;
+        };
+        /**
+         * SatelliteProduct
+         * @description A Sentinel-5P TROPOMI column product ingested from Earth Engine.
+         * @enum {string}
+         */
+        SatelliteProduct: "no2" | "so2" | "co" | "aerosol_index";
+        /**
+         * SatelliteResponse
+         * @description A Sentinel-5P product over one city.
+         */
+        SatelliteResponse: {
+            city: components["schemas"]["PilotCity"];
+            product: components["schemas"]["SatelliteProduct"];
+            /** Unit */
+            unit: string;
+            /**
+             * Source
+             * @description Sentinel-5P TROPOMI via Google Earth Engine. A column measurement over roughly 36 km^2 cells, not a ground concentration.
+             */
+            source: string;
+            /**
+             * Total Cells
+             * @description Cells covering the city, so a day's observed count reads as coverage.
+             */
+            total_cells: number;
+            /** Series */
+            series: components["schemas"]["SatelliteDayResponse"][];
+            /** Cells */
+            cells: components["schemas"]["SatelliteCellResponse"][];
         };
         /**
          * SlaBreachResponse
@@ -1706,6 +1891,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StationsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_low_cost_sensors_v1_sensors_get: {
+        parameters: {
+            query?: {
+                pollutant?: components["schemas"]["Pollutant"];
+                city?: components["schemas"]["PilotCity"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LowCostSensorsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2206,6 +2423,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FederationStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    city_satellite_v1_satellite_get: {
+        parameters: {
+            query: {
+                city: components["schemas"]["PilotCity"];
+                product?: components["schemas"]["SatelliteProduct"];
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SatelliteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    official_aqi_v1_official_aqi_get: {
+        parameters: {
+            query: {
+                city: components["schemas"]["PilotCity"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfficialAqiResponse"];
                 };
             };
             /** @description Validation Error */

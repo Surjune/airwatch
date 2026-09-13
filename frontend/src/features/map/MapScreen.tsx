@@ -4,7 +4,10 @@ import { StatusMessage } from '@/components/ui/StatusMessage';
 import { HotspotPanel } from '@/features/hotspots/HotspotPanel';
 import { NoHotspots } from '@/features/hotspots/NoHotspots';
 import { MapView } from '@/features/map/MapView';
+import { useState } from 'react';
+
 import { useHotspots, useStations } from '@/hooks/useAnalysis';
+import { useLowCostSensors, useSatellite } from '@/hooks/useSources';
 import { pollutantLabel, useScope } from '@/lib/scope';
 
 /** Detection window, in hours. Two weeks, matching the ingested history. */
@@ -25,6 +28,9 @@ export function MapScreen() {
   const { city, pollutant, current } = useScope();
   const stations = useStations(pollutant, city);
   const hotspots = useHotspots(DETECTION_WINDOW_HOURS, pollutant, city);
+  const sensors = useLowCostSensors(pollutant, city);
+  const [showSatellite, setShowSatellite] = useState(false);
+  const satellite = useSatellite(city, 'no2');
 
   const failure = stations.error ?? hotspots.error;
   const isLoading = stations.isLoading || hotspots.isLoading || current === null;
@@ -47,7 +53,19 @@ export function MapScreen() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <PollutantToggle />
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface-sunken px-3 py-1.5 text-xs font-medium text-ink-muted">
+              <input
+                type="checkbox"
+                checked={showSatellite}
+                onChange={(event) => {
+                  setShowSatellite(event.target.checked);
+                }}
+                className="accent-violet-600"
+              />
+              Satellite NO₂
+            </label>
             <Pill label="Stations reporting" value={stations.data?.station_count} />
+            <Pill label="Low-cost sensors" value={sensors.data?.sensor_count} />
             <Pill
               label="Hotspots"
               value={hotspots.data?.hotspot_count}
@@ -81,6 +99,12 @@ export function MapScreen() {
               centre={[current.centre.longitude, current.centre.latitude]}
               radiusM={current.radius_m}
               pollutantLabel={label}
+              sensors={sensors.data?.readings ?? []}
+              satellite={
+                showSatellite && satellite.data
+                  ? { cells: satellite.data.cells, product: 'no2' }
+                  : null
+              }
             />
           )}
         </div>

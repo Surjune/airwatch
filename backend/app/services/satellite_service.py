@@ -64,6 +64,7 @@ class CityPicture:
     city: PilotCity
     product: SatelliteProduct
     unit: str
+    total_cells: int
     series: list[DailyMean]
     cells: list[CellValue]
 
@@ -166,6 +167,7 @@ def city_picture(
         city=city,
         product=product,
         unit=S5P_PRODUCT_UNITS[product.value],
+        total_cells=len(ids),
         series=satellite_repository.daily_means(session, ids, product, since),
         cells=[
             CellValue(

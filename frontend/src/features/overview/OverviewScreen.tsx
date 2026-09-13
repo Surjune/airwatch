@@ -8,6 +8,8 @@ import { MetricCard } from '@/components/ui/MetricCard';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { NoHotspots } from '@/features/hotspots/NoHotspots';
+import { OfficialAqiCard } from '@/features/overview/OfficialAqiCard';
+import { SatelliteCard } from '@/features/overview/SatelliteCard';
 import { TopHotspots } from '@/features/overview/TopHotspots';
 import { WorstStations } from '@/features/overview/WorstStations';
 import { Workflow } from '@/features/overview/Workflow';
@@ -172,6 +174,11 @@ export function OverviewScreen({ onNavigate }: { readonly onNavigate: (key: Scre
               <WorstStations readings={stations.data?.readings ?? []} />
             )}
           </Card>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <OfficialAqiCard city={city} cityLabel={cityLabel} />
+          <SatelliteCard city={city} />
         </div>
 
         <section aria-labelledby="workflow-heading">
