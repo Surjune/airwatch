@@ -78,6 +78,9 @@ nano ~/airwatch/.env
 scp -i airwatch-key.pem gee-key.json ubuntu@<ELASTIC-IP>:~/airwatch/secrets/gee-key.json
 ```
 
+`deploy.sh` hands `secrets/` to the container user (uid 10001), so the key is
+readable inside the API and worker but by no other account on the server.
+
 Log out and back in once, so Docker works without `sudo`.
 
 ## 4. Deploy and load data (20–40 minutes, mostly waiting)

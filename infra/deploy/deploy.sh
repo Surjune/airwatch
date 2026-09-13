@@ -20,6 +20,15 @@ done
 say "Updating code"
 git pull --ff-only
 
+# The API image runs as uid 10001 (backend/Dockerfile), so a key copied in with
+# scp as ubuntu is unreadable inside the container until it is handed over.
+if [ -d secrets ] && [ -n "$(sudo ls -A secrets)" ]; then
+  say "Granting the containers read access to secrets/"
+  sudo chown -R 10001:10001 secrets
+  sudo chmod 700 secrets
+  sudo find secrets -type f -exec chmod 600 {} +
+fi
+
 say "Building images"
 "${COMPOSE[@]}" build
 
