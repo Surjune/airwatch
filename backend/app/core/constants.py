@@ -845,6 +845,38 @@ CITIZEN_SENSOR_MAX_AGE_HOURS: Final[int] = CITIZEN_MAX_CAPTURE_AGE_HOURS
 
 
 # ---------------------------------------------------------------------------
+# Complaint reports
+# ---------------------------------------------------------------------------
+# A photograph or sensor reading can carry what the resident saw, and the
+# resident can download a PDF describing the submission, what it measured, how
+# it compared with the nearest monitor, and who is responsible for that ground --
+# something they can attach to an official grievance.
+
+#: Longest free-text description accepted with a submission, in characters.
+#: Enough for "black smoke from the dyeing unit behind the bus stand, every night
+#: after 9pm"; short enough that the field cannot carry a document.
+COMPLAINT_DESCRIPTION_MAX_LENGTH: Final[int] = 500
+
+#: Prefix of every submission reference, so a reference read aloud over a
+#: grievance helpline is recognisably AirWatch's.
+COMPLAINT_REFERENCE_PREFIX: Final[str] = "AW"
+
+#: Digits the submission id is padded to inside a reference. Six keeps references
+#: a fixed, dictatable length until the millionth submission.
+COMPLAINT_REFERENCE_DIGITS: Final[int] = 6
+
+#: Most of a device's own submissions listed in one request.
+COMPLAINT_LIST_LIMIT: Final[int] = 50
+
+#: Offset of Indian Standard Time from UTC, in minutes, for dates written on a
+#: report. Storage is UTC; a resident and the office reading their complaint both
+#: work in IST. A fixed offset rather than a tz database name, because India has
+#: observed no daylight saving since 1945 and a slim server image may carry no
+#: tz database at all.
+IST_UTC_OFFSET_MINUTES: Final[int] = 330
+
+
+# ---------------------------------------------------------------------------
 # Photo provenance
 # ---------------------------------------------------------------------------
 # EXIF cannot be trusted as proof: it is trivially editable and most messaging

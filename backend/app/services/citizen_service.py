@@ -42,11 +42,12 @@ from app.core.constants import (
     CITIZEN_UNVERIFIED_TRUST,
     HOURS_PER_DAY,
 )
-from app.core.enums import Pollutant
+from app.core.enums import ComplaintCategory, Pollutant, SubmissionKind
 from app.core.exceptions import RateLimitExceededError, ValidationError
 from app.core.geo import LonLat, validate_within_india
 from app.core.h3_grid import point_to_cell
 from app.core.logging import get_logger
+from app.core.references import clean_description, format_reference
 from app.ml.exif import PhotoProvenance, Verdict, verify
 from app.ml.haze_calibration import HazeCalibration, HazeEstimate
 from app.ml.haze_calibration import fit as fit_calibration
@@ -85,6 +86,8 @@ class AcceptedReport:
     """A stored submission and everything that could honestly be said about it."""
 
     report_id: int
+    #: What the resident quotes, and downloads their complaint report by.
+    complaint_reference: str
     haze_index: float
     h3_cell: str
     captured_at: datetime
@@ -241,6 +244,8 @@ def submit(
     captured_at: datetime,
     device_id: str,
     pollutant: Pollutant = Pollutant.PM25,
+    category: ComplaintCategory | None = None,
+    description: str | None = None,
     now: datetime | None = None,
 ) -> AcceptedReport | Rejection:
     """Accept a photograph, measure its haze, and store what it yielded.
@@ -252,6 +257,8 @@ def submit(
         captured_at: When the photo was taken, timezone-aware.
         device_id: Opaque per-device identifier, for rate limiting and trust.
         pollutant: Pollutant to compare against a nearby monitor.
+        category: What the resident says they saw, if they said.
+        description: The resident's own words, trimmed; blank is stored as none.
         now: Reference time, injectable for tests.
 
     Returns:
@@ -288,6 +295,8 @@ def submit(
         device_id=device_id,
         pollutant=pollutant,
         provenance=provenance,
+        category=category,
+        description=clean_description(description),
     )
 
 
@@ -300,6 +309,8 @@ def _store(
     device_id: str,
     pollutant: Pollutant,
     provenance: PhotoProvenance,
+    category: ComplaintCategory | None,
+    description: str | None,
 ) -> AcceptedReport:
     """Persist an analysed submission and describe what it supports."""
     reference = citizen_repository.nearest_station_reading(
@@ -338,6 +349,9 @@ def _store(
             reference_station_id=reference.station_id if reference else None,
             reference_value=reference.value if reference else None,
             reference_distance_m=reference.distance_m if reference else None,
+            category=category,
+            description=description,
+            provenance=provenance.verdict.value,
         ),
     )
 
@@ -353,6 +367,7 @@ def _store(
 
     return AcceptedReport(
         report_id=report_id,
+        complaint_reference=format_reference(SubmissionKind.PHOTO, report_id),
         haze_index=analysis.haze_index,
         h3_cell=point_to_cell(position),
         captured_at=capture_time,

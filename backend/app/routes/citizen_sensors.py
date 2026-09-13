@@ -69,10 +69,13 @@ def submit_reading(
         observed_at=body.observed_at,
         device_id=body.device_id,
         sensor_model=body.sensor_model,
+        category=body.category,
+        description=body.description,
     )
 
     return SensorReadingAccepted(
         reading_id=accepted.reading_id,
+        complaint_reference=accepted.complaint_reference,
         h3_cell=accepted.h3_cell,
         observed_at=accepted.observed_at,
         pollutant=accepted.pollutant,

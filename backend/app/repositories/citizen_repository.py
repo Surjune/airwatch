@@ -13,11 +13,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from sqlalchemy import Row, func, select
+from sqlalchemy import Row, Select, func, select
 from sqlalchemy.orm import Session
 
 from app.core.constants import CITIZEN_COLOCATION_RADIUS_M, CITIZEN_REFERENCE_MAX_GAP_MINUTES
-from app.core.enums import Pollutant, StationTier
+from app.core.enums import ComplaintCategory, Pollutant, StationTier
 from app.core.geo import LonLat
 from app.core.h3_grid import H3Cell
 from app.ml.haze_calibration import CalibrationPair
@@ -38,6 +38,29 @@ class CitizenReportRow:
     sharpness: float
     trust_score: float
     reference_station_id: int | None
+    reference_value: float | None
+    reference_distance_m: float | None
+    category: ComplaintCategory | None = None
+    description: str | None = None
+    #: What the photo's own metadata said, kept so a report can repeat it later.
+    provenance: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class StoredPhotoReport:
+    """One stored photograph report, as its submitter's complaint report needs it."""
+
+    report_id: int
+    coordinates: LonLat
+    h3_cell: H3Cell
+    captured_at: datetime
+    submitted_at: datetime
+    haze_index: float
+    trust_score: float
+    category: ComplaintCategory | None
+    description: str | None
+    provenance: str | None
+    reference_station_name: str | None
     reference_value: float | None
     reference_distance_m: float | None
 
@@ -134,10 +157,66 @@ def insert_report(session: Session, row: CitizenReportRow) -> int:
         reference_station_id=row.reference_station_id,
         reference_value=row.reference_value,
         reference_distance_m=row.reference_distance_m,
+        category=row.category,
+        description=row.description,
+        extra=None if row.provenance is None else {"provenance": row.provenance},
     )
     session.add(report)
     session.flush()
     return int(report.id)
+
+
+def _stored_photo_statement() -> Select[tuple[CitizenReport, float, float, str | None]]:
+    return select(
+        CitizenReport,
+        CitizenReport.geom.ST_X(),
+        CitizenReport.geom.ST_Y(),
+        Station.name,
+    ).outerjoin(Station, Station.id == CitizenReport.reference_station_id)
+
+
+def _to_stored_photo(row: Row[tuple[CitizenReport, float, float, str | None]]) -> StoredPhotoReport:
+    report, lon, lat, station_name = row
+    provenance = (report.extra or {}).get("provenance")
+    return StoredPhotoReport(
+        report_id=report.id,
+        coordinates=(float(lon), float(lat)),
+        h3_cell=report.h3_cell,
+        captured_at=report.captured_at,
+        submitted_at=report.submitted_at,
+        haze_index=report.haze_index,
+        trust_score=report.trust_score,
+        category=report.category,
+        description=report.description,
+        provenance=None if provenance is None else str(provenance),
+        reference_station_name=station_name,
+        reference_value=report.reference_value,
+        reference_distance_m=report.reference_distance_m,
+    )
+
+
+def photo_for_device(session: Session, report_id: int, device_id: str) -> StoredPhotoReport | None:
+    """One photograph report, only if this device submitted it.
+
+    A mismatch returns None exactly as a missing id does, so a caller cannot use
+    the difference to learn which ids exist.
+    """
+    statement = _stored_photo_statement().where(
+        CitizenReport.id == report_id, CitizenReport.device_id == device_id
+    )
+    row = session.execute(statement).first()
+    return None if row is None else _to_stored_photo(row)
+
+
+def photos_for_device(session: Session, device_id: str, *, limit: int) -> list[StoredPhotoReport]:
+    """A device's photograph reports, newest first."""
+    statement = (
+        _stored_photo_statement()
+        .where(CitizenReport.device_id == device_id)
+        .order_by(CitizenReport.submitted_at.desc())
+        .limit(limit)
+    )
+    return [_to_stored_photo(row) for row in session.execute(statement).all()]
 
 
 def count_reports_since(session: Session, device_id: str, since: datetime) -> int:

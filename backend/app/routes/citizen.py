@@ -12,6 +12,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile
 from sqlalchemy.orm import Session
 
+from app.core.constants import COMPLAINT_DESCRIPTION_MAX_LENGTH
+from app.core.enums import ComplaintCategory
 from app.ml.vision import Rejection
 from app.repositories import citizen_repository
 from app.repositories.session import get_db_session
@@ -63,6 +65,7 @@ def _calibration(status_: CalibrationStatus) -> CalibrationStatusResponse:
 def _accepted(report: AcceptedReport) -> SubmissionResponse:
     return SubmissionResponse(
         report_id=report.report_id,
+        complaint_reference=report.complaint_reference,
         h3_cell=report.h3_cell,
         captured_at=report.captured_at,
         haze_index=report.haze_index,
@@ -124,6 +127,16 @@ async def submit_report(
         Form(description="When the photo was taken, timezone-aware. Not the upload time."),
     ],
     device_id: Annotated[str, Form(min_length=_MIN_DEVICE_ID_LENGTH, max_length=128)],
+    category: Annotated[
+        ComplaintCategory | None, Form(description="What the resident says they saw.")
+    ] = None,
+    description: Annotated[
+        str | None,
+        Form(
+            max_length=COMPLAINT_DESCRIPTION_MAX_LENGTH,
+            description="The resident's own words, for their complaint report.",
+        ),
+    ] = None,
 ) -> SubmissionResponse | RejectionResponse:
     """Measure atmospheric haze in a photograph and store what it yielded.
 
@@ -143,6 +156,8 @@ async def submit_report(
         coordinates=(longitude, latitude),
         captured_at=captured_at,
         device_id=device_id,
+        category=category,
+        description=description,
     )
 
     if isinstance(outcome, Rejection):

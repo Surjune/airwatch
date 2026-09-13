@@ -96,6 +96,9 @@ class SubmissionResponse(BaseModel):
     """What a submitted photograph yielded."""
 
     report_id: int
+    complaint_reference: str = Field(
+        description="What the resident quotes, and downloads their complaint report by."
+    )
     h3_cell: str
     captured_at: datetime
 

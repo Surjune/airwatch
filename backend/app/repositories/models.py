@@ -41,10 +41,11 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from app.core.constants import SRID_WGS84
+from app.core.constants import COMPLAINT_DESCRIPTION_MAX_LENGTH, SRID_WGS84
 from app.core.enums import (
     AlertKind,
     AlertStatus,
+    ComplaintCategory,
     HotspotStatus,
     Pollutant,
     SatelliteProduct,
@@ -70,6 +71,24 @@ def _enum_values(enum_class: type[StrEnum]) -> list[str]:
 
 class Base(DeclarativeBase):
     """Declarative base for every AirWatch table."""
+
+
+def _complaint_category_column() -> Mapped[ComplaintCategory | None]:
+    """The optional complaint category shared by both citizen tables.
+
+    One native type serves both, so a category means the same thing whichever
+    tier it arrived through. ``create_type=False`` because the migration creates
+    it once, before either column.
+    """
+    return mapped_column(
+        SqlEnum(
+            ComplaintCategory,
+            name="complaint_category",
+            create_type=False,
+            values_callable=_enum_values,
+        ),
+        nullable=True,
+    )
 
 
 def _point_column(nullable: bool = False) -> Mapped[str]:
@@ -638,6 +657,13 @@ class CitizenReport(Base):
     #: disagrees with the surrounding network.
     trust_score: Mapped[float] = mapped_column(Float, nullable=False)
 
+    #: What the resident says they saw, when they said. Optional: a photograph
+    #: taken only to measure haze is still a contribution.
+    category: Mapped[ComplaintCategory | None] = _complaint_category_column()
+    description: Mapped[str | None] = mapped_column(
+        String(COMPLAINT_DESCRIPTION_MAX_LENGTH), nullable=True
+    )
+
     extra: Mapped[dict[str, object] | None] = mapped_column(JSONB, nullable=True)
 
     __table_args__ = (
@@ -694,6 +720,12 @@ class CitizenSensorReading(Base):
     )
     reference_value: Mapped[float | None] = mapped_column(Float, nullable=True)
     reference_distance_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    #: What the resident says they saw, when they said.
+    category: Mapped[ComplaintCategory | None] = _complaint_category_column()
+    description: Mapped[str | None] = mapped_column(
+        String(COMPLAINT_DESCRIPTION_MAX_LENGTH), nullable=True
+    )
 
     __table_args__ = (
         CheckConstraint("value >= 0", name="ck_citizen_sensor_value_non_negative"),

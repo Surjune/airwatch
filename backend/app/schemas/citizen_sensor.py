@@ -13,7 +13,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
-from app.core.enums import PilotCity, Pollutant
+from app.core.constants import COMPLAINT_DESCRIPTION_MAX_LENGTH
+from app.core.enums import ComplaintCategory, PilotCity, Pollutant
 from app.schemas.analysis import Position
 
 #: Shortest device identifier accepted, matching photo submissions.
@@ -46,6 +47,16 @@ class SensorReadingRequest(BaseModel):
             description="What the instrument is, for example 'AirGradient ONE'.",
         ),
     ]
+    category: ComplaintCategory | None = Field(
+        default=None, description="What the resident says they saw, if anything."
+    )
+    description: Annotated[
+        str | None,
+        Field(
+            max_length=COMPLAINT_DESCRIPTION_MAX_LENGTH,
+            description="The resident's own words, for their complaint report.",
+        ),
+    ] = None
 
 
 class ReferencePairResponse(BaseModel):
@@ -83,6 +94,9 @@ class SensorReadingAccepted(BaseModel):
     """What happened to a submitted reading."""
 
     reading_id: int
+    complaint_reference: str = Field(
+        description="What the resident quotes, and downloads their complaint report by."
+    )
     h3_cell: str
     observed_at: datetime
     pollutant: Pollutant

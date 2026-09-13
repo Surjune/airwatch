@@ -26,6 +26,8 @@ dependencies = [
     "shapely>=2.0",
     "python-multipart>=0.0.17",
     "earthengine-api>=1.4",
+    "fpdf2>=2.8",
+    "uharfbuzz>=0.40",
 ]
 
 [project.optional-dependencies]

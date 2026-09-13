@@ -147,6 +147,23 @@ def authorities_containing(session: Session, point: LonLat) -> list[tuple[int, i
     return [(int(row[0]), int(row[1])) for row in session.execute(statement).all()]
 
 
+def authorities_at(session: Session, point: LonLat) -> list[tuple[str, int]]:
+    """``(name, escalation_tier)`` of every active authority whose ground holds a point.
+
+    Lowest tier first -- the district before the state body -- which is the order a
+    resident's complaint should name them in.
+    """
+    statement = (
+        select(Authority.name, Authority.escalation_tier)
+        .where(
+            Authority.is_active.is_(True),
+            func.ST_Contains(Authority.jurisdiction, func.ST_GeomFromEWKT(_point_wkt(point))),
+        )
+        .order_by(Authority.escalation_tier, Authority.name)
+    )
+    return [(str(name), int(tier)) for name, tier in session.execute(statement).all()]
+
+
 def retire_authorities_except(session: Session, names: Sequence[str]) -> int:
     """Stop routing to every authority not named, keeping its row and its alerts.
 

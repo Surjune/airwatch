@@ -107,6 +107,30 @@ class AlertStatus(StrEnum):
     ESCALATED = "escalated"
 
 
+class ComplaintCategory(StrEnum):
+    """What a resident says they saw, attached to a photograph or sensor reading.
+
+    Kept to the source types an inspector would be sent to check, so a complaint
+    can be read by the body responsible without translation. ``other`` exists
+    because a forced wrong category is worse than an honest unknown.
+    """
+
+    OPEN_BURNING = "open_burning"
+    INDUSTRIAL_SMOKE = "industrial_smoke"
+    CONSTRUCTION_DUST = "construction_dust"
+    VEHICLE_EXHAUST = "vehicle_exhaust"
+    CROP_RESIDUE_BURNING = "crop_residue_burning"
+    ROAD_DUST = "road_dust"
+    OTHER = "other"
+
+
+class SubmissionKind(StrEnum):
+    """Which citizen tier a submission came through."""
+
+    PHOTO = "photo"
+    SENSOR = "sensor"
+
+
 class AlertKind(StrEnum):
     """Why an authority received an alert.
 

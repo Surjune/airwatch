@@ -36,12 +36,13 @@ from app.core.constants import (
     CITIZEN_SENSOR_POLLUTANTS,
     HOURS_PER_DAY,
 )
-from app.core.enums import PilotCity, Pollutant
+from app.core.enums import ComplaintCategory, PilotCity, Pollutant, SubmissionKind
 from app.core.exceptions import RateLimitExceededError, ValidationError
 from app.core.geo import LonLat, validate_within_india
 from app.core.h3_grid import point_to_cell
 from app.core.logging import get_logger
 from app.core.plausibility import is_plausible, plausible_range
+from app.core.references import clean_description, format_reference
 from app.ml.sensor_colocation import ColocationSummary, relative_difference, summarise
 from app.repositories import citizen_repository, citizen_sensor_repository
 from app.repositories.citizen_repository import NearestReading
@@ -61,6 +62,8 @@ class AcceptedReading:
     """A stored reading and everything that can honestly be said about it."""
 
     reading_id: int
+    #: What the resident quotes, and downloads their complaint report by.
+    complaint_reference: str
     h3_cell: str
     observed_at: datetime
     pollutant: Pollutant
@@ -141,6 +144,8 @@ def submit(
     observed_at: datetime,
     device_id: str,
     sensor_model: str,
+    category: ComplaintCategory | None = None,
+    description: str | None = None,
     now: datetime | None = None,
 ) -> AcceptedReading:
     """Validate, pair and store one sensor reading.
@@ -153,6 +158,8 @@ def submit(
         observed_at: When the sensor measured, timezone-aware.
         device_id: Opaque per-device identifier.
         sensor_model: What the instrument is, as the submitter describes it.
+        category: What the resident says they saw, if they said.
+        description: The resident's own words; blank is stored as none.
         now: Reference time, injectable for tests.
 
     Raises:
@@ -181,6 +188,8 @@ def submit(
             reference_station_id=reference.station_id if reference else None,
             reference_value=reference.value if reference else None,
             reference_distance_m=reference.distance_m if reference else None,
+            category=category,
+            description=clean_description(description),
         ),
     )
     difference = relative_difference(value, reference.value) if reference is not None else None
@@ -195,6 +204,7 @@ def submit(
 
     return AcceptedReading(
         reading_id=reading_id,
+        complaint_reference=format_reference(SubmissionKind.SENSOR, reading_id),
         h3_cell=cell,
         observed_at=observed_at,
         pollutant=pollutant,
