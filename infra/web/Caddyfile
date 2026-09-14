@@ -31,6 +31,15 @@
 
 	# Everything else is the single-page app; unknown paths fall back to it.
 	handle {
+		# Built assets carry a content hash in their names, so a given file never
+		# changes and may be kept for a year. Everything else -- index.html above
+		# all, which names the current assets -- must be revalidated on each visit,
+		# or a browser keeps running a release that has already been replaced.
+		@hashed path /assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		@shell not path /assets/*
+		header @shell Cache-Control "no-cache"
+
 		root * /srv/www
 		try_files {path} /index.html
 		file_server
