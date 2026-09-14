@@ -6,7 +6,8 @@ forecast. Open-Meteo serves it for any point with no key.
 
 It is a **model**, not an instrument. At a resolution of tens of kilometres it
 describes the air over a whole city, not a street; it misses local sources a
-monitor would catch; and in Indian cities it can read particulates well below monitors.
+monitor would catch; and its error differs by city -- in September 2026 it read
+about 0.6x Coimbatore's PM10 monitor and 1.8x Delhi's PM2.5 monitors.
 AirWatch therefore stores it in its own table, shows it labelled as modelled,
 measures its bias against real monitors, and never feeds it into detection.
 What it adds is coverage in time and space where monitors are silent -- which in

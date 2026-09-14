@@ -227,6 +227,10 @@ The model is the only source that fills the hours, so it is stored and shown -- 
   median ratio -- established only after 24 paired hours, so one day's cycle is represented.
 - **Past and future are drawn differently.** The chart draws the reconstruction solid and the
   forecast dashed.
+- **The bias is real and not one-directional.** On 15 September 2026 the model read 0.63× SIDCO
+  Kurichi's PM10 (218 pairs), 1.24× Kanpur's PM2.5 monitors (671 pairs) and 1.81× Delhi's (12,969
+  pairs across 56 monitors). A single correction factor would be wrong in two cities out of three,
+  so none is applied; the ratio is shown instead.
 - **Where no route forecast is possible**, as on every Coimbatore corridor, the Forecast screen
   offers the model's city-wide outlook instead of an empty page, and says plainly it cannot see
   where along a road the air changes.

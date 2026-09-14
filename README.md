@@ -225,9 +225,9 @@ Interactive docs: [/docs](https://airwatch-cbe.duckdns.org/docs).
   opens on PM10 and cannot detect hotspots. The official AQI, the CAMS model, satellite and citizen
   data still cover it. No community sensor network (AirGradient, Sensor.Community) has a sensor
   within 60 km.
-- **The CAMS model** averages over tens of kilometres and can read particulates well below street
-  monitors in Indian
-  cities; its measured bias is shown beside every value and it is never used for detection.
+- **The CAMS model** averages over tens of kilometres, and its error differs by city. Measured on
+  15 September 2026 against the monitors: 0.6× in Coimbatore (PM10), 1.2× in Kanpur and 1.8× in
+  Delhi (PM2.5). That ratio is shown beside every value, and the model is never used for detection.
 - **Photos** give no PM2.5 figure until 30 photos taken near monitors calibrate them.
 - **Low-cost and home sensors** are shown but not used in analysis until their error is measured.
 - **The forecast** knows the daily pattern, but cannot say whether tomorrow will be worse than today.
