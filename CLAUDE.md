@@ -40,7 +40,7 @@ routes  ->  services  ->  repositories  ->  database
   They never touch a `Session` or write SQL. **Services never import other services** — shared
   logic moves down into `core/`.
 - `repositories/` are the only place a `Session`/SQL/PostGIS function appears.
-- `external/` are thin, typed clients (OpenAQ, CPCB, FIRMS, Open-Meteo, Sentinel-5P) with
+- `external/` are thin, typed clients (OpenAQ, CPCB, FIRMS, Open-Meteo, Sentinel-5P, Gemini, Sarvam) with
   timeouts, retries and typed errors. Business code never imports `httpx` directly.
 - `ml/` holds the analysis itself -- fusion, hotspot detection, attribution, forecasting -- as pure
   functions over plain data, plus inference wrappers that load artifacts once at startup. Training

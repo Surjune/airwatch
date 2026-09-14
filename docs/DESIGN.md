@@ -207,6 +207,35 @@ guide explains each screen aloud in English, Hindi or Tamil, and four decisions 
   paragraph plays on a tap. The guide works for someone who is hard of hearing, in a quiet office,
   and on a deployment with no key, which shows the transcript and says the voice is not set up.
 
+## Google Gemini, and what it is allowed to say
+
+Gemini does two jobs. Neither produces a number AirWatch publishes.
+
+**Reading a photograph.** The haze index says how polluted a photo looks; it cannot say what is
+polluting. Gemini is asked for the single most visible source, its own confidence, and one sentence
+on what in the frame supports it.
+- **Never a gate.** The reading happens after the submission is stored. It changes no haze index,
+  trust score or calibration pair, and a Gemini outage returns the submission with a note instead.
+- **It may say "nothing".** The answer includes *haze without a visible source*, *no visible
+  pollution* and *not outdoor*, so the model is never forced to name a culprit.
+- **Privacy first.** Gemini receives a re-encoded copy at most 1024 px wide. Re-encoding drops the
+  EXIF block, which can carry the resident's exact position; the original is not stored.
+- **Labelled as what it is.** The confidence is the model's own and uncalibrated, and the screen and
+  PDF call the reading an AI suggestion that establishes no source.
+
+**Writing an alert brief.** Officials skim. The brief turns an alert into two sentences and a
+suggested inspection, and is the place a language model is most tempted to invent.
+- **Only the alert's facts go in:** the reading, the prediction, the excess, the times in IST, and
+  the ranked source with its plausibility, each number rounded once.
+- **Every figure that comes out is checked** (`core/grounding.py`). A number in the brief that does
+  not appear verbatim in those facts discards the whole brief with a typed error. "74.0" does not
+  pass for "74": a strict check that occasionally drops a good brief costs nothing.
+- **Written once, on request.** Briefs are generated when someone presses the button, then stored,
+  so every reader sees the same words and a console of forty alerts does not trigger forty requests.
+
+**Busy models.** A Gemini model can answer "high demand" for minutes. The client tries the next
+model instead of retrying the same one, and records which model wrote each answer.
+
 ## Interoperability, and why weights are withheld
 
 No state hands another its raw database, so a national data lake stalls on

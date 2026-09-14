@@ -24,8 +24,8 @@ Built for the *Clean Air & Climate Resilience* challenge · Live in Delhi-NCR, K
 | | |
 | --- | --- |
 | **Problem** | India has only a few hundred official air monitors and reports a 24-hour city average. A three-hour plume from a landfill or bus depot never shows up, nobody knows its source, and the source is often in another district or state. |
-| **Solution** | AirWatch combines government monitors, low-cost and home sensors, residents' photos, satellite data, wind and fire detections. It spots unusual pollution, names likely sources, forecasts busy routes, and alerts the responsible authority. |
-| **Proof** | Deployed and updating hourly. It has already sent a real cross-state request (Uttar Pradesh → East Delhi). 907 backend and 120 frontend tests run in CI. |
+| **Solution** | AirWatch combines government monitors, low-cost and home sensors, residents' photos, satellite data, wind and fire detections. It spots unusual pollution, names likely sources, forecasts busy routes, and alerts the responsible authority. Google Gemini reads residents' photos and writes plain-language alert briefs. |
+| **Proof** | Deployed and updating hourly. It has already sent a real cross-state request (Uttar Pradesh → East Delhi). 938 backend and 130 frontend tests run in CI. |
 | **Honesty** | Every number shows its uncertainty. Where there is no data, it says "unknown", never "clean". |
 
 ## Key terms
@@ -74,6 +74,7 @@ flowchart LR
 | Alert authorities | Routes each hotspot to the district that contains it, with deadlines and resolution notes | Authority console |
 | Coordinate across cities and states | If the source is in another district or state, that authority is asked to act too | Authority console |
 | Share models, interoperability | Federated learning (weights only) and a standard GeoJSON exchange API | Federation |
+| **Google AI** | **Gemini** reads residents' photos for a visible source (computer vision) and writes plain-language alert briefs whose every number is checked against the data (GenAI) | Contribute, Authority console |
 | Accessible to everyone | A spoken guide on every screen in English, Hindi and Tamil | **Listen** button |
 
 ## The screens
@@ -91,10 +92,21 @@ flowchart LR
    stretches without monitors are marked unknown. *When to travel* shows the best departure hour,
    for example leaving at 20:00 instead of 16:00 avoids about 25% of exposure.
 4. **Authority console:** open, overdue, cross-boundary and undelivered alerts. Officials sign in to
-   acknowledge and resolve alerts with a note.
+   acknowledge and resolve alerts with a note. **Summarise with Gemini** writes a two-sentence brief
+   and a suggested first step for any alert.
 5. **Federation:** each city's data coverage, and whether sharing models actually helped.
 6. **Contribute:** send a photo or sensor reading, describe the problem, and download a PDF complaint
-   report. Tamil and Hindi descriptions print correctly.
+   report. Google Gemini suggests what the photo shows, such as *"Likely open burning of waste, 82%
+   confidence"*, and that goes into the PDF too. Tamil and Hindi descriptions print correctly.
+
+## How Google AI (Gemini) is used
+
+| Where | What Gemini does | Type | Safeguard |
+| --- | --- | --- | --- |
+| **Contribute → Photograph** | Names the pollution source visible in a resident's photo (burning waste, industrial smoke, construction dust, vehicle exhaust…), with its confidence and one sentence on what it sees. Flags photos that are not of outdoor air. | Computer vision | Shown as an *AI suggestion*, never a measurement. A copy without location data is sent; the photo is not stored. If Gemini is down, the submission still works. |
+| **Authority console → Summarise with Gemini** | Writes a plain-English brief of the alert and a suggested first inspection. | GenAI | Gemini gets only the alert's own figures. Every number in its answer is checked against them; a brief with an invented number is discarded, never shown. |
+
+Model: Gemini 3.6 Flash, falling back to Gemini 3.1 Flash-Lite when busy.
 
 **Listen:** the headphones button explains the current screen aloud in English, हिन्दी or தமிழ்
 (Sarvam AI voice), with the text shown alongside. Tap any paragraph to play from there.
@@ -150,7 +162,7 @@ We publish results where ML lost, because a wrong number is worse than a simple,
 | Backend | Python 3.12, FastAPI, PostgreSQL 16 + PostGIS + TimescaleDB, H3 grid |
 | Analysis | NumPy, LightGBM, Flower (federated learning), Google Earth Engine |
 | Frontend | React, TypeScript, Vite, Tailwind CSS, Leaflet + OpenStreetMap |
-| Services | Sarvam AI (voice), fpdf2 (PDF reports) |
+| AI services | Google Gemini (photo reading, alert briefs), Sarvam AI (voice), fpdf2 (PDF reports) |
 | Hosting | Docker Compose, Caddy (HTTPS), hourly worker, nightly backups |
 
 Code quality is enforced in CI: strict typing, linting, 1,000+ tests, database migration checks and a
@@ -167,7 +179,8 @@ infra/          Docker, Caddy, deploy and backup scripts
 ## Run it locally
 
 Needs Docker, Node 20+ and Python 3.12. Copy `.env.example` to `.env` and add free keys for OpenAQ,
-data.gov.in and NASA FIRMS. Earth Engine and Sarvam AI are optional.
+data.gov.in and NASA FIRMS, plus a Google Gemini key from aistudio.google.com. Earth Engine and
+Sarvam AI are optional.
 
 ```bash
 npm install
@@ -199,6 +212,7 @@ Interactive docs: [/docs](https://airwatch-cbe.duckdns.org/docs).
 | `GET /v1/hotspots` | Hotspots with likely sources |
 | `GET /v1/forecast/corridor` · `/exposure/advisory` | Route forecast and best time to travel |
 | `GET /v1/alerts` · `POST /v1/alerts/{id}/acknowledge` · `/resolve` | Alerts and operator actions |
+| `GET /v1/alerts/{id}/brief` | Gemini-written brief of an alert, with every figure checked |
 | `POST /v1/citizen/reports` · `/sensor-readings` · `GET /v1/citizen/complaints/{ref}/pdf` | Citizen photos, sensor readings and PDF reports |
 | `GET /v1/federation/status` · `/interop/*` | Model sharing results and data exchange for partner cities |
 | `GET /v1/guide/{screen}?language=ta` | Spoken screen guide (text and audio) |
@@ -215,6 +229,8 @@ Interactive docs: [/docs](https://airwatch-cbe.duckdns.org/docs).
 - **Satellite** pixels are about 36 km², too coarse to pinpoint a single chimney.
 - **Alerts** are delivered by webhook only (no SMS or email), and operators share one login key.
 - **Federation** nodes currently run on one server; real multi-state use needs secure connections.
+- **Gemini's photo reading** is the model's own judgement with an uncalibrated confidence; it can
+  mistake fog for smoke. It is labelled as a suggestion and never changes a measurement.
 - **The voice guide** explains screens but doesn't read live figures; native speakers should review
   the Hindi and Tamil wording.
 
