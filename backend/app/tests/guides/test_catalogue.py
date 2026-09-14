@@ -42,7 +42,7 @@ class TestSpokenForms:
     def test_technical_terms_are_spoken_in_the_listeners_script(
         self, language: GuideLanguage
     ) -> None:
-        section = script_for(GuideScreen.CITIZEN, language).sections[2]
+        section = script_for(GuideScreen.CITIZEN, language).sections[3]
 
         # Shown as the interface writes it, so the listener can match the label...
         assert "PM2.5" in section.text
