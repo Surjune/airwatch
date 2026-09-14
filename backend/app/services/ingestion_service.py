@@ -22,7 +22,7 @@ from datetime import UTC, datetime, timedelta
 
 from app.core import aqi
 from app.core.config import Settings
-from app.core.constants import BACKFILL_DAYS
+from app.core.constants import BACKFILL_DAYS, WEATHER_FORECAST_DAYS, WEATHER_PAST_DAYS
 from app.core.enums import Pollutant, StationTier
 from app.core.exceptions import AirWatchError
 from app.core.geo import LonLat
@@ -408,8 +408,10 @@ class IngestionService:
 
             async with OpenMeteoClient() as client:
                 # Past days as well as forecast: a back-trajectory needs the wind
-                # field for hours that have already happened.
-                hours = await client.forecast(centre, forecast_days=3, past_days=2)
+                # field for every hour detection can still look back over.
+                hours = await client.forecast(
+                    centre, forecast_days=WEATHER_FORECAST_DAYS, past_days=WEATHER_PAST_DAYS
+                )
 
             rows = [
                 WeatherRow(

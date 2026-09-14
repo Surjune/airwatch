@@ -599,6 +599,17 @@ MIN_HOURLY_COVERAGE_PCT: Final[float] = 50.0
 #: weekly traffic cycle from the daily one.
 BACKFILL_DAYS: Final[int] = 14
 
+#: Days of past wind re-fetched on every weather ingest. Matches the backfilled
+#: history, because detection looks back over all of it: when only the last two
+#: days were kept, a hotspot found in older readings had no wind to trace, and
+#: 20 of 21 Delhi hotspots named no candidate source. One request returns the
+#: whole span, so keeping it full costs nothing extra. Open-Meteo serves up to
+#: 92 past days.
+WEATHER_PAST_DAYS: Final[int] = BACKFILL_DAYS
+
+#: Days of forecast wind fetched alongside the past.
+WEATHER_FORECAST_DAYS: Final[int] = 3
+
 #: Minimum gap between OpenAQ requests, in seconds. The free tier allows roughly
 #: 60 requests per minute, and a Delhi run makes one call per active station --
 #: 60 of them -- so an unpaced run trips the quota partway through and loses the
