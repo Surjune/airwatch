@@ -3,13 +3,15 @@ import { Card } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import type { Resource, StationsResponse } from '@/hooks/useAnalysis';
+import { rankRecent, RECENT_READING_HOURS } from '@/lib/readings';
 import { timeAgo } from '@/lib/time';
 
 /** Rows shown: enough to see the pattern, few enough to read at a glance. */
 const SHOWN = 6;
 
 /**
- * The latest hourly reading at each reference monitor, highest first.
+ * The latest hourly reading at each reference monitor, highest first, among the
+ * monitors that have reported recently.
  *
  * This is the one place the overview ranks by concentration, and it says so: it
  * answers "where is the air worst", which a resident asks, and is kept apart from
@@ -22,13 +24,24 @@ export function MonitorReadings({
   readonly stations: Resource<StationsResponse>;
   readonly pollutantLabel: string;
 }) {
-  const readings = [...(stations.data?.readings ?? [])].sort((a, b) => b.aqi - a.aqi);
+  const all = stations.data?.readings ?? [];
+  const { recent, staleCount } = rankRecent(all);
+  // With nothing recent at all, the old readings are still better than an empty
+  // card -- shown newest first, so their age is the first thing read.
+  const readings =
+    recent.length > 0
+      ? recent
+      : [...all].sort((a, b) => b.observed_at.localeCompare(a.observed_at));
 
   return (
     <Card
       eyebrow="Reference monitors · OpenAQ"
       title={`Latest ${pollutantLabel} at each monitor`}
-      description="Hourly concentrations, highest first, with how old each one is"
+      description={
+        recent.length > 0
+          ? `Reported in the last ${String(RECENT_READING_HOURS)} hours, highest first`
+          : `No monitor has reported in the last ${String(RECENT_READING_HOURS)} hours; the most recent readings are shown with their age`
+      }
       flush
     >
       {stations.error ? (
@@ -71,6 +84,13 @@ export function MonitorReadings({
               </span>
             </li>
           ))}
+          {recent.length > 0 && staleCount > 0 && (
+            <li className="px-4 py-2.5 text-xs text-ink-subtle sm:px-5">
+              {staleCount} {staleCount === 1 ? 'monitor has' : 'monitors have'} not reported in the
+              last {RECENT_READING_HOURS} hours and {staleCount === 1 ? 'is' : 'are'} left out of
+              this ranking.
+            </li>
+          )}
         </ol>
       )}
     </Card>
