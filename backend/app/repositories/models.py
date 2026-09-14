@@ -24,6 +24,7 @@ from enum import StrEnum
 
 from geoalchemy2 import Geometry
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -782,4 +783,38 @@ class AlertBrief(Base):
     model: Mapped[str] = mapped_column(String(64), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ModelConcentration(Base):
+    """An hourly concentration from the CAMS regional model, for one pilot city.
+
+    Kept apart from ``measurements`` on purpose: a model value is an average over
+    tens of kilometres and must never reach detection, fusion or validation,
+    all of which read measurements. One row per city, pollutant and hour; the
+    grid point the model snapped to is kept so the view can say where it is.
+    """
+
+    __tablename__ = "model_concentrations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    city: Mapped[str] = mapped_column(String(32), nullable=False)
+    pollutant: Mapped[Pollutant] = mapped_column(
+        SqlEnum(Pollutant, name="pollutant", create_type=False, values_callable=_enum_values),
+        nullable=False,
+    )
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    #: Modelled concentration, ug/m3.
+    value: Mapped[float] = mapped_column(Float, nullable=False)
+    #: True for hours after the fetch: the model's forecast, not its analysis.
+    is_forecast: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    grid_longitude: Mapped[float] = mapped_column(Float, nullable=False)
+    grid_latitude: Mapped[float] = mapped_column(Float, nullable=False)
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint("city", "pollutant", "observed_at", name="uq_model_city_pollutant_hour"),
+        Index("ix_model_concentrations_city_time", "city", "observed_at"),
     )

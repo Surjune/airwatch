@@ -20,7 +20,12 @@ from app import worker
 from app.core.config import Settings
 from app.core.constants import PILOT_CITY_CENTRES
 from app.core.exceptions import UpstreamUnavailableError
-from app.services import alert_delivery_service, alert_service, official_aqi_service
+from app.services import (
+    alert_delivery_service,
+    alert_service,
+    official_aqi_service,
+    regional_model_service,
+)
 from app.services.ingestion_service import IngestionReport, SourceResult
 
 NOW = datetime(2026, 9, 13, 3, 0, tzinfo=UTC)
@@ -34,6 +39,7 @@ class Calls:
     fire_boxes: list[object] = field(default_factory=list)
     dispatched: int = 0
     delivered: int = 0
+    modelled: list[object] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -49,6 +55,7 @@ class FakeDispatch:
 class FakeDelivery:
     attempted: int = 0
     delivered: int = 0
+    modelled: list[object] = field(default_factory=list)
     failed: int = 0
     endpoint_configured: bool = False
 
@@ -84,6 +91,10 @@ def calls(monkeypatch: pytest.MonkeyPatch, settings: Settings) -> Calls:
         recorded.delivered += 1
         return FakeDelivery()
 
+    async def fake_model(_session: object, city: Any, **_kwargs: Any) -> int:
+        recorded.modelled.append(city)
+        return 1
+
     @contextmanager
     def fake_session() -> Any:
         yield object()
@@ -95,6 +106,7 @@ def calls(monkeypatch: pytest.MonkeyPatch, settings: Settings) -> Calls:
     monkeypatch.setattr(worker, "session_scope", fake_session)
     monkeypatch.setattr(alert_service, "dispatch", fake_dispatch)
     monkeypatch.setattr(alert_delivery_service, "deliver_pending", fake_deliver)
+    monkeypatch.setattr(regional_model_service, "ingest_city", fake_model)
     return recorded
 
 
@@ -271,3 +283,13 @@ class TestExitCode:
 
     def test_once_exits_zero_on_a_clean_cycle(self, calls: Calls) -> None:
         assert worker.main(["--once"]) == 0
+
+
+def test_the_regional_model_is_fetched_for_every_city_without_a_key(
+    settings: Settings, calls: Calls
+) -> None:
+    # CAMS needs no credential, so unlike satellites and CPCB it runs every cycle.
+    report = worker.run_cycle(settings, now=NOW)
+
+    assert len(calls.modelled) == len(PILOT_CITY_CENTRES)
+    assert all(step.succeeded for step in report.steps if step.name.startswith("model:"))

@@ -1229,3 +1229,44 @@ GEMINI_ACTION_MAX_CHARS: Final[int] = 400
 #: loaded for its brief, in hours: the back-trajectory's reach plus how long a
 #: fire detection stays a candidate.
 ALERT_BRIEF_LOOKBACK_HOURS: Final[int] = 18
+
+
+# ---------------------------------------------------------------------------
+# Regional air-quality model (CAMS, via Open-Meteo)
+# ---------------------------------------------------------------------------
+
+#: Open-Meteo's air-quality API root. It serves the Copernicus Atmosphere
+#: Monitoring Service (CAMS) global forecast, needs no key, and covers every
+#: pilot city -- including Coimbatore, where one monitor reports days late and
+#: every other monitor in the district has fallen silent.
+CAMS_BASE_URL: Final[str] = "https://air-quality-api.open-meteo.com/v1"
+
+#: Open-Meteo variable name for each pollutant the model provides, all in ug/m3.
+CAMS_VARIABLES: Final[dict[str, str]] = {
+    "pm25": "pm2_5",
+    "pm10": "pm10",
+    "no2": "nitrogen_dioxide",
+    "so2": "sulphur_dioxide",
+    "co": "carbon_monoxide",
+    "o3": "ozone",
+}
+
+#: Days of past model hours re-fetched each ingest: the detection window, so a
+#: comparison against monitors always has the same fortnight to work with.
+CAMS_PAST_DAYS: Final[int] = BACKFILL_DAYS
+
+#: Days of model forecast fetched. CAMS runs five days ahead; four keeps the
+#: outlook inside the part of the run that is refreshed most often.
+CAMS_FORECAST_DAYS: Final[int] = 4
+
+#: Hours of model history and forecast returned for a city view, each way.
+CAMS_VIEW_HOURS: Final[int] = 72
+
+#: Longest gap, in minutes, between a monitor reading and the model hours it is
+#: interpolated between. Monitors report hour-ending averages at :30 IST offsets
+#: and the model is on the hour, so every reading has model hours either side.
+CAMS_PAIR_MAX_GAP_MINUTES: Final[int] = 60
+
+#: Monitor hours needed before the model's bias against them is read as
+#: established: one full day of paired hours, so the daily cycle is represented.
+CAMS_COMPARISON_MIN_PAIRS: Final[int] = 24

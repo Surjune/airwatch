@@ -27,6 +27,7 @@ from app.services import (
     fixture_service,
     official_aqi_service,
     plausibility_service,
+    regional_model_service,
     satellite_service,
     seed_service,
     voice_guide_service,
@@ -244,6 +245,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     replay.add_argument("--event", required=True, help="Fixture name under infra/fixtures")
 
+    model = subparsers.add_parser(
+        "regional-model",
+        help="Fetch the CAMS regional air-quality model for a city (no key needed)",
+    )
+    model.add_argument("--city", choices=sorted(PILOT_CITIES), default="coimbatore")
+
     subparsers.add_parser(
         "voice-guide",
         help="Generate the spoken guide's audio in advance, so no listener waits for it",
@@ -283,6 +290,13 @@ def main(argv: list[str] | None = None) -> int:
         print("")
         for pollutant, count in flagged.items():
             print(f"{pollutant.value:<5} flagged implausible: {count}")
+        return 0
+
+    if args.command == "regional-model":
+        with session_scope() as session:
+            stored = asyncio.run(regional_model_service.ingest_city(session, PilotCity(args.city)))
+        print("")
+        print(f"CAMS model {args.city}: {stored} hourly values stored")
         return 0
 
     if args.command == "voice-guide":

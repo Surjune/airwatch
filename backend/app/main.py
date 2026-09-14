@@ -26,6 +26,7 @@ from app.routes import (
     interop,
     official_aqi,
     operator,
+    regional_model,
     satellite,
 )
 from app.services.health_service import APP_VERSION
@@ -118,6 +119,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(official_aqi.router, prefix=API_PREFIX)
     app.include_router(operator.router, prefix=API_PREFIX)
     app.include_router(guide.router, prefix=API_PREFIX)
+    app.include_router(regional_model.router, prefix=API_PREFIX)
 
     if settings is not None:
         # Routes resolve settings through Depends(get_settings), which returns the

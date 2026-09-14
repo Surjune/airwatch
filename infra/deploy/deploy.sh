@@ -60,6 +60,7 @@ if [ "${1:-}" = "--first-load" ]; then
     done
     "${COMPOSE[@]}" run --rm api python -m app.cli official-aqi --city "$city" || true
     "${COMPOSE[@]}" run --rm api python -m app.cli satellite --city "$city" || true
+    "${COMPOSE[@]}" run --rm api python -m app.cli regional-model --city "$city" || true
   done
   say "Checking detection against the recorded episode"
   "${COMPOSE[@]}" run --rm api python -m app.cli replay --event delhi-anand-vihar-august || true

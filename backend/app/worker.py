@@ -50,6 +50,7 @@ from app.services import (
     alert_delivery_service,
     alert_service,
     official_aqi_service,
+    regional_model_service,
     satellite_service,
 )
 from app.services.ingestion_service import IngestionService
@@ -140,6 +141,17 @@ def run_cycle(settings: Settings, *, now: datetime | None = None) -> CycleReport
                 return f"{stored} sub-indices"
 
             _run_step(report, f"official:{city.value}", official)
+
+    # The CAMS model needs no key, so it runs every cycle: one request a city
+    # refreshes its fortnight of history and its four-day forecast.
+    for city in PilotCity:
+
+        def model(city: PilotCity = city) -> str:
+            with session_scope() as session:
+                stored = asyncio.run(regional_model_service.ingest_city(session, city))
+            return f"{stored} model hours"
+
+        _run_step(report, f"model:{city.value}", model)
 
     if _satellite_due(settings, report.started_at):
         for city in PilotCity:
