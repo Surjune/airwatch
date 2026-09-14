@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from sqlalchemy.orm import Session
 
+from app.core.constants import OFFICIAL_SUB_INDEX_MAX_AGE_HOURS
 from app.core.enums import PilotCity, Pollutant
 from app.repositories import official_aqi_repository
 from app.repositories.official_aqi_repository import OfficialRow
@@ -45,15 +46,15 @@ def _row(pollutant: Pollutant, value: float, reported_at: datetime) -> OfficialR
 
 
 @pytest.mark.integration
-def test_combines_only_the_latest_report_into_an_aqi(session: Session) -> None:
-    earlier = NOW - timedelta(hours=1)
+def test_a_pollutant_that_stopped_reporting_is_not_combined(session: Session) -> None:
+    earlier = NOW - timedelta(hours=OFFICIAL_SUB_INDEX_MAX_AGE_HOURS + 1)
     official_aqi_repository.upsert_sub_indices(
         session,
         [
             _row(Pollutant.PM10, 28, NOW),
             _row(Pollutant.NO2, 22, NOW),
             _row(Pollutant.CO, 44, NOW),
-            # An older, higher value from another hour must not leak into now's AQI.
+            # A sensor silent for longer than the window must not set today's AQI.
             _row(Pollutant.SO2, 150, earlier),
         ],
     )
@@ -67,3 +68,35 @@ def test_combines_only_the_latest_report_into_an_aqi(session: Session) -> None:
     assert Pollutant.SO2 not in station.sub_indices
     assert station.aqi == 44
     assert station.category == "Good"
+
+
+@pytest.mark.integration
+def test_pollutants_published_an_hour_apart_still_make_an_index(session: Session) -> None:
+    # SIDCO Kurichi on 15 September 2026: CO and O3 in the newest update, PM10,
+    # NO2 and SO2 an hour earlier. Taking only the newest hour stated no index.
+    earlier = NOW - timedelta(hours=1)
+    official_aqi_repository.upsert_sub_indices(
+        session,
+        [
+            _row(Pollutant.CO, 47, NOW),
+            _row(Pollutant.O3, 20, NOW),
+            _row(Pollutant.PM10, 28, earlier),
+            _row(Pollutant.NO2, 22, earlier),
+            _row(Pollutant.SO2, 27, earlier),
+        ],
+    )
+    session.flush()
+
+    station = latest_for_city(session, PilotCity.COIMBATORE)[0]
+
+    assert station.aqi == 47
+    assert station.dominant_pollutant is Pollutant.CO
+    assert set(station.sub_indices) == {
+        Pollutant.CO,
+        Pollutant.O3,
+        Pollutant.PM10,
+        Pollutant.NO2,
+        Pollutant.SO2,
+    }
+    assert station.reported_at == NOW
+    assert station.oldest_reported_at == earlier

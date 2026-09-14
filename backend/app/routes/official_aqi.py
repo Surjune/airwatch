@@ -39,6 +39,7 @@ def official_aqi(
                     longitude=station.coordinates[0], latitude=station.coordinates[1]
                 ),
                 reported_at=station.reported_at,
+                oldest_reported_at=station.oldest_reported_at,
                 sub_indices=station.sub_indices,
                 aqi=station.aqi,
                 category=station.category,

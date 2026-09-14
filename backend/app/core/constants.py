@@ -1118,6 +1118,16 @@ PILOT_CITY_CPCB_NAMES: Final[dict[str, str]] = {
 #: Source: CPCB National Air Quality Index methodology (2014).
 AQI_MIN_POLLUTANTS: Final[int] = 3
 
+#: How much older than a station's newest report a pollutant's sub-index may be
+#: and still be combined into the station's AQI, in hours. data.gov.in publishes
+#: a station's pollutants staggered across consecutive hourly updates -- SIDCO
+#: Kurichi's CO and O3 routinely arrive an hour before its PM10, NO2 and SO2 --
+#: so taking only the newest hour left Coimbatore with two pollutants and no
+#: index. Each sub-index is itself a 24-hour (8-hour for CO and O3) rolling
+#: average, so one or two hours' difference barely moves it. Past three hours
+#: the pollutant is treated as not currently reported.
+OFFICIAL_SUB_INDEX_MAX_AGE_HOURS: Final[int] = 3
+
 
 # ---------------------------------------------------------------------------
 # Voice guide (Sarvam AI text-to-speech)

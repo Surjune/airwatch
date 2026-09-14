@@ -88,10 +88,18 @@ function SubIndices({ station }: { readonly station: OfficialStation }) {
           <dd className="figure text-[13px] text-ink">{Math.round(value)}</dd>
         </div>
       ))}
-      {station.aqi === null && (
+      {station.aqi === null ? (
         <p className="w-full text-xs text-ink-subtle">
-          Too few pollutants reported for CPCB to state an overall index.
+          Too few pollutants reported in the last 3 hours for CPCB to state an overall index.
         </p>
+      ) : (
+        station.oldest_reported_at !== station.reported_at && (
+          <p className="w-full text-xs text-ink-subtle">
+            CPCB publishes this station&apos;s pollutants an hour or so apart; each one&apos;s
+            latest sub-index is combined, the oldest from {istDateTime(station.oldest_reported_at)}{' '}
+            IST.
+          </p>
+        )
       )}
     </dl>
   );

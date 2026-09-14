@@ -15,13 +15,17 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
 from app.core import aqi
 from app.core.config import Settings
-from app.core.constants import AQI_MIN_POLLUTANTS, PILOT_CITY_CPCB_NAMES
+from app.core.constants import (
+    AQI_MIN_POLLUTANTS,
+    OFFICIAL_SUB_INDEX_MAX_AGE_HOURS,
+    PILOT_CITY_CPCB_NAMES,
+)
 from app.core.enums import PilotCity, Pollutant
 from app.core.geo import LonLat
 from app.core.logging import get_logger
@@ -46,6 +50,9 @@ class StationAqi:
     aqi: float | None
     category: str | None
     dominant_pollutant: Pollutant | None
+    #: When the oldest sub-index combined here was published. Equal to
+    #: ``reported_at`` when every pollutant arrived in the newest update.
+    oldest_reported_at: datetime
 
 
 def station_aqi(
@@ -86,10 +93,13 @@ def latest_for_city(session: Session, city: PilotCity) -> list[StationAqi]:
 
     stations: list[StationAqi] = []
     for name, rows in by_station.items():
-        # Sub-indices from different reporting times are not one reading; only
-        # the station's most recent report is combined into an AQI.
+        # The feed staggers a station's pollutants across consecutive updates, so
+        # each pollutant's latest sub-index from the last few hours is combined.
+        # Anything older is a pollutant that is not currently reporting.
         latest = max(row.reported_at for row in rows)
-        current = {row.pollutant: row.sub_index for row in rows if row.reported_at == latest}
+        cutoff = latest - timedelta(hours=OFFICIAL_SUB_INDEX_MAX_AGE_HOURS)
+        included = [row for row in rows if row.reported_at >= cutoff]
+        current = {row.pollutant: row.sub_index for row in included}
         overall, dominant = station_aqi(current)
         stations.append(
             StationAqi(
@@ -100,6 +110,7 @@ def latest_for_city(session: Session, city: PilotCity) -> list[StationAqi]:
                 aqi=overall,
                 category=aqi.category(overall) if overall is not None else None,
                 dominant_pollutant=dominant,
+                oldest_reported_at=min(row.reported_at for row in included),
             )
         )
 

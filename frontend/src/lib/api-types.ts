@@ -1874,11 +1874,17 @@ export interface components {
             reported_at: string;
             /**
              * Sub Indices
-             * @description CPCB sub-index per pollutant from the station's latest report.
+             * @description CPCB sub-index per pollutant: each pollutant's latest, from the station's last three hours of reports, because the feed publishes pollutants staggered by an hour.
              */
             sub_indices: {
                 [key: string]: number;
             };
+            /**
+             * Oldest Reported At
+             * Format: date-time
+             * @description When the oldest sub-index combined here was published.
+             */
+            oldest_reported_at: string;
             /**
              * Aqi
              * @description The highest sub-index, stated only when CPCB would state one: at least three pollutants reported, one of them PM2.5 or PM10.

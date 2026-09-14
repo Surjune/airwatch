@@ -17,7 +17,13 @@ class OfficialStationResponse(BaseModel):
     position: Position
     reported_at: datetime
     sub_indices: dict[Pollutant, float] = Field(
-        description="CPCB sub-index per pollutant from the station's latest report."
+        description=(
+            "CPCB sub-index per pollutant: each pollutant's latest, from the station's last "
+            "three hours of reports, because the feed publishes pollutants staggered by an hour."
+        )
+    )
+    oldest_reported_at: datetime = Field(
+        description="When the oldest sub-index combined here was published."
     )
     aqi: float | None = Field(
         description=(
