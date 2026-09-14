@@ -603,6 +603,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/regional-model": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The CAMS regional model over a city, with its bias against the monitors
+         * @description Modelled hours around now, peaks ahead, and how the model compared with monitors.
+         */
+        get: operations["regional_model_v1_regional_model_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1594,6 +1614,60 @@ export interface components {
             models: components["schemas"]["ModelCard"][];
         };
         /**
+         * ModelComparisonResponse
+         * @description How the model compared with the city's reference monitors over the last fortnight.
+         */
+        ModelComparisonResponse: {
+            /**
+             * Pairs
+             * @description Monitor readings paired with the model interpolated to them.
+             */
+            pairs: number;
+            /** Pairs Needed */
+            pairs_needed: number;
+            /**
+             * Stations
+             * @description Reference monitors in the city that contributed pairs.
+             */
+            stations: number;
+            /**
+             * Median Ratio
+             * @description Median of model / monitor. Below 1, the model reads low here.
+             */
+            median_ratio: number | null;
+            /**
+             * Median Difference
+             * @description Median of model - monitor, ug/m3.
+             */
+            median_difference: number | null;
+            /**
+             * Is Established
+             * @description Whether there are enough pairs for the ratio to be read as the model's bias.
+             */
+            is_established: boolean;
+        };
+        /**
+         * ModelHourResponse
+         * @description One modelled hour.
+         */
+        ModelHourResponse: {
+            /**
+             * Observed At
+             * Format: date-time
+             */
+            observed_at: string;
+            /**
+             * Value
+             * @description Modelled concentration, ug/m3.
+             */
+            value: number;
+            /**
+             * Is Forecast
+             * @description True for hours after now: the model's forecast.
+             */
+            is_forecast: boolean;
+        };
+        /**
          * ModelPerformance
          * @description A measured score, with what it was measured against.
          *
@@ -1955,6 +2029,46 @@ export interface components {
              * @description (sensor - reference) / reference. Null when the monitor read zero, where a ratio is undefined rather than enormous.
              */
             relative_difference?: number | null;
+        };
+        /**
+         * RegionalModelResponse
+         * @description The CAMS regional model over one city.
+         */
+        RegionalModelResponse: {
+            city: components["schemas"]["PilotCity"];
+            pollutant: components["schemas"]["Pollutant"];
+            /**
+             * Unit
+             * @default µg/m³
+             */
+            unit: string;
+            /** Source */
+            source: string;
+            /** @description The model grid point the city centre snapped to. Null before first ingest. */
+            grid_point: components["schemas"]["Position"] | null;
+            /** @description The most recent modelled hour at or before now. */
+            latest: components["schemas"]["ModelHourResponse"] | null;
+            /**
+             * Next Day Peak
+             * @description Highest modelled hour in the next 24 hours.
+             */
+            next_day_peak: number | null;
+            /**
+             * Outlook Peak
+             * @description Highest modelled hour in the next 72 hours.
+             */
+            outlook_peak: number | null;
+            /**
+             * Hours
+             * @description Modelled hours from 72 hours ago to 72 hours ahead, oldest first.
+             */
+            hours: components["schemas"]["ModelHourResponse"][];
+            comparison: components["schemas"]["ModelComparisonResponse"];
+            /**
+             * Notice
+             * @description What a modelled value can and cannot say. Always shown beside the numbers.
+             */
+            notice: string;
         };
         /**
          * RejectionResponse
@@ -3345,6 +3459,38 @@ export interface operations {
                 };
                 content: {
                     "audio/mpeg": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    regional_model_v1_regional_model_get: {
+        parameters: {
+            query: {
+                city: components["schemas"]["PilotCity"];
+                pollutant?: components["schemas"]["Pollutant"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegionalModelResponse"];
                 };
             };
             /** @description Validation Error */

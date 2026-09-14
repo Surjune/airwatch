@@ -13,6 +13,8 @@ import { CORRIDORS, HORIZONS, type HorizonKey } from '@/features/corridor/corrid
 import { ExposurePanel } from '@/features/corridor/ExposurePanel';
 import { markGaps } from '@/features/corridor/segments';
 import { useCorridorForecast, useExposureAdvisory } from '@/hooks/useAnalysis';
+import { useRegionalModel } from '@/hooks/useSources';
+import { ModelOutlook } from '@/features/corridor/ModelOutlook';
 import { useScope } from '@/lib/scope';
 
 /** Unforecast length, in km, worth warning about rather than rounding away. */
@@ -41,6 +43,7 @@ export function CorridorView() {
   const points = corridor?.points ?? '';
   const { data, error, isLoading } = useCorridorForecast(points, Number(horizon), pollutant);
   const advisory = useExposureAdvisory(points, pollutant);
+  const model = useRegionalModel(city, pollutant);
 
   const segments = useMemo(() => markGaps(data?.points ?? []), [data]);
   const uncoveredKm = data ? data.corridor_length_km - data.covered_length_km : 0;
@@ -104,11 +107,14 @@ export function CorridorView() {
             <Skeleton label="Forecasting along the route" rows={4} />
           </Card>
         ) : !data || data.point_count === 0 ? (
-          <StatusMessage
-            kind="empty"
-            title="Too few monitors to forecast this route"
-            detail="Each point on a route is estimated from several nearby monitors combined, and no point on this one has enough of them in range. A route beside a single monitor is not enough. That is unknown ground, not clean air."
-          />
+          <>
+            <StatusMessage
+              kind="empty"
+              title="Too few monitors to forecast this route"
+              detail="Each point on a route is estimated from several nearby monitors combined, and no point on this one has enough of them in range. A route beside a single monitor is not enough. That is unknown ground, not clean air."
+            />
+            <ModelOutlook model={model.data} cityLabel={current?.label ?? 'this city'} />
+          </>
         ) : (
           <>
             <Card

@@ -3,6 +3,7 @@ import type { CitizenReport } from '@/hooks/useCitizen';
 import type { SensorReadings } from '@/hooks/useCitizenSensors';
 import type { HealthState } from '@/hooks/useHealth';
 import type { LowCostSensors, OfficialAqi, Satellite } from '@/hooks/useSources';
+import type { RegionalModel } from '@/lib/regional-model';
 import { TierTile } from '@/features/overview/TierTile';
 import { MONITORS_FOR_DETECTION, tierState } from '@/lib/tiers';
 
@@ -13,6 +14,7 @@ interface NetworkTiersProps {
   readonly photos: readonly CitizenReport[] | null;
   readonly readings: Resource<SensorReadings>;
   readonly satellite: Resource<Satellite>;
+  readonly model: Resource<RegionalModel>;
   readonly health: HealthState;
   readonly pollutantLabel: string;
 }
@@ -32,6 +34,7 @@ export function NetworkTiers({
   photos,
   readings,
   satellite,
+  model,
   health,
   pollutantLabel,
 }: NetworkTiersProps) {
@@ -104,6 +107,18 @@ export function NetworkTiers({
               ? 'thin'
               : 'live'
         }
+      />
+      <TierTile
+        tier="Tier 3 · modelled, coarse"
+        name="CAMS regional air-quality model"
+        value={model.data?.latest ? `${model.data.latest.value.toFixed(0)} µg/m³` : '…'}
+        note={
+          model.data?.latest
+            ? `Modelled ${pollutantLabel} over the city this hour, with a 72-hour outlook. Fills every hour monitors miss; checked against them, never used for detection.`
+            : 'Hourly modelled concentrations and a 72-hour outlook, for every hour the monitors miss.'
+        }
+        state={tierState(model.data?.hours.length, 1, Boolean(model.error))}
+        className="sm:col-span-2 lg:col-span-3"
       />
     </div>
   );

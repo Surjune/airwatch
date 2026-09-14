@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import type { components } from '@/lib/api-types';
 import { ApiError, get } from '@/lib/api-client';
+import type { RegionalModel } from '@/lib/regional-model';
 
 import type { Resource } from './useAnalysis';
 
@@ -59,6 +60,11 @@ export function useOfficialAqi(city: string): Resource<OfficialAqi> {
 /** Uncalibrated low-cost sensor readings in a city. */
 export function useLowCostSensors(pollutant: string, city: string): Resource<LowCostSensors> {
   return useQuery<LowCostSensors>('/sensors', { pollutant, city });
+}
+
+/** The CAMS regional model over a city: hours around now, peaks ahead, and its bias. */
+export function useRegionalModel(city: string, pollutant: string): Resource<RegionalModel> {
+  return useQuery<RegionalModel>('/regional-model', { city, pollutant });
 }
 
 /** A Sentinel-5P product over a city: its daily series and latest cell values. */

@@ -14,6 +14,7 @@ import { HowItWorks } from '@/features/overview/HowItWorks';
 import { MonitorReadings } from '@/features/overview/MonitorReadings';
 import { NetworkTiers } from '@/features/overview/NetworkTiers';
 import { OfficialReading } from '@/features/overview/OfficialReading';
+import { RegionalModelCard } from '@/features/overview/RegionalModelCard';
 import { SatelliteCard } from '@/features/overview/SatelliteCard';
 import { TopHotspots } from '@/features/overview/TopHotspots';
 import { useAlerts } from '@/hooks/useAlerts';
@@ -24,6 +25,7 @@ import { useHealth } from '@/hooks/useHealth';
 import {
   useLowCostSensors,
   useOfficialAqi,
+  useRegionalModel,
   useSatellite,
   type SatelliteProduct,
 } from '@/hooks/useSources';
@@ -54,6 +56,7 @@ export function OverviewScreen({ onNavigate }: { readonly onNavigate: (key: Scre
   const official = useOfficialAqi(city);
   const sensors = useLowCostSensors(pollutant, city);
   const satellite = useSatellite(city, product);
+  const model = useRegionalModel(city, pollutant);
   const readings = useCitizenSensors(pollutant, city);
   const citizen = useCitizen();
   const alerts = useAlerts(city);
@@ -112,6 +115,7 @@ export function OverviewScreen({ onNavigate }: { readonly onNavigate: (key: Scre
             photos={photos}
             readings={readings}
             satellite={satellite}
+            model={model}
             health={health}
             pollutantLabel={label}
           />
@@ -138,6 +142,7 @@ export function OverviewScreen({ onNavigate }: { readonly onNavigate: (key: Scre
               </div>
             </Card>
           </div>
+          <RegionalModelCard model={model} cityLabel={cityLabel} pollutantLabel={label} />
         </section>
 
         <section aria-labelledby="detect" className="space-y-4">

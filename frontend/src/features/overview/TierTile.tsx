@@ -8,6 +8,8 @@ interface TierTileProps {
   readonly value: ReactNode;
   readonly note: string;
   readonly state: TierState;
+  /** Grid placement, for a tile that spans a row. */
+  readonly className?: string;
 }
 
 const STATES: Record<TierState, { label: string; dot: string; text: string }> = {
@@ -24,10 +26,10 @@ const STATES: Record<TierState, { label: string; dot: string; text: string }> = 
  * finding for several tiers in a data-poor city and must read as a gap, not as
  * a quiet green panel.
  */
-export function TierTile({ tier, name, value, note, state }: TierTileProps) {
+export function TierTile({ tier, name, value, note, state, className = '' }: TierTileProps) {
   const look = STATES[state];
   return (
-    <div className="flex min-w-0 flex-col bg-surface p-4">
+    <div className={`flex min-w-0 flex-col bg-surface p-4 ${className}`}>
       <p className="eyebrow">{tier}</p>
       <p className="mt-1 text-sm font-semibold text-ink">{name}</p>
       <p className="figure mt-3 text-[26px] font-medium leading-none text-ink">{value}</p>
