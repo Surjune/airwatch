@@ -164,6 +164,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/alerts/{alert_id}/brief": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A plain-language brief for one alert, written by Google Gemini
+         * @description The alert's brief, written on first request and stored for every reader after.
+         */
+        get: operations["alert_brief_v1_alerts__alert_id__brief_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/alerts/dispatch": {
         parameters: {
             query?: never;
@@ -587,6 +607,33 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AlertBriefResponse
+         * @description A plain-language brief for one alert, written by Google Gemini.
+         */
+        AlertBriefResponse: {
+            /** Alert Id */
+            alert_id: number;
+            /** Summary */
+            summary: string;
+            /** Suggested Action */
+            suggested_action: string;
+            /**
+             * Model
+             * @description The Gemini model that wrote it.
+             */
+            model: string;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /**
+             * Notice
+             * @description How the brief was made and checked. Every figure in it appears in the alert's own data; it is a reading aid beside those figures, not a finding.
+             */
+            notice: string;
+        };
         /**
          * AlertKind
          * @description Why an authority received an alert.
@@ -1776,6 +1823,29 @@ export interface components {
             authorised: boolean;
         };
         /**
+         * PhotoReadingResponse
+         * @description What Google Gemini saw in the photograph.
+         *
+         *     A suggestion about what is visible, kept apart from the haze index: it names
+         *     no concentration, and a source that looks present in a photograph is not a
+         *     source established by it.
+         */
+        PhotoReadingResponse: {
+            visible_source: components["schemas"]["VisibleSource"];
+            /**
+             * Confidence
+             * @description Gemini's own confidence in its choice. Not calibrated against ground truth.
+             */
+            confidence: number;
+            /**
+             * Observation
+             * @description What in the image supports the choice, in one sentence.
+             */
+            observation: string;
+            /** Model */
+            model: string;
+        };
+        /**
          * PilotCity
          * @description A city this deployment ingests, analyses and can scope a view to.
          * @enum {string}
@@ -2236,6 +2306,13 @@ export interface components {
             reference?: components["schemas"]["ReferenceComparisonResponse"] | null;
             provenance: components["schemas"]["ProvenanceResponse"];
             calibration: components["schemas"]["CalibrationStatusResponse"];
+            /** @description What Google Gemini saw in the photograph. Null when it was not read. */
+            photo_reading?: components["schemas"]["PhotoReadingResponse"] | null;
+            /**
+             * Photo Reading Note
+             * @description Why the photograph was not read, when it was not.
+             */
+            photo_reading_note?: string | null;
         };
         /**
          * TransferResultResponse
@@ -2312,6 +2389,16 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /**
+         * VisibleSource
+         * @description What a residents' photograph visibly shows, as read by Gemini.
+         *
+         *     The pollution kinds match :class:`ComplaintCategory`, so a suggestion can be
+         *     compared with what the resident said they saw. The last three exist so the
+         *     model is never forced to name a source it cannot see.
+         * @enum {string}
+         */
+        VisibleSource: "open_burning" | "industrial_smoke" | "construction_dust" | "vehicle_exhaust" | "crop_residue_burning" | "road_dust" | "haze_without_visible_source" | "none_visible" | "not_outdoor";
     };
     responses: never;
     parameters: never;
@@ -2544,6 +2631,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AlertsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    alert_brief_v1_alerts__alert_id__brief_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertBriefResponse"];
                 };
             };
             /** @description Validation Error */

@@ -3,6 +3,7 @@ import { useId, useState } from 'react';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { AlertBriefPanel } from '@/features/alerts/AlertBriefPanel';
 import type { Alert } from '@/hooks/useAlerts';
 import { pollutantLabel } from '@/lib/scope';
 import { istDateTime } from '@/lib/time';
@@ -118,6 +119,8 @@ export function AlertCard({
         {alert.peak_z.toFixed(1)}× the expected error · first seen{' '}
         {istDateTime(alert.first_seen_at)} IST
       </p>
+
+      <AlertBriefPanel alertId={alert.alert_id} />
 
       {isOverdue && (
         <p

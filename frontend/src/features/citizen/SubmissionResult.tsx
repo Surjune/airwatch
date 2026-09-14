@@ -1,5 +1,6 @@
 import { CircleCheck } from 'lucide-react';
 
+import { PhotoReadingCard } from '@/features/citizen/PhotoReadingCard';
 import { ReportDownload } from '@/features/citizen/ReportDownload';
 import type { SubmissionOutcome } from '@/hooks/useCitizen';
 
@@ -67,6 +68,8 @@ export function SubmissionResult({ outcome }: { readonly outcome: SubmissionOutc
           'No reference monitor was within range, which is exactly the gap this tier exists to fill.'
         )}
       </p>
+
+      <PhotoReadingCard reading={report.photo_reading} note={report.photo_reading_note} />
 
       <ReportDownload reference={report.complaint_reference} />
     </section>

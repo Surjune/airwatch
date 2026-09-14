@@ -54,7 +54,8 @@ export function PhotoForm({ tier }: { readonly tier: CitizenTier }) {
         <p className="text-xs font-medium text-ink-muted">Photograph</p>
         <p className="mb-2 text-xs text-ink-subtle">
           An outdoor daylight scene with something distant in it. Blurred, dark or over-exposed
-          frames are refused — each makes clean air look dirty.
+          frames are refused — each makes clean air look dirty. A smaller copy, without its location
+          data, is shown to Google Gemini to suggest what is visible; the photo itself is not kept.
         </p>
         <PhotoDropzone
           file={file}
@@ -81,7 +82,7 @@ export function PhotoForm({ tier }: { readonly tier: CitizenTier }) {
           onClick={send}
           disabled={!canSubmit}
           isBusy={isSubmitting}
-          busyLabel="Measuring…"
+          busyLabel="Measuring and reading…"
         >
           <Send aria-hidden className="size-4" />
           Submit photograph

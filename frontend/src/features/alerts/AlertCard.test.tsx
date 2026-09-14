@@ -49,6 +49,9 @@ function renderCard(alert: Alert, props: { isOverdue?: boolean; isBusy?: boolean
   return { onAcknowledge, onResolve };
 }
 
+/** The controls that change an alert's trail, as opposed to reading it. */
+const ACTIONS = /Acknowledge|Resolve|Close alert/;
+
 describe('AlertCard', () => {
   it('leads with the comparison, not the bare concentration', () => {
     renderCard(makeAlert());
@@ -145,7 +148,8 @@ describe('AlertCard', () => {
     );
     expect(screen.getByText(/past its response deadline/i)).toBeInTheDocument();
     expect(screen.getByText('not delivered')).toBeInTheDocument();
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    // Reading aids such as the Gemini brief remain; what is withheld is changing the trail.
+    expect(screen.queryByRole('button', { name: ACTIONS })).not.toBeInTheDocument();
   });
 
   it('shows the resolution and offers no further actions once resolved', () => {
@@ -153,7 +157,7 @@ describe('AlertCard', () => {
       makeAlert({ status: 'resolved', delivered_at: null, resolution_note: 'Kiln sealed.' }),
     );
     expect(screen.getByText('Kiln sealed.')).toBeInTheDocument();
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: ACTIONS })).not.toBeInTheDocument();
     expect(screen.queryByText('not delivered')).not.toBeInTheDocument();
   });
 });
