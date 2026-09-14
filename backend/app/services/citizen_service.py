@@ -17,18 +17,24 @@ So the pipeline is arranged to fail towards silence:
 The first submissions near stations are therefore the ones that make later
 submissions far from stations mean anything. That bootstrapping is the point,
 and it is why a report with no derived concentration is still worth storing.
+
+An accepted photograph is also shown to Google Gemini, which names the pollution
+source visible in it, if any. That reading is an addition, never a gate: it does
+not change the haze index, the trust score or the calibration, and a submission
+succeeds exactly the same when Gemini is unavailable.
 """
 
 from __future__ import annotations
 
 import io
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 
 import numpy as np
 from PIL import Image, UnidentifiedImageError
 from sqlalchemy.orm import Session
 
+from app.core.config import Settings
 from app.core.constants import (
     CITIZEN_CALIBRATION_MIN_PAIRS,
     CITIZEN_COLOCATION_RADIUS_M,
@@ -40,20 +46,23 @@ from app.core.constants import (
     CITIZEN_PHOTO_MAX_BYTES,
     CITIZEN_TRUST_STEP,
     CITIZEN_UNVERIFIED_TRUST,
+    GEMINI_IMAGE_JPEG_QUALITY,
+    GEMINI_IMAGE_MAX_EDGE_PX,
     HOURS_PER_DAY,
 )
 from app.core.enums import ComplaintCategory, Pollutant, SubmissionKind
-from app.core.exceptions import RateLimitExceededError, ValidationError
+from app.core.exceptions import RateLimitExceededError, UpstreamError, ValidationError
 from app.core.geo import LonLat, validate_within_india
 from app.core.h3_grid import point_to_cell
 from app.core.logging import get_logger
 from app.core.references import clean_description, format_reference
+from app.external.gemini_client import GeminiClient
 from app.ml.exif import PhotoProvenance, Verdict, verify
 from app.ml.haze_calibration import HazeCalibration, HazeEstimate
 from app.ml.haze_calibration import fit as fit_calibration
 from app.ml.vision import HazeAnalysis, Rejection, analyse
 from app.repositories import citizen_repository
-from app.repositories.citizen_repository import CitizenReportRow, NearestReading
+from app.repositories.citizen_repository import CitizenReportRow, NearestReading, PhotoReadingRow
 
 logger = get_logger(__name__)
 
@@ -67,6 +76,15 @@ DEFAULT_REPORT_WINDOW_HOURS = HOURS_PER_DAY
 
 #: Most reports one map request returns.
 MAX_REPORTS_RETURNED = 500
+
+#: The credential photo reading needs.
+_GEMINI_CREDENTIAL = "gemini_api_key"
+
+#: Said when a photograph was stored without a reading, so the gap has a reason.
+_READING_NOT_SET_UP = "Reading photographs with Google Gemini is not set up on this deployment."
+_READING_FAILED = (
+    "Google Gemini could not read this photograph just now. The haze measurement is unaffected."
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,6 +125,11 @@ class AcceptedReport:
     provenance: PhotoProvenance
 
     calibration: CalibrationStatus
+
+    #: What Google Gemini saw in the photograph. None when it was not asked or
+    #: could not answer, with the reason in ``photo_reading_note``.
+    photo_reading: PhotoReadingRow | None = None
+    photo_reading_note: str | None = None
 
 
 def decode_image(content: bytes) -> np.ndarray:
@@ -298,6 +321,75 @@ def submit(
         category=category,
         description=clean_description(description),
     )
+
+
+async def submit_and_read(
+    session: Session,
+    settings: Settings,
+    *,
+    content: bytes,
+    coordinates: LonLat,
+    captured_at: datetime,
+    device_id: str,
+    category: ComplaintCategory | None = None,
+    description: str | None = None,
+    now: datetime | None = None,
+) -> AcceptedReport | Rejection:
+    """Accept a photograph as :func:`submit` does, then have Gemini read it.
+
+    The reading happens only for an accepted photograph, and after it is
+    stored: a refused or rate-limited submission costs no request, and a Gemini
+    failure cannot lose a submission.
+
+    Raises:
+        ValidationError: The upload, position or capture time is unusable.
+        RateLimitExceededError: The device is over its hourly allowance.
+    """
+    outcome = submit(
+        session,
+        content=content,
+        coordinates=coordinates,
+        captured_at=captured_at,
+        device_id=device_id,
+        category=category,
+        description=description,
+        now=now,
+    )
+    if isinstance(outcome, Rejection):
+        return outcome
+
+    if not settings.has(_GEMINI_CREDENTIAL):
+        return replace(outcome, photo_reading_note=_READING_NOT_SET_UP)
+    try:
+        async with GeminiClient(settings.require(_GEMINI_CREDENTIAL)) as client:
+            answer = await client.read_photo(image_for_reading(content))
+    except UpstreamError as error:
+        logger.warning("citizen.photo_reading_failed", error_code=error.code)
+        return replace(outcome, photo_reading_note=_READING_FAILED)
+
+    reading = PhotoReadingRow(
+        visible_source=answer.visible_source,
+        confidence=answer.confidence,
+        observation=answer.observation,
+        model=answer.model,
+    )
+    citizen_repository.set_photo_reading(session, outcome.report_id, reading)
+    return replace(outcome, photo_reading=reading)
+
+
+def image_for_reading(content: bytes) -> bytes:
+    """A smaller JPEG copy of an accepted photograph, for Gemini to read.
+
+    Re-encoding writes no metadata, so the EXIF block -- which can hold the
+    resident's exact position and phone model -- never leaves this server.
+    Only called on content :func:`decode_image` has already accepted.
+    """
+    with Image.open(io.BytesIO(content)) as opened:
+        copy = opened.convert("RGB")
+    copy.thumbnail((GEMINI_IMAGE_MAX_EDGE_PX, GEMINI_IMAGE_MAX_EDGE_PX))
+    buffer = io.BytesIO()
+    copy.save(buffer, format="JPEG", quality=GEMINI_IMAGE_JPEG_QUALITY)
+    return buffer.getvalue()
 
 
 def _store(

@@ -89,6 +89,22 @@ class AlertResponse(BaseModel):
     )
 
 
+class AlertBriefResponse(BaseModel):
+    """A plain-language brief for one alert, written by Google Gemini."""
+
+    alert_id: int
+    summary: str
+    suggested_action: str
+    model: str = Field(description="The Gemini model that wrote it.")
+    generated_at: datetime
+    notice: str = Field(
+        description=(
+            "How the brief was made and checked. Every figure in it appears in the alert's "
+            "own data; it is a reading aid beside those figures, not a finding."
+        )
+    )
+
+
 class AlertsResponse(BaseModel):
     """The alert inbox."""
 

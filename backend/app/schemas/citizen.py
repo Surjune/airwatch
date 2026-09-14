@@ -16,6 +16,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from app.core.enums import VisibleSource
 from app.schemas.analysis import Position
 
 
@@ -92,6 +93,24 @@ class ProvenanceResponse(BaseModel):
     )
 
 
+class PhotoReadingResponse(BaseModel):
+    """What Google Gemini saw in the photograph.
+
+    A suggestion about what is visible, kept apart from the haze index: it names
+    no concentration, and a source that looks present in a photograph is not a
+    source established by it.
+    """
+
+    visible_source: VisibleSource
+    confidence: float = Field(
+        ge=0.0,
+        le=1.0,
+        description="Gemini's own confidence in its choice. Not calibrated against ground truth.",
+    )
+    observation: str = Field(description="What in the image supports the choice, in one sentence.")
+    model: str
+
+
 class SubmissionResponse(BaseModel):
     """What a submitted photograph yielded."""
 
@@ -128,6 +147,14 @@ class SubmissionResponse(BaseModel):
     reference: ReferenceComparisonResponse | None = None
     provenance: ProvenanceResponse
     calibration: CalibrationStatusResponse
+    photo_reading: PhotoReadingResponse | None = Field(
+        default=None,
+        description="What Google Gemini saw in the photograph. Null when it was not read.",
+    )
+    photo_reading_note: str | None = Field(
+        default=None,
+        description="Why the photograph was not read, when it was not.",
+    )
 
 
 class RejectionResponse(BaseModel):

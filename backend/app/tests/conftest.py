@@ -49,6 +49,7 @@ def settings() -> Settings:
         gee_service_account_email="",
         gee_private_key_path="",
         sarvam_api_key="",
+        gemini_api_key="",
         operator_api_key=OPERATOR_KEY,
     )
 

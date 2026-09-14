@@ -42,7 +42,12 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from app.core.constants import COMPLAINT_DESCRIPTION_MAX_LENGTH, SRID_WGS84
+from app.core.constants import (
+    COMPLAINT_DESCRIPTION_MAX_LENGTH,
+    GEMINI_ACTION_MAX_CHARS,
+    GEMINI_BRIEF_MAX_CHARS,
+    SRID_WGS84,
+)
 from app.core.enums import (
     AlertKind,
     AlertStatus,
@@ -754,6 +759,27 @@ class VoiceGuideClip(Base):
     model: Mapped[str] = mapped_column(String(32), nullable=False)
     speaker: Mapped[str] = mapped_column(String(32), nullable=False)
     audio: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class AlertBrief(Base):
+    """A plain-language brief for one alert, written by Google Gemini.
+
+    Stored once written, so an alert is summarised once rather than on every
+    view, and every reader sees the same words. Only a brief whose figures all
+    appear in the alert's own facts is ever stored.
+    """
+
+    __tablename__ = "alert_briefs"
+
+    alert_id: Mapped[int] = mapped_column(
+        ForeignKey("alerts.id", ondelete="CASCADE"), primary_key=True
+    )
+    summary: Mapped[str] = mapped_column(String(GEMINI_BRIEF_MAX_CHARS), nullable=False)
+    suggested_action: Mapped[str] = mapped_column(String(GEMINI_ACTION_MAX_CHARS), nullable=False)
+    model: Mapped[str] = mapped_column(String(64), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -12,6 +12,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile
 from sqlalchemy.orm import Session
 
+from app.core.config import Settings, get_settings
 from app.core.constants import COMPLAINT_DESCRIPTION_MAX_LENGTH
 from app.core.enums import ComplaintCategory
 from app.ml.vision import Rejection
@@ -23,6 +24,7 @@ from app.schemas.citizen import (
     CitizenReportsResponse,
     CitizenReportSummary,
     HazeEstimateResponse,
+    PhotoReadingResponse,
     ProvenanceResponse,
     ReferenceComparisonResponse,
     RejectionResponse,
@@ -98,6 +100,17 @@ def _accepted(report: AcceptedReport) -> SubmissionResponse:
             contributes_to_calibration=report.trust_score >= CALIBRATION_MIN_TRUST,
         ),
         calibration=_calibration(report.calibration),
+        photo_reading=(
+            PhotoReadingResponse(
+                visible_source=report.photo_reading.visible_source,
+                confidence=report.photo_reading.confidence,
+                observation=report.photo_reading.observation,
+                model=report.photo_reading.model,
+            )
+            if report.photo_reading is not None
+            else None
+        ),
+        photo_reading_note=report.photo_reading_note,
     )
 
 
@@ -118,6 +131,7 @@ def _accepted(report: AcceptedReport) -> SubmissionResponse:
 )
 async def submit_report(
     session: Annotated[Session, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
     response: Response,
     photo: Annotated[UploadFile, File(description="A geotagged outdoor photograph.")],
     longitude: Annotated[float, Form(ge=-180.0, le=180.0)],
@@ -150,8 +164,9 @@ async def submit_report(
     """
     content = await photo.read()
 
-    outcome = citizen_service.submit(
+    outcome = await citizen_service.submit_and_read(
         session,
+        settings,
         content=content,
         coordinates=(longitude, latitude),
         captured_at=captured_at,

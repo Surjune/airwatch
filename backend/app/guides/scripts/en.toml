@@ -189,6 +189,14 @@ Resolve it with a note saying what was done. Everyone else can read every alert,
 but cannot change one.
 """
 
+[[screens.alerts.sections]]
+heading = "A brief from Google Gemini"
+text = """
+Press Summarise with Gemini on any alert for a short brief in plain language,
+with a suggested first step. Google's Gemini AI writes it from the alert's own
+figures only, and AirWatch checks every number in it before showing it.
+"""
+
 # --- Federation -----------------------------------------------------------------
 
 [screens.federation]
@@ -244,6 +252,15 @@ To send a photograph, take a daytime picture that shows open sky and some
 distance. Dark, blurred or very bright photos are refused, because they make
 clean air look polluted. Then press Use my location, or type in the latitude and
 longitude.
+"""
+
+[[screens.citizen.sections]]
+heading = "What Google Gemini sees"
+text = """
+After you send a photograph, Google's Gemini AI looks at it and suggests what is
+visible, such as burning waste or construction dust, with its confidence. This is
+a suggestion to help your complaint, not a measurement or proof. Your location
+data is removed first, and the photograph is not kept.
 """
 
 [[screens.citizen.sections]]

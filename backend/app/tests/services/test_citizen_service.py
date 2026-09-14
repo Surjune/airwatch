@@ -14,21 +14,27 @@ somewhere no monitor covers, since that is where the tier is most needed.
 from __future__ import annotations
 
 import io
+import json
 from datetime import UTC, datetime, timedelta
 
+import httpx
 import numpy as np
 import pytest
+import respx
 from PIL import Image
 from sqlalchemy.orm import Session
 
+from app.core.config import Settings
 from app.core.constants import (
     CITIZEN_CALIBRATION_MIN_PAIRS,
     CITIZEN_INITIAL_TRUST,
     CITIZEN_MAX_CAPTURE_AGE_HOURS,
     CITIZEN_MAX_REPORTS_PER_DEVICE_PER_HOUR,
     CITIZEN_UNVERIFIED_TRUST,
+    GEMINI_BASE_URL,
+    GEMINI_MODELS,
 )
-from app.core.enums import Pollutant, StationTier
+from app.core.enums import Pollutant, StationTier, VisibleSource
 from app.core.exceptions import RateLimitExceededError, ValidationError
 from app.core.h3_grid import point_to_cell
 from app.ml.exif import Verdict
@@ -530,3 +536,88 @@ class TestProvenance:
 
         assert not isinstance(result, Rejection)
         assert result.trust_score >= citizen_service.CALIBRATION_MIN_TRUST
+
+
+class TestReadingWithGemini:
+    """Gemini's reading is an addition to a submission, never a condition of it."""
+
+    URL = f"{GEMINI_BASE_URL}/models/{GEMINI_MODELS[0]}:generateContent"
+
+    @staticmethod
+    def _answer() -> httpx.Response:
+        text = json.dumps(
+            {
+                "visible_source": "open_burning",
+                "confidence": 0.8,
+                "observation": "Grey smoke rises from a burning pile of waste.",
+            }
+        )
+        return httpx.Response(
+            200,
+            json={"candidates": [{"content": {"parts": [{"text": text}]}, "finishReason": "STOP"}]},
+        )
+
+    async def _submit(self, session: Session, settings: Settings) -> object:
+        return await citizen_service.submit_and_read(
+            session,
+            settings,
+            content=photo_bytes(haze=0.3),
+            coordinates=DELHI,
+            captured_at=NOW,
+            device_id=DEVICE,
+            now=NOW,
+        )
+
+    @respx.mock
+    async def test_a_reading_is_returned_and_kept_for_the_report(
+        self, session: Session, settings: Settings
+    ) -> None:
+        respx.post(self.URL).mock(return_value=self._answer())
+        voiced = settings.model_copy(update={"gemini_api_key": "test-gemini-key"})
+
+        result = await self._submit(session, voiced)
+
+        assert isinstance(result, citizen_service.AcceptedReport)
+        assert result.photo_reading is not None
+        assert result.photo_reading.visible_source is VisibleSource.OPEN_BURNING
+        stored = citizen_repository.photo_for_device(session, result.report_id, DEVICE)
+        assert stored is not None
+        assert stored.photo_reading == result.photo_reading
+
+    async def test_without_a_key_the_submission_still_succeeds_and_says_why(
+        self, session: Session, settings: Settings
+    ) -> None:
+        result = await self._submit(session, settings)
+
+        assert isinstance(result, citizen_service.AcceptedReport)
+        assert result.photo_reading is None
+        assert result.photo_reading_note is not None
+
+    @respx.mock
+    async def test_a_gemini_outage_does_not_lose_the_submission(
+        self, session: Session, settings: Settings
+    ) -> None:
+        for model in GEMINI_MODELS:
+            respx.post(f"{GEMINI_BASE_URL}/models/{model}:generateContent").mock(
+                return_value=httpx.Response(503, json={"error": "busy"})
+            )
+        voiced = settings.model_copy(update={"gemini_api_key": "test-gemini-key"})
+
+        result = await self._submit(session, voiced)
+
+        assert isinstance(result, citizen_service.AcceptedReport)
+        assert result.photo_reading is None
+        assert "haze measurement is unaffected" in (result.photo_reading_note or "")
+        assert citizen_repository.photo_for_device(session, result.report_id, DEVICE) is not None
+
+
+def test_the_copy_sent_to_gemini_carries_no_location_metadata() -> None:
+    original = photo_with_metadata(position=DELHI, captured_at=NOW)
+
+    copy = citizen_service.image_for_reading(original)
+
+    with Image.open(io.BytesIO(original)) as source:
+        assert source.getexif().get_ifd(0x8825)
+    with Image.open(io.BytesIO(copy)) as sent:
+        assert not sent.getexif().get_ifd(0x8825)
+        assert sent.format == "JPEG"

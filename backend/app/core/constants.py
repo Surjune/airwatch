@@ -1180,3 +1180,52 @@ VOICE_GUIDE_VERSION_LENGTH: Final[int] = 12
 #: How long a browser may keep a versioned clip, in seconds (one year). Safe
 #: because the URL changes whenever the words or the voice do.
 VOICE_GUIDE_CACHE_MAX_AGE_SECONDS: Final[int] = 31_536_000
+
+
+# ---------------------------------------------------------------------------
+# Google AI (Gemini)
+# ---------------------------------------------------------------------------
+
+#: Gemini API root (Google AI Studio keys).
+GEMINI_BASE_URL: Final[str] = "https://generativelanguage.googleapis.com/v1beta"
+
+#: Models tried in order, for both photo reading and alert briefs. Each reads
+#: images and honours a JSON response schema. A busy model answers 503 "high
+#: demand" for minutes at a time -- Gemini 3.5 Flash did while this was built --
+#: so the next is tried rather than the same one retried. Gemini 3.6 Flash is
+#: Google's current recommendation; 3.1 Flash-Lite is the lighter fallback.
+#: Gemini 2.5 is closed to new keys.
+GEMINI_MODELS: Final[tuple[str, ...]] = ("gemini-3.6-flash", "gemini-3.1-flash-lite")
+
+#: Timeout for one request to one model, in seconds. Reading a photo took up to
+#: twenty seconds in testing; past thirty, the next model is the better bet.
+GEMINI_TIMEOUT_SECONDS: Final[float] = 30.0
+
+#: Attempts per model. One: when a model is busy, falling back to the next one
+#: answers sooner than retrying it, and a resident is waiting on the reply.
+GEMINI_ATTEMPTS_PER_MODEL: Final[int] = 1
+
+#: Sampling temperature. Zero, because both uses describe evidence rather than
+#: invent: the same photograph or alert should read the same way twice.
+GEMINI_TEMPERATURE: Final[float] = 0.0
+
+#: Longest edge a photograph is resized to before it is sent, in pixels. Enough
+#: to see smoke and dust; smaller uploads are faster and send less of a
+#: resident's surroundings to a third party.
+GEMINI_IMAGE_MAX_EDGE_PX: Final[int] = 1024
+
+#: JPEG quality for the re-encoded copy sent to Gemini. Re-encoding also drops
+#: the EXIF block, which can carry the resident's exact position.
+GEMINI_IMAGE_JPEG_QUALITY: Final[int] = 85
+
+#: Longest description of a photograph kept, in characters.
+GEMINI_OBSERVATION_MAX_CHARS: Final[int] = 300
+
+#: Longest alert summary and suggested action kept, in characters.
+GEMINI_BRIEF_MAX_CHARS: Final[int] = 800
+GEMINI_ACTION_MAX_CHARS: Final[int] = 400
+
+#: How long before a hotspot's first sighting candidate sources and wind are
+#: loaded for its brief, in hours: the back-trajectory's reach plus how long a
+#: fire detection stays a candidate.
+ALERT_BRIEF_LOOKBACK_HOURS: Final[int] = 18

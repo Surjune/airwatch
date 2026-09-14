@@ -17,11 +17,24 @@ from sqlalchemy import Row, Select, func, select
 from sqlalchemy.orm import Session
 
 from app.core.constants import CITIZEN_COLOCATION_RADIUS_M, CITIZEN_REFERENCE_MAX_GAP_MINUTES
-from app.core.enums import ComplaintCategory, Pollutant, StationTier
+from app.core.enums import ComplaintCategory, Pollutant, StationTier, VisibleSource
 from app.core.geo import LonLat
 from app.core.h3_grid import H3Cell
 from app.ml.haze_calibration import CalibrationPair
 from app.repositories.models import CitizenReport, Measurement, Station
+
+#: Key under a report's ``extra`` document holding Gemini's reading of the photo.
+_PHOTO_READING_KEY = "photo_reading"
+
+
+@dataclass(frozen=True, slots=True)
+class PhotoReadingRow:
+    """What Gemini saw in a photograph, as stored with its report."""
+
+    visible_source: VisibleSource
+    confidence: float
+    observation: str
+    model: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,6 +76,7 @@ class StoredPhotoReport:
     reference_station_name: str | None
     reference_value: float | None
     reference_distance_m: float | None
+    photo_reading: PhotoReadingRow | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -166,6 +180,39 @@ def insert_report(session: Session, row: CitizenReportRow) -> int:
     return int(report.id)
 
 
+def set_photo_reading(session: Session, report_id: int, reading: PhotoReadingRow) -> None:
+    """Attach Gemini's reading to a stored report, keeping what ``extra`` already holds."""
+    report = session.get(CitizenReport, report_id)
+    if report is None:
+        return
+    report.extra = {
+        **(report.extra or {}),
+        _PHOTO_READING_KEY: {
+            "visible_source": reading.visible_source.value,
+            "confidence": reading.confidence,
+            "observation": reading.observation,
+            "model": reading.model,
+        },
+    }
+    session.flush()
+
+
+def _photo_reading(extra: dict[str, object] | None) -> PhotoReadingRow | None:
+    """Read a stored photo reading back, or None when there is none or it no longer parses."""
+    stored = (extra or {}).get(_PHOTO_READING_KEY)
+    if not isinstance(stored, dict):
+        return None
+    try:
+        return PhotoReadingRow(
+            visible_source=VisibleSource(str(stored["visible_source"])),
+            confidence=float(str(stored["confidence"])),
+            observation=str(stored["observation"]),
+            model=str(stored["model"]),
+        )
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
 def _stored_photo_statement() -> Select[tuple[CitizenReport, float, float, str | None]]:
     return select(
         CitizenReport,
@@ -192,6 +239,7 @@ def _to_stored_photo(row: Row[tuple[CitizenReport, float, float, str | None]]) -
         reference_station_name=station_name,
         reference_value=report.reference_value,
         reference_distance_m=report.reference_distance_m,
+        photo_reading=_photo_reading(report.extra),
     )
 
 

@@ -33,7 +33,7 @@ from app.core.constants import (
     IST_UTC_OFFSET_MINUTES,
     PILOT_CITY_LABELS,
 )
-from app.core.enums import ComplaintCategory, PilotCity, SubmissionKind
+from app.core.enums import ComplaintCategory, PilotCity, SubmissionKind, VisibleSource
 from app.core.exceptions import NotFoundError
 from app.core.geo import LonLat
 from app.core.logging import get_logger
@@ -42,7 +42,7 @@ from app.documents.complaint_pdf import ComplaintDocument, Row, Section, render
 from app.ml.haze_calibration import fit as fit_calibration
 from app.ml.sensor_colocation import relative_difference
 from app.repositories import alert_repository, citizen_repository, citizen_sensor_repository
-from app.repositories.citizen_repository import StoredPhotoReport
+from app.repositories.citizen_repository import PhotoReadingRow, StoredPhotoReport
 from app.repositories.citizen_sensor_repository import DeviceSensorReading
 
 logger = get_logger(__name__)
@@ -63,6 +63,30 @@ CATEGORY_LABELS: dict[ComplaintCategory, str] = {
     ComplaintCategory.ROAD_DUST: "Dust from unpaved or unswept roads",
     ComplaintCategory.OTHER: "Other",
 }
+
+#: How Gemini's reading of a photograph is named on a report.
+VISIBLE_SOURCE_LABELS: dict[VisibleSource, str] = {
+    VisibleSource.OPEN_BURNING: "Open burning of waste",
+    VisibleSource.INDUSTRIAL_SMOKE: "Smoke or fumes from an industrial unit",
+    VisibleSource.CONSTRUCTION_DUST: "Dust from construction or demolition",
+    VisibleSource.VEHICLE_EXHAUST: "Vehicle exhaust",
+    VisibleSource.CROP_RESIDUE_BURNING: "Burning of crop residue",
+    VisibleSource.ROAD_DUST: "Road dust",
+    VisibleSource.HAZE_WITHOUT_VISIBLE_SOURCE: "Haze, with no source visible in the frame",
+    VisibleSource.NONE_VISIBLE: "No visible pollution",
+    VisibleSource.NOT_OUTDOOR: "Not a photograph of outdoor air",
+}
+
+
+def _photo_reading_value(reading: PhotoReadingRow | None) -> str:
+    if reading is None:
+        return "Not read"
+    label = VISIBLE_SOURCE_LABELS[reading.visible_source]
+    return (
+        f"{label} (Google Gemini, {reading.confidence * _PERCENT:.0f}% confidence). "
+        f"{reading.observation}"
+    )
+
 
 #: How a jurisdiction's tier is named on a report.
 _TIER_LABELS: dict[int, str] = {1: "Responsible first", 2: "Escalation"}
@@ -297,6 +321,7 @@ def _photo_document(
             if estimate
             else "Not derivable yet: too few photographs have been taken beside a monitor",
         ),
+        Row("Visible in the photo", _photo_reading_value(photo.photo_reading)),
         Row("Photo metadata", _PROVENANCE_LABELS.get(photo.provenance or "", "Not recorded")),
         Row(
             "Counts towards calibration",
@@ -325,7 +350,9 @@ def _photo_document(
                 title="What AirWatch measured",
                 rows=tuple(rows),
                 paragraphs=(
-                    "The photograph itself is not stored; only what was measured from it.",
+                    "The photograph itself is not stored; only what was measured from it. What "
+                    "is visible in it was suggested by Google Gemini, an AI model: it describes "
+                    "the image, measures nothing, and does not establish a source.",
                 ),
             ),
             Section(

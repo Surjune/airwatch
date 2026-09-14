@@ -132,6 +132,18 @@ class UpstreamRateLimitedError(UpstreamError):
     status_code = 429
 
 
+class UngroundedAiOutputError(UpstreamError):
+    """A language model wrote something the facts it was given do not support.
+
+    Raised when generated text contains a figure that was not in its input. The
+    text is discarded rather than shown: in front of an official, one invented
+    number costs the credibility of every correct one beside it.
+    """
+
+    code = "ai_output_ungrounded"
+    status_code = 502
+
+
 # ---------------------------------------------------------------------------
 # Validation
 # ---------------------------------------------------------------------------

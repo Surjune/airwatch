@@ -17,6 +17,7 @@ from app.repositories.alert_repository import AlertDetail
 from app.repositories.session import get_db_session
 from app.routes.dependencies import OperatorOnly
 from app.schemas.alerts import (
+    AlertBriefResponse,
     AlertResponse,
     AlertsResponse,
     DeliveryResponse,
@@ -26,7 +27,7 @@ from app.schemas.alerts import (
     SlaBreachResponse,
 )
 from app.schemas.analysis import Position
-from app.services import alert_delivery_service, alert_service
+from app.services import alert_brief_service, alert_delivery_service, alert_service
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -36,6 +37,12 @@ _MAX_WINDOW_HOURS = 720
 
 #: Seconds in an hour, for rendering an overdue interval a human reads.
 _SECONDS_PER_HOUR = 3600.0
+
+_BRIEF_NOTICE = (
+    "Written by Google Gemini from this alert's own figures. Every number in it was checked "
+    "against those figures before it was shown. The likely source is a ranked candidate to "
+    "inspect, not a confirmed cause."
+)
 
 
 def _to_response(detail: AlertDetail) -> AlertResponse:
@@ -78,6 +85,28 @@ def list_alerts(
     return AlertsResponse(
         alert_count=len(details),
         alerts=[_to_response(detail) for detail in details],
+    )
+
+
+@router.get(
+    "/{alert_id}/brief",
+    response_model=AlertBriefResponse,
+    summary="A plain-language brief for one alert, written by Google Gemini",
+)
+async def alert_brief(
+    session: Annotated[Session, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    alert_id: Annotated[int, Path(ge=1)],
+) -> AlertBriefResponse:
+    """The alert's brief, written on first request and stored for every reader after."""
+    brief = await alert_brief_service.brief_for(session, settings, alert_id)
+    return AlertBriefResponse(
+        alert_id=brief.alert_id,
+        summary=brief.summary,
+        suggested_action=brief.suggested_action,
+        model=brief.model,
+        generated_at=brief.generated_at,
+        notice=_BRIEF_NOTICE,
     )
 
 

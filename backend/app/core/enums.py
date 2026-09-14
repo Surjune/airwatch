@@ -169,3 +169,25 @@ class GuideLanguage(StrEnum):
     ENGLISH = "en"
     HINDI = "hi"
     TAMIL = "ta"
+
+
+class VisibleSource(StrEnum):
+    """What a residents' photograph visibly shows, as read by Gemini.
+
+    The pollution kinds match :class:`ComplaintCategory`, so a suggestion can be
+    compared with what the resident said they saw. The last three exist so the
+    model is never forced to name a source it cannot see.
+    """
+
+    OPEN_BURNING = "open_burning"
+    INDUSTRIAL_SMOKE = "industrial_smoke"
+    CONSTRUCTION_DUST = "construction_dust"
+    VEHICLE_EXHAUST = "vehicle_exhaust"
+    CROP_RESIDUE_BURNING = "crop_residue_burning"
+    ROAD_DUST = "road_dust"
+    #: Haze or smog is visible, but nothing in frame shows where it comes from.
+    HAZE_WITHOUT_VISIBLE_SOURCE = "haze_without_visible_source"
+    #: The air looks clear and no emission is visible.
+    NONE_VISIBLE = "none_visible"
+    #: Not a photograph of outdoor air at all: a screenshot, a room, a document.
+    NOT_OUTDOOR = "not_outdoor"

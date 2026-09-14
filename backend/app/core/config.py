@@ -29,6 +29,7 @@ CREDENTIAL_SOURCES: dict[str, tuple[str, str]] = {
     "firms_map_key": ("NASA FIRMS", "FIRMS_MAP_KEY"),
     "gee_service_account_email": ("Google Earth Engine", "GEE_SERVICE_ACCOUNT_EMAIL"),
     "sarvam_api_key": ("Sarvam AI (voice guide)", "SARVAM_API_KEY"),
+    "gemini_api_key": ("Google Gemini", "GEMINI_API_KEY"),
 }
 
 
@@ -108,6 +109,12 @@ class Settings(BaseSettings):
     #: it the guide is still served as text, and any clip already synthesised
     #: keeps playing, because clips are stored once generated.
     sarvam_api_key: str = ""
+
+    # -- Google AI -----------------------------------------------------------
+    #: Gemini API key (Google AI Studio). Reads residents' photographs for a
+    #: visible pollution source and writes plain-language alert briefs. Without
+    #: it both are skipped with a stated reason; nothing else depends on it.
+    gemini_api_key: str = ""
 
     @field_validator("operator_api_key")
     @classmethod

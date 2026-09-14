@@ -169,3 +169,20 @@ class TestSlaEndpoint:
     @staticmethod
     def _dispatch(api: TestClient) -> None:
         api.post("/v1/alerts/dispatch", params={"window_hours": 720})
+
+
+class TestBriefEndpoint:
+    def test_without_a_gemini_key_a_brief_is_a_configuration_error(
+        self, api: TestClient, session: Session, seeded: None
+    ) -> None:
+        alert_id = (
+            alert_service.dispatch(session, Pollutant.PM25, window_hours=720).raised[0].alert_id
+        )
+
+        response = api.get(f"/v1/alerts/{alert_id}/brief")
+
+        assert response.status_code == 503
+        assert response.json()["error"]["code"] == "missing_credential"
+
+    def test_an_unknown_alert_has_no_brief(self, api: TestClient) -> None:
+        assert api.get("/v1/alerts/987654/brief").status_code == 404
