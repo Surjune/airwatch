@@ -25,7 +25,7 @@ Built for the *Clean Air & Climate Resilience* challenge · Live in Delhi-NCR, K
 | --- | --- |
 | **Problem** | India has only a few hundred official air monitors and reports a 24-hour city average. A three-hour plume from a landfill or bus depot never shows up, nobody knows its source, and the source is often in another district or state. |
 | **Solution** | AirWatch combines government monitors, low-cost and home sensors, residents' photos, satellite data, wind and fire detections. It spots unusual pollution, names likely sources, forecasts busy routes, and alerts the responsible authority. Google Gemini reads residents' photos and writes plain-language alert briefs. |
-| **Proof** | Deployed and updating hourly. It has already sent a real cross-state request (Uttar Pradesh → East Delhi). 938 backend and 130 frontend tests run in CI. |
+| **Proof** | Deployed and updating hourly. It has already sent a real cross-state request (Uttar Pradesh → East Delhi). 957 backend and 134 frontend tests run in CI. |
 | **Honesty** | Every number shows its uncertainty. Where there is no data, it says "unknown", never "clean". |
 
 ## Key terms
@@ -50,7 +50,7 @@ a ₹1-crore government monitor.
 | --- | --- | --- | --- |
 | **1 · Ground truth** | CPCB and state monitors (via OpenAQ), CPCB's live AQI (via data.gov.in) | Accurate | Few |
 | **2 · Dense** | Community sensors, residents' photos and home sensor readings | Everywhere | Less accurate |
-| **3 · Complete** | Sentinel-5P satellite, Open-Meteo wind, NASA FIRMS fires | Covers everything | Coarse |
+| **3 · Complete** | Sentinel-5P satellite, CAMS air-quality model (hourly, with a 72 h outlook), Open-Meteo wind, NASA FIRMS fires | Covers everything, every hour | Coarse; the model is checked against monitors |
 
 ```mermaid
 flowchart LR
@@ -68,7 +68,7 @@ flowchart LR
 | Citizen photos | Measures haze from a photo; rejects dark, blurry or over-bright images | Contribute |
 | Citizen sensor readings | Accepts PM2.5/PM10 from home sensors and compares each with the nearest monitor | Contribute |
 | Citizen complaints | Every submission gets a reference number and a PDF report naming the responsible authorities | Contribute → Your reports |
-| Satellite and weather data | Daily Sentinel-5P gases; hourly wind for tracing sources | Overview, Live map |
+| Satellite and weather data | Daily Sentinel-5P gases; hourly wind for tracing sources; the CAMS regional model for every hour monitors miss, compared against them | Overview, Live map, Forecast |
 | Detect hidden hotspots | Flags monitors far above their neighbours' prediction, with ranked likely sources | Live map |
 | Forecast spikes on corridors | 24/48/72-hour outlook along busy routes, plus the best time to travel | Forecast |
 | Alert authorities | Routes each hotspot to the district that contains it, with deadlines and resolution notes | Authority console |
@@ -209,6 +209,7 @@ Interactive docs: [/docs](https://airwatch-cbe.duckdns.org/docs).
 | Endpoint | Returns |
 | --- | --- |
 | `GET /v1/official-aqi` · `/stations` · `/sensors` · `/satellite` | Official AQI, monitor readings, community sensors, satellite data |
+| `GET /v1/regional-model?city=coimbatore&pollutant=pm10` | CAMS modelled hours, 72 h outlook, and the model's bias against the city's monitors |
 | `GET /v1/hotspots` | Hotspots with likely sources |
 | `GET /v1/forecast/corridor` · `/exposure/advisory` | Route forecast and best time to travel |
 | `GET /v1/alerts` · `POST /v1/alerts/{id}/acknowledge` · `/resolve` | Alerts and operator actions |
@@ -219,8 +220,14 @@ Interactive docs: [/docs](https://airwatch-cbe.duckdns.org/docs).
 
 ## Known limitations
 
-- **Coimbatore** has one official monitor nearby and its PM2.5 sensor is broken, so it opens on PM10
-  and cannot detect hotspots. The official AQI, satellite and citizen data still work.
+- **Coimbatore** has four government monitors on record, but three (PSG College, Tirupur, Ooty)
+  stopped reporting between April and July 2026 and SIDCO Kurichi's PM2.5 sensor is broken. So it
+  opens on PM10 and cannot detect hotspots. The official AQI, the CAMS model, satellite and citizen
+  data still cover it. No community sensor network (AirGradient, Sensor.Community) has a sensor
+  within 60 km.
+- **The CAMS model** averages over tens of kilometres and can read particulates well below street
+  monitors in Indian
+  cities; its measured bias is shown beside every value and it is never used for detection.
 - **Photos** give no PM2.5 figure until 30 photos taken near monitors calibrate them.
 - **Low-cost and home sensors** are shown but not used in analysis until their error is measured.
 - **The forecast** knows the daily pattern, but cannot say whether tomorrow will be worse than today.

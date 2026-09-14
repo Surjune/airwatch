@@ -207,6 +207,30 @@ guide explains each screen aloud in English, Hindi or Tamil, and four decisions 
   paragraph plays on a tap. The guide works for someone who is hard of hearing, in a quiet office,
   and on a deployment with no key, which shows the transcript and says the voice is not set up.
 
+## Coimbatore, and the regional model
+
+Every source was checked for Coimbatore in September 2026:
+
+| Source | What it holds for Coimbatore |
+| --- | --- |
+| OpenAQ | Four government monitors on record: SIDCO Kurichi (reporting, days late), PSG College (silent since July), Tirupur and Ooty (silent since April) |
+| CPCB live feed (data.gov.in) | SIDCO Kurichi only |
+| AirGradient public network | 183 sensors in India, none within 60 km |
+| Sensor.Community | None |
+| **CAMS model via Open-Meteo** | Every hour, six pollutants, 92 days back and 5 days ahead, no key |
+
+The model is the only source that fills the hours, so it is stored and shown -- on its own terms:
+- **Its own table.** `model_concentrations` is never read by detection, fusion, the corridor
+  forecast or validation, all of which read measurements. A modelled value cannot become a hotspot.
+- **Its bias travels with it.** Each view pairs the model, interpolated to the half-past timestamp
+  each monitor reports at, with the city's reference readings over the fortnight, and states the
+  median ratio -- established only after 24 paired hours, so one day's cycle is represented.
+- **Past and future are drawn differently.** The chart draws the reconstruction solid and the
+  forecast dashed.
+- **Where no route forecast is possible**, as on every Coimbatore corridor, the Forecast screen
+  offers the model's city-wide outlook instead of an empty page, and says plainly it cannot see
+  where along a road the air changes.
+
 ## Google Gemini, and what it is allowed to say
 
 Gemini does two jobs. Neither produces a number AirWatch publishes.
