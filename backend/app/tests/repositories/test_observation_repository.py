@@ -266,6 +266,105 @@ class TestReadingsInWindow:
         assert timestamps == sorted(timestamps)
 
 
+class TestDailyMeans:
+    def _store(
+        self, session: Session, station_id: int, readings: list[tuple[datetime, float]]
+    ) -> None:
+        observation_repository.upsert_measurements(
+            session,
+            [
+                MeasurementRow(
+                    station_id=station_id,
+                    observed_at=observed_at,
+                    pollutant=Pollutant.PM25,
+                    value_raw=value,
+                    unit="ug/m3",
+                )
+                for observed_at, value in readings
+            ],
+        )
+        session.flush()
+
+    def _means(
+        self, session: Session, tier: StationTier = StationTier.REFERENCE
+    ) -> dict[int, tuple[float, int]]:
+        return observation_repository.daily_means(
+            session, Pollutant.PM25, tier, since=NOW - timedelta(hours=24), until=NOW
+        )
+
+    def test_weighs_each_hour_once_however_often_it_was_reported(self, session: Session) -> None:
+        # Four quarter-hour readings of 100 and one hourly reading of 20 are two
+        # hours averaging 60, not five readings averaging 84.
+        station_id = _station(session)
+        busy_hour = NOW - timedelta(hours=1)
+        self._store(
+            session,
+            station_id,
+            [(busy_hour + timedelta(minutes=minute), 100.0) for minute in (0, 15, 30, 45)]
+            + [(NOW - timedelta(hours=2), 20.0)],
+        )
+
+        mean, hours = self._means(session)[station_id]
+
+        assert mean == pytest.approx(60.0)
+        assert hours == 2
+
+    def test_counts_only_plausible_readings_inside_the_window(self, session: Session) -> None:
+        station_id = _station(session)
+        self._store(
+            session,
+            station_id,
+            [
+                (NOW, 30.0),
+                # The window's start is exclusive and its end inclusive.
+                (NOW - timedelta(hours=24), 500.0),
+                (NOW + timedelta(hours=1), 500.0),
+            ],
+        )
+        observation_repository.upsert_measurements(
+            session,
+            [
+                MeasurementRow(
+                    station_id=station_id,
+                    observed_at=NOW - timedelta(hours=3),
+                    pollutant=Pollutant.PM25,
+                    value_raw=99999.0,
+                    unit="ug/m3",
+                    is_plausible=False,
+                )
+            ],
+        )
+        session.flush()
+
+        means = self._means(session)
+
+        assert set(means) == {station_id}
+        assert means[station_id][0] == pytest.approx(30.0)
+        assert means[station_id][1] == 1
+
+    def test_keeps_each_station_and_tier_apart(self, session: Session) -> None:
+        first = _station(session, station_id="test-1")
+        second = _station(session, station_id="test-2")
+        sensor = station_repository.upsert_station(
+            session,
+            source="test",
+            source_station_id="sensor-1",
+            name="Rooftop sensor",
+            tier=StationTier.LOW_COST,
+            coordinates=DELHI,
+        )
+        self._store(session, first, [(NOW, 40.0)])
+        self._store(session, second, [(NOW, 80.0)])
+        self._store(session, sensor, [(NOW, 300.0)])
+
+        means = self._means(session)
+
+        assert set(means) == {first, second}
+        assert means[first][0] == pytest.approx(40.0)
+        assert means[second][0] == pytest.approx(80.0)
+        assert set(self._means(session, StationTier.LOW_COST)) == {sensor}
+
+
 class TestWeatherAndFires:
     def test_weather_round_trips_its_wind_components(self, session: Session) -> None:
         observation_repository.upsert_weather(
