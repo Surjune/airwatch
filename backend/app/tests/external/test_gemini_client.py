@@ -36,6 +36,7 @@ PHOTO = {
     "observation": "A pile of waste is burning at the roadside, sending up grey smoke.",
 }
 BRIEF = {"summary": "PM2.5 read 74 µg/m³.", "suggested_action": "Inspect the landfill."}
+TRANSLATION = {"language": "Tamil", "is_english": False, "english": "They burn garbage at night."}
 
 
 @respx.mock
@@ -65,6 +66,38 @@ async def test_sends_the_key_in_a_header_with_the_image_and_a_schema() -> None:
     assert parts[1]["inline_data"]["mime_type"] == "image/jpeg"
     assert body["generationConfig"]["responseMimeType"] == "application/json"
     assert "visible_source" in body["generationConfig"]["responseSchema"]["properties"]
+
+
+@respx.mock
+async def test_translates_a_description_and_names_its_language() -> None:
+    route = respx.post(url(PRIMARY)).mock(return_value=answer(TRANSLATION))
+
+    async with GeminiClient(API_KEY) as client:
+        translation = await client.translate("இரவில் குப்பை எரிக்கிறார்கள்")
+
+    assert translation.language == "Tamil"
+    assert translation.is_english is False
+    assert translation.english == "They burn garbage at night."
+    assert translation.model == PRIMARY
+    body = json.loads(route.calls.last.request.content)
+    prompt = body["contents"][0]["parts"][0]["text"]
+    # The resident's words are set apart from the instructions, as data.
+    assert prompt.endswith("<description>\nஇரவில் குப்பை எரிக்கிறார்கள்\n</description>")
+    assert "is_english" in body["generationConfig"]["responseSchema"]["properties"]
+
+
+@pytest.mark.parametrize(
+    "document",
+    [{**TRANSLATION, "english": ""}, {"language": "Tamil", "english": "At night."}],
+    ids=["empty-translation", "missing-is-english"],
+)
+@respx.mock
+async def test_an_incomplete_translation_is_a_typed_error(document: object) -> None:
+    respx.post(url(PRIMARY)).mock(return_value=answer(document))
+
+    async with GeminiClient(API_KEY) as client:
+        with pytest.raises(UpstreamResponseError):
+            await client.translate("இரவில்")
 
 
 @respx.mock

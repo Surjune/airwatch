@@ -47,6 +47,8 @@ from app.core.constants import (
     COMPLAINT_DESCRIPTION_MAX_LENGTH,
     GEMINI_ACTION_MAX_CHARS,
     GEMINI_BRIEF_MAX_CHARS,
+    GEMINI_LANGUAGE_MAX_CHARS,
+    GEMINI_TRANSLATION_MAX_CHARS,
     SRID_WGS84,
 )
 from app.core.enums import (
@@ -780,6 +782,30 @@ class AlertBrief(Base):
     )
     summary: Mapped[str] = mapped_column(String(GEMINI_BRIEF_MAX_CHARS), nullable=False)
     suggested_action: Mapped[str] = mapped_column(String(GEMINI_ACTION_MAX_CHARS), nullable=False)
+    model: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class DescriptionTranslation(Base):
+    """A resident's description in English, as Google Gemini translated it.
+
+    Keyed by a hash of the description rather than by submission, so the same
+    words are translated once and every report quoting them prints the same
+    English. Only a translation whose figures all appear in the original is
+    stored. A description Gemini found to be English already is stored too, so
+    it is not sent again.
+    """
+
+    __tablename__ = "description_translations"
+
+    #: SHA-256 of the description, in hex.
+    text_sha256: Mapped[str] = mapped_column(String(64), primary_key=True)
+    #: The language the description was written in, in English ("Tamil").
+    language: Mapped[str] = mapped_column(String(GEMINI_LANGUAGE_MAX_CHARS), nullable=False)
+    is_english: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    english: Mapped[str] = mapped_column(String(GEMINI_TRANSLATION_MAX_CHARS), nullable=False)
     model: Mapped[str] = mapped_column(String(64), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

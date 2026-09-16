@@ -35,6 +35,17 @@ def test_a_rounded_restatement_is_not_accepted_as_the_same_figure() -> None:
     assert ungrounded_figures("It read 74.0 µg/m³.", FACTS) == {"74.0"}
 
 
+def test_a_figure_in_tamil_or_devanagari_digits_is_the_same_figure() -> None:
+    # ௫௦ and ५० are both 50, written in Tamil and Devanagari numerals.
+    assert ungrounded_figures("It burns at 50 metres.", "௫௦ மீட்டரில் எரிகிறது") == set()
+    assert ungrounded_figures("It burns at 50 metres.", "५० मीटर पर जलता है") == set()
+    assert figures("५०") == {"50"}
+
+
+def test_a_translation_adding_a_figure_is_still_caught() -> None:
+    assert ungrounded_figures("They burn 20 kg at 9.", "இரவு 9 மணிக்கு எரிக்கிறார்கள்") == {"20"}
+
+
 def test_a_superscript_unit_is_not_a_figure() -> None:
     assert figures("µg/m³") == set()
 

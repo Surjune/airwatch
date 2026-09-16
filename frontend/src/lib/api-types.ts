@@ -473,6 +473,9 @@ export interface paths {
         /**
          * Download the PDF complaint report for one submission
          * @description The report for a submission this device made; any other device gets a 404.
+         *
+         *     A description in another language is printed with an English translation
+         *     beneath it, made by Google Gemini on the first download and stored.
          */
         get: operations["complaint_pdf_v1_citizen_complaints__reference__pdf_get"];
         put?: never;

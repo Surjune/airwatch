@@ -14,10 +14,18 @@ Two constraints shape every sentence:
   sensor is uncalibrated; neither establishes a cause. AirWatch does not forward
   an individual complaint on its own, and the report says so rather than implying
   an office has already been told.
+
+A description written in Tamil, Hindi or any language other than English is
+printed as written and, beneath it, in English as Google Gemini translated it,
+so the official it is taken to can read it. The translation is made once per
+distinct text, stored, and checked: one that states a figure the resident did
+not write is discarded.
 """
 
 from __future__ import annotations
 
+import hashlib
+import unicodedata
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta, timezone
 
@@ -25,6 +33,7 @@ from sqlalchemy.orm import Session
 
 from app.core import aqi
 from app.core.cities import in_city
+from app.core.config import Settings
 from app.core.constants import (
     CITIZEN_COLOCATION_RADIUS_M,
     CITIZEN_INITIAL_TRUST,
@@ -34,14 +43,21 @@ from app.core.constants import (
     PILOT_CITY_LABELS,
 )
 from app.core.enums import ComplaintCategory, PilotCity, SubmissionKind, VisibleSource
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import NotFoundError, UpstreamError
 from app.core.geo import LonLat
+from app.core.grounding import ungrounded_figures
 from app.core.logging import get_logger
 from app.core.references import format_reference, parse_reference
-from app.documents.complaint_pdf import ComplaintDocument, Row, Section, render
+from app.documents.complaint_pdf import ComplaintDocument, Row, Section, Translation, render
+from app.external.gemini_client import GeminiClient
 from app.ml.haze_calibration import fit as fit_calibration
 from app.ml.sensor_colocation import relative_difference
-from app.repositories import alert_repository, citizen_repository, citizen_sensor_repository
+from app.repositories import (
+    alert_repository,
+    citizen_repository,
+    citizen_sensor_repository,
+    translation_repository,
+)
 from app.repositories.citizen_repository import PhotoReadingRow, StoredPhotoReport
 from app.repositories.citizen_sensor_repository import DeviceSensorReading
 
@@ -53,6 +69,22 @@ _IST = timezone(timedelta(minutes=IST_UTC_OFFSET_MINUTES))
 _METRES_PER_KM = 1000
 #: Percent, for a relative difference written as a percentage.
 _PERCENT = 100
+
+_GEMINI_CREDENTIAL = "gemini_api_key"
+
+#: Label and notes for a description's English translation.
+_IN_ENGLISH = "In English"
+_TRANSLATION_NOT_SET_UP = (
+    "Not available: translation with Google Gemini is not set up on this deployment."
+)
+_TRANSLATION_FAILED = (
+    "Not available: Google Gemini could not translate this just now. Downloading the report "
+    "again tries once more."
+)
+_TRANSLATION_DISCARDED = (
+    "Not shown: Google Gemini's translation stated figures the words above do not, so it was "
+    "discarded."
+)
 
 CATEGORY_LABELS: dict[ComplaintCategory, str] = {
     ComplaintCategory.OPEN_BURNING: "Open burning of waste",
@@ -170,8 +202,13 @@ def list_for_device(session: Session, device_id: str) -> list[ComplaintSummary]:
     return summaries[:COMPLAINT_LIST_LIMIT]
 
 
-def document_for(
-    session: Session, reference: str, device_id: str, *, now: datetime | None = None
+async def document_for(
+    session: Session,
+    settings: Settings,
+    reference: str,
+    device_id: str,
+    *,
+    now: datetime | None = None,
 ) -> ComplaintDocument:
     """Word the complaint report for one of this device's submissions.
 
@@ -186,29 +223,96 @@ def document_for(
         photo = citizen_repository.photo_for_device(session, submission_id, device_id)
         if photo is None:
             raise NotFoundError("complaint", reference)
-        document = _photo_document(session, photo, generated_at)
+        translation = await _translation(session, settings, photo.description)
+        document = _photo_document(session, photo, translation, generated_at)
     else:
         reading = citizen_sensor_repository.reading_for_device(session, submission_id, device_id)
         if reading is None:
             raise NotFoundError("complaint", reference)
-        document = _reading_document(session, reading, generated_at)
+        translation = await _translation(session, settings, reading.description)
+        document = _reading_document(session, reading, translation, generated_at)
 
     logger.info("complaint.report_prepared", reference=document.reference, kind=kind.value)
     return document
 
 
-def render_pdf(
-    session: Session, reference: str, device_id: str, *, now: datetime | None = None
+async def render_pdf(
+    session: Session,
+    settings: Settings,
+    reference: str,
+    device_id: str,
+    *,
+    now: datetime | None = None,
 ) -> tuple[str, bytes]:
     """The canonical reference and PDF bytes of one of this device's complaint reports."""
-    document = document_for(session, reference, device_id, now=now)
+    document = await document_for(session, settings, reference, device_id, now=now)
     return document.reference, render(document)
+
+
+async def _translation(
+    session: Session, settings: Settings, description: str | None
+) -> Translation | None:
+    """A description in English, for an official who cannot read the language it is in.
+
+    Nothing is printed for a description already in English. A translation never
+    holds up the report: when Gemini is not configured or fails, the report is
+    produced without one, and says so if the description is in a script an
+    official may not be able to read at all.
+    """
+    if description is None:
+        return None
+    text_sha256 = hashlib.sha256(description.encode()).hexdigest()
+    stored = translation_repository.translation_for(session, text_sha256)
+    if stored is None:
+        if not settings.has(_GEMINI_CREDENTIAL):
+            return _untranslated(description, _TRANSLATION_NOT_SET_UP)
+        try:
+            async with GeminiClient(settings.require(_GEMINI_CREDENTIAL)) as client:
+                answer = await client.translate(description)
+        except UpstreamError as error:
+            logger.warning("complaint.translation_failed", error_code=error.code)
+            return _untranslated(description, _TRANSLATION_FAILED)
+        invented = ungrounded_figures(answer.english, description)
+        if invented:
+            logger.warning("complaint.translation_ungrounded", figures=sorted(invented))
+            return _untranslated(description, _TRANSLATION_DISCARDED)
+        stored = translation_repository.store_translation(
+            session,
+            text_sha256,
+            language=answer.language,
+            is_english=answer.is_english,
+            english=answer.english,
+            model=answer.model,
+        )
+        logger.info("complaint.description_translated", language=stored.language)
+    if stored.is_english:
+        return None
+    return Translation(
+        label=(
+            f"In English · machine translation from {stored.language} by Google Gemini. The "
+            "words above are the resident's own and remain the record."
+        ),
+        text=stored.english,
+    )
+
+
+def _untranslated(description: str, note: str) -> Translation | None:
+    """The note for a description left untranslated, where an official needs it.
+
+    Text in Latin letters is most likely English, or an Indian language written
+    in Latin letters an official can sound out, so the gap goes unmentioned
+    there. A Tamil or Devanagari description with no English beside it is
+    unreadable to many officials, and the report says why it is missing.
+    """
+    latin = all("LATIN" in unicodedata.name(char, "") for char in description if char.isalpha())
+    return None if latin else Translation(label=_IN_ENGLISH, text=note)
 
 
 def _reported_section(
     kind: SubmissionKind,
     category: ComplaintCategory | None,
     description: str | None,
+    translation: Translation | None,
     observed_at: datetime,
     submitted_at: datetime,
     point: LonLat,
@@ -228,6 +332,7 @@ def _reported_section(
             Row("Location", f"{lat:.5f}° N, {lon:.5f}° E · {_area(point)}"),
         ),
         quote=description,
+        translation=translation,
     )
 
 
@@ -304,7 +409,10 @@ def _comparison_paragraph(
 
 
 def _photo_document(
-    session: Session, photo: StoredPhotoReport, generated_at: datetime
+    session: Session,
+    photo: StoredPhotoReport,
+    translation: Translation | None,
+    generated_at: datetime,
 ) -> ComplaintDocument:
     reference = format_reference(SubmissionKind.PHOTO, photo.report_id)
     calibration = fit_calibration(
@@ -342,6 +450,7 @@ def _photo_document(
                 SubmissionKind.PHOTO,
                 photo.category,
                 photo.description,
+                translation,
                 photo.captured_at,
                 photo.submitted_at,
                 photo.coordinates,
@@ -379,7 +488,10 @@ def _photo_document(
 
 
 def _reading_document(
-    session: Session, reading: DeviceSensorReading, generated_at: datetime
+    session: Session,
+    reading: DeviceSensorReading,
+    translation: Translation | None,
+    generated_at: datetime,
 ) -> ComplaintDocument:
     reference = format_reference(SubmissionKind.SENSOR, reading.reading_id)
     sub_index = aqi.sub_index(reading.pollutant, reading.value)
@@ -395,6 +507,7 @@ def _reading_document(
                 SubmissionKind.SENSOR,
                 reading.category,
                 reading.description,
+                translation,
                 reading.observed_at,
                 reading.submitted_at,
                 reading.coordinates,

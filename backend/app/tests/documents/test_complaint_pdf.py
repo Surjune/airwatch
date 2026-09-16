@@ -8,9 +8,10 @@ resident may write, and its reference and pages are what the footer says.
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 from datetime import UTC, datetime
 
-from app.documents.complaint_pdf import ComplaintDocument, Row, Section, render
+from app.documents.complaint_pdf import ComplaintDocument, Row, Section, Translation, render
 
 GENERATED = datetime(2026, 9, 13, 15, 10, tzinfo=UTC)
 
@@ -60,6 +61,20 @@ class TestRender:
         assert pdf.startswith(b"%PDF-")
         assert b"NotoSansTamil" in pdf
         assert b"NotoSansDevanagari" in pdf
+
+    def test_prints_an_english_translation_beneath_the_description(self) -> None:
+        document = _document(quote="இரவு 9 மணிக்கு குப்பை எரிக்கிறார்கள்")
+        reported, *rest = document.sections
+        translation = Translation(
+            label="In English · machine translation from Tamil by Google Gemini.",
+            text="They burn garbage at 9 at night. " * 20,
+        )
+        translated = replace(document, sections=(replace(reported, translation=translation), *rest))
+
+        pdf = render(translated)
+
+        assert pdf.startswith(b"%PDF-")
+        assert len(pdf) > len(render(document))
 
     def test_a_submission_without_a_description_still_renders(self) -> None:
         assert render(_document(quote=None)).startswith(b"%PDF-")

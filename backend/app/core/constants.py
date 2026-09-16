@@ -1215,8 +1215,9 @@ GEMINI_TIMEOUT_SECONDS: Final[float] = 30.0
 #: answers sooner than retrying it, and a resident is waiting on the reply.
 GEMINI_ATTEMPTS_PER_MODEL: Final[int] = 1
 
-#: Sampling temperature. Zero, because both uses describe evidence rather than
-#: invent: the same photograph or alert should read the same way twice.
+#: Sampling temperature. Zero, because every use describes evidence rather than
+#: invents: the same photograph, alert or description should read the same way
+#: twice.
 GEMINI_TEMPERATURE: Final[float] = 0.0
 
 #: Longest edge a photograph is resized to before it is sent, in pixels. Enough
@@ -1234,6 +1235,14 @@ GEMINI_OBSERVATION_MAX_CHARS: Final[int] = 300
 #: Longest alert summary and suggested action kept, in characters.
 GEMINI_BRIEF_MAX_CHARS: Final[int] = 800
 GEMINI_ACTION_MAX_CHARS: Final[int] = 400
+
+#: Longest language name kept with a translated description, in characters.
+GEMINI_LANGUAGE_MAX_CHARS: Final[int] = 64
+
+#: Longest English translation of a resident's description kept, in characters.
+#: A translation can run longer than its original, so it is allowed three times
+#: the description's own limit.
+GEMINI_TRANSLATION_MAX_CHARS: Final[int] = 3 * COMPLAINT_DESCRIPTION_MAX_LENGTH
 
 #: How long before a hotspot's first sighting candidate sources and wind are
 #: loaded for its brief, in hours: the back-trajectory's reach plus how long a

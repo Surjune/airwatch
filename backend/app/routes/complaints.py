@@ -12,6 +12,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Header, Path, Response
 from sqlalchemy.orm import Session
 
+from app.core.config import Settings, get_settings
 from app.repositories.session import get_db_session
 from app.schemas.complaints import ComplaintsResponse, ComplaintSummaryResponse
 from app.services import complaint_service
@@ -73,13 +74,18 @@ def list_complaints(
     response_class=Response,
     responses={200: {"content": {"application/pdf": {}}, "description": "The report."}},
 )
-def complaint_pdf(
+async def complaint_pdf(
     session: Annotated[Session, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
     device_id: DeviceId,
     reference: Annotated[str, Path(max_length=_MAX_REFERENCE_LENGTH)],
 ) -> Response:
-    """The report for a submission this device made; any other device gets a 404."""
-    canonical, content = complaint_service.render_pdf(session, reference, device_id)
+    """The report for a submission this device made; any other device gets a 404.
+
+    A description in another language is printed with an English translation
+    beneath it, made by Google Gemini on the first download and stored.
+    """
+    canonical, content = await complaint_service.render_pdf(session, settings, reference, device_id)
     return Response(
         content=content,
         media_type="application/pdf",

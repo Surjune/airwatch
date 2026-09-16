@@ -58,6 +58,14 @@ class Row:
 
 
 @dataclass(frozen=True, slots=True)
+class Translation:
+    """An English rendering of a quote, printed beneath it under its own label."""
+
+    label: str
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
 class Section:
     """A numbered section: optional rows, then paragraphs."""
 
@@ -67,6 +75,8 @@ class Section:
     bullets: tuple[str, ...] = ()
     #: Set in the resident's own words, visually quoted.
     quote: str | None = None
+    #: The quote in English, when it was written in another language.
+    translation: Translation | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -155,6 +165,24 @@ def _section(pdf: _Page, number: int, section: Section) -> None:
         pdf.set_text_color(*_INK)
         pdf.multi_cell(0, _LINE_MM + 0.6, section.quote, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         pdf.set_draw_color(*_SIGNAL)
+        pdf.set_line_width(0.6)
+        pdf.line(_MARGIN_MM + 1, top, _MARGIN_MM + 1, pdf.get_y())
+        pdf.set_line_width(0.2)
+        pdf.ln(1.5)
+
+    if section.translation:
+        top = pdf.get_y()
+        pdf.set_x(_MARGIN_MM + 4)
+        pdf.set_font("Noto", "B", 8)
+        pdf.set_text_color(*_SUBTLE)
+        pdf.multi_cell(0, 4, section.translation.label, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.set_x(_MARGIN_MM + 4)
+        pdf.set_font("Noto", "", 10)
+        pdf.set_text_color(*_MUTED)
+        pdf.multi_cell(
+            0, _LINE_MM + 0.4, section.translation.text, new_x=XPos.LMARGIN, new_y=YPos.NEXT
+        )
+        pdf.set_draw_color(*_RULE)
         pdf.set_line_width(0.6)
         pdf.line(_MARGIN_MM + 1, top, _MARGIN_MM + 1, pdf.get_y())
         pdf.set_line_width(0.2)
