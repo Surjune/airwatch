@@ -12,8 +12,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.core import aqi
-from app.core.constants import FORECAST_MAX_HORIZON_HOURS, METRES_PER_KILOMETRE
+from app.core import aqi, who
+from app.core.constants import (
+    DAILY_MEAN_MIN_HOURS,
+    FORECAST_MAX_HORIZON_HOURS,
+    METRES_PER_KILOMETRE,
+)
 from app.core.enums import PilotCity, Pollutant, StationTier
 from app.core.exceptions import ValidationError
 from app.core.geo import LonLat, validate_lon_lat
@@ -86,6 +90,8 @@ def list_stations(
     return StationsResponse(
         pollutant=pollutant,
         station_count=len(snapshots),
+        who_guideline_24h=who.guideline_24h(pollutant),
+        daily_mean_min_hours=DAILY_MEAN_MIN_HOURS,
         readings=[_reading(snapshot) for snapshot in snapshots],
     )
 
@@ -123,6 +129,9 @@ def _reading(snapshot: analysis_service.StationSnapshot) -> StationReadingRespon
         unit=snapshot.unit,
         aqi=snapshot.aqi,
         category=snapshot.category,
+        daily_mean=snapshot.daily_mean,
+        daily_mean_hours=snapshot.daily_mean_hours,
+        who_multiple=snapshot.who_multiple,
     )
 
 

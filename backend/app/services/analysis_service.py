@@ -14,10 +14,11 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from app.core import aqi
+from app.core import aqi, who
 from app.core.cities import in_city
 from app.core.constants import (
     CITY_VIEW_RADIUS_M,
+    DAILY_MEAN_MIN_HOURS,
     EXPOSURE_CANDIDATE_HOURS,
     FUSION_MIN_NEIGHBOURS,
     HOURS_PER_DAY,
@@ -60,6 +61,14 @@ class StationSnapshot:
     unit: str
     aqi: float
     category: str
+    #: Average over the last 24 hours, or None with fewer than
+    #: ``DAILY_MEAN_MIN_HOURS`` hours of readings in them.
+    daily_mean: float | None
+    #: Hours of the last 24 with at least one reading.
+    daily_mean_hours: int
+    #: ``daily_mean`` as a multiple of WHO's 24-hour guideline level, or None
+    #: when there is no average or WHO sets no 24-hour level for the pollutant.
+    who_multiple: float | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,6 +127,8 @@ def latest_snapshots(
     pollutant: Pollutant,
     city: PilotCity | None = None,
     tier: StationTier = StationTier.REFERENCE,
+    *,
+    now: datetime | None = None,
 ) -> list[StationSnapshot]:
     """Every station's most recent reading, with its sub-index, optionally in one city.
 
@@ -125,7 +136,14 @@ def latest_snapshots(
     returned as it reported, uncalibrated, and its sub-index is what that raw
     value would mean -- which is why the route serving it says so on every
     response.
+
+    Each station also carries its average over the 24 hours to ``now``, and that
+    average against WHO's 24-hour guideline, when enough hours were reported.
     """
+    until = now or datetime.now(UTC)
+    means = observation_repository.daily_means(
+        session, pollutant, tier, since=until - timedelta(hours=HOURS_PER_DAY), until=until
+    )
     snapshots: list[StationSnapshot] = []
 
     for row in observation_repository.latest_reading_per_station(session, pollutant, tier):
@@ -133,6 +151,8 @@ def latest_snapshots(
         if not in_city((float(lon), float(lat)), city):
             continue
         sub_index = aqi.sub_index(pollutant, float(value))
+        mean, hours = means.get(int(station_id), (0.0, 0))
+        daily_mean = mean if hours >= DAILY_MEAN_MIN_HOURS else None
         snapshots.append(
             StationSnapshot(
                 station_id=int(station_id),
@@ -144,6 +164,11 @@ def latest_snapshots(
                 unit=str(unit),
                 aqi=sub_index,
                 category=aqi.category(sub_index),
+                daily_mean=daily_mean,
+                daily_mean_hours=hours,
+                who_multiple=(
+                    None if daily_mean is None else who.multiple_of_guideline(pollutant, daily_mean)
+                ),
             )
         )
 

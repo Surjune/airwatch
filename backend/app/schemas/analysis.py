@@ -35,6 +35,20 @@ class StationReadingResponse(BaseModel):
     unit: str
     aqi: float = Field(description="CPCB sub-index for this pollutant alone.")
     category: str = Field(description="CPCB band name for the sub-index.")
+    daily_mean: float | None = Field(
+        description=(
+            "Average over the last 24 hours, in the same unit as value. Null when fewer than "
+            "daily_mean_min_hours of those hours have a reading."
+        )
+    )
+    daily_mean_hours: int = Field(ge=0, description="Hours of the last 24 with a reading.")
+    who_multiple: float | None = Field(
+        description=(
+            "daily_mean as a multiple of WHO's 2021 guideline level for a 24-hour average; "
+            "below 1 is within it. Null when there is no daily_mean, or WHO sets no 24-hour "
+            "level for this pollutant."
+        )
+    )
 
 
 class CityResponse(BaseModel):
@@ -60,6 +74,15 @@ class StationsResponse(BaseModel):
 
     pollutant: Pollutant
     station_count: int
+    who_guideline_24h: float | None = Field(
+        description=(
+            "WHO's 2021 guideline level for a 24-hour average of this pollutant, in its unit. "
+            "Health guidance, not an Indian legal limit."
+        )
+    )
+    daily_mean_min_hours: int = Field(
+        description="Hours of readings a station needs in the last 24 before it gets a daily_mean."
+    )
     readings: list[StationReadingResponse]
 
 

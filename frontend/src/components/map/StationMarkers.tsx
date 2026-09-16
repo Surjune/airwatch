@@ -4,6 +4,7 @@ import type { StationReading } from '@/hooks/useAnalysis';
 import { aqiColour } from '@/lib/aqi';
 import { toLeaflet } from '@/lib/geo';
 import { istDateTime } from '@/lib/time';
+import { formatMultiple, withinGuideline } from '@/lib/who';
 
 /** Radius of a monitor marker, in pixels: the largest of the non-hotspot marks. */
 const MONITOR_RADIUS_PX = 7;
@@ -34,6 +35,14 @@ export function StationMarkers({ readings }: { readonly readings: readonly Stati
               <p className="mt-1 text-xs text-ink-subtle">
                 {reading.category} · {istDateTime(reading.observed_at)} IST
               </p>
+              {reading.daily_mean !== null && reading.who_multiple !== null && (
+                <p className="mt-1 text-xs text-ink-subtle">
+                  24 h average {reading.daily_mean.toFixed(0)} {reading.unit} ·{' '}
+                  {withinGuideline(reading.who_multiple)
+                    ? 'within the WHO guideline'
+                    : `${formatMultiple(reading.who_multiple)} the WHO guideline`}
+                </p>
+              )}
             </div>
           </Popup>
         </CircleMarker>

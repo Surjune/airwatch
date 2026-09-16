@@ -1130,6 +1130,30 @@ OFFICIAL_SUB_INDEX_MAX_AGE_HOURS: Final[int] = 3
 
 
 # ---------------------------------------------------------------------------
+# WHO air quality guidelines
+# ---------------------------------------------------------------------------
+
+#: WHO's 2021 guideline levels for a 24-hour average. Health guidance, not law:
+#: India's legal limits are the NAAQS, 60 µg/m³ of PM2.5 and 100 µg/m³ of PM10
+#: over 24 hours. WHO defines a 24-hour level as the 99th percentile of a year's
+#: daily averages -- three or four days a year above it are allowed -- so one
+#: day above it is a comparison, not a breach. Micrograms per cubic metre,
+#: except CO in milligrams per cubic metre, matching the storage units.
+#: Source: WHO global air quality guidelines (2021), recommended AQG levels.
+WHO_GUIDELINE_24H_PM25: Final[float] = 15.0
+WHO_GUIDELINE_24H_PM10: Final[float] = 45.0
+WHO_GUIDELINE_24H_NO2: Final[float] = 25.0
+WHO_GUIDELINE_24H_SO2: Final[float] = 40.0
+WHO_GUIDELINE_24H_CO: Final[float] = 4.0
+
+#: Hours of the last 24 a monitor must have readings for before its average is
+#: compared with a 24-hour guideline: 75% data capture, the completeness rule
+#: the EU air quality directive (2008/50/EC) sets for a daily mean. With fewer,
+#: the average of a few clean or dirty hours would stand in for the whole day.
+DAILY_MEAN_MIN_HOURS: Final[int] = 18
+
+
+# ---------------------------------------------------------------------------
 # Voice guide (Sarvam AI text-to-speech)
 # ---------------------------------------------------------------------------
 

@@ -17,6 +17,7 @@ from typing import Any
 
 import pytest
 
+from app.core.constants import DAILY_MEAN_MIN_HOURS
 from app.core.enums import Pollutant, SourceType
 from app.core.geo import LonLat
 from app.core.h3_grid import point_to_cell
@@ -145,6 +146,7 @@ def stub_repositories(monkeypatch: pytest.MonkeyPatch) -> None:
     stub something gets an empty list rather than a connection attempt.
     """
     monkeypatch.setattr(observation_repository, "latest_reading_per_station", lambda *a, **k: [])
+    monkeypatch.setattr(observation_repository, "daily_means", lambda *a, **k: {})
     monkeypatch.setattr(observation_repository, "readings_in_window", lambda *a, **k: [])
     monkeypatch.setattr(observation_repository, "weather_in_window", lambda *a, **k: [])
     monkeypatch.setattr(observation_repository, "fire_detections_in_window", lambda *a, **k: [])
@@ -181,6 +183,67 @@ class TestLatestSnapshots:
 
     def test_an_empty_network_is_an_empty_list(self, stub_repositories: None) -> None:
         assert analysis_service.latest_snapshots(_session(), Pollutant.PM25) == []
+
+    def test_compares_a_full_days_average_with_the_who_guideline(
+        self, monkeypatch: pytest.MonkeyPatch, stub_repositories: None
+    ) -> None:
+        monkeypatch.setattr(
+            observation_repository, "latest_reading_per_station", lambda *a, **k: latest_rows()
+        )
+        monkeypatch.setattr(
+            observation_repository,
+            "daily_means",
+            lambda *a, **k: {1: (48.0, 24), 2: (12.0, DAILY_MEAN_MIN_HOURS)},
+        )
+
+        by_id = {
+            snapshot.station_id: snapshot
+            for snapshot in analysis_service.latest_snapshots(_session(), Pollutant.PM25, now=NOW)
+        }
+
+        # WHO's 24-hour PM2.5 level is 15 µg/m³.
+        assert by_id[1].daily_mean == 48.0
+        assert by_id[1].who_multiple == pytest.approx(3.2)
+        assert by_id[2].who_multiple == pytest.approx(0.8)
+
+    def test_states_no_average_for_a_patchy_day(
+        self, monkeypatch: pytest.MonkeyPatch, stub_repositories: None
+    ) -> None:
+        # Six evening hours alone are not the day's average, and must not be
+        # compared with a 24-hour guideline as if they were.
+        monkeypatch.setattr(
+            observation_repository, "latest_reading_per_station", lambda *a, **k: latest_rows()
+        )
+        monkeypatch.setattr(
+            observation_repository,
+            "daily_means",
+            lambda *a, **k: {1: (200.0, DAILY_MEAN_MIN_HOURS - 1)},
+        )
+
+        snapshot = next(
+            s
+            for s in analysis_service.latest_snapshots(_session(), Pollutant.PM25, now=NOW)
+            if s.station_id == 1
+        )
+
+        assert snapshot.daily_mean is None
+        assert snapshot.daily_mean_hours == DAILY_MEAN_MIN_HOURS - 1
+        assert snapshot.who_multiple is None
+
+    def test_asks_for_the_24_hours_before_now(
+        self, monkeypatch: pytest.MonkeyPatch, stub_repositories: None
+    ) -> None:
+        windows: list[tuple[datetime, datetime]] = []
+
+        def _means(*_: Any, since: datetime, until: datetime, **__: Any) -> dict[int, Any]:
+            windows.append((since, until))
+            return {}
+
+        monkeypatch.setattr(observation_repository, "daily_means", _means)
+
+        analysis_service.latest_snapshots(_session(), Pollutant.PM25, now=NOW)
+
+        assert windows == [(NOW - timedelta(hours=24), NOW)]
 
 
 class TestDetectAndAttribute:

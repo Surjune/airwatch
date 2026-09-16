@@ -2377,6 +2377,21 @@ export interface components {
              * @description CPCB band name for the sub-index.
              */
             category: string;
+            /**
+             * Daily Mean
+             * @description Average over the last 24 hours, in the same unit as value. Null when fewer than daily_mean_min_hours of those hours have a reading.
+             */
+            daily_mean: number | null;
+            /**
+             * Daily Mean Hours
+             * @description Hours of the last 24 with a reading.
+             */
+            daily_mean_hours: number;
+            /**
+             * Who Multiple
+             * @description daily_mean as a multiple of WHO's 2021 guideline level for a 24-hour average; below 1 is within it. Null when there is no daily_mean, or WHO sets no 24-hour level for this pollutant.
+             */
+            who_multiple: number | null;
         };
         /**
          * StationsResponse
@@ -2386,6 +2401,16 @@ export interface components {
             pollutant: components["schemas"]["Pollutant"];
             /** Station Count */
             station_count: number;
+            /**
+             * Who Guideline 24H
+             * @description WHO's 2021 guideline level for a 24-hour average of this pollutant, in its unit. Health guidance, not an Indian legal limit.
+             */
+            who_guideline_24h: number | null;
+            /**
+             * Daily Mean Min Hours
+             * @description Hours of readings a station needs in the last 24 before it gets a daily_mean.
+             */
+            daily_mean_min_hours: number;
             /** Readings */
             readings: components["schemas"]["StationReadingResponse"][];
         };

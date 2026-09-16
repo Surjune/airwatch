@@ -260,6 +260,47 @@ def latest_reading_per_station(
     return list(session.execute(statement).all())
 
 
+def daily_means(
+    session: Session,
+    pollutant: Pollutant,
+    tier: StationTier,
+    *,
+    since: datetime,
+    until: datetime,
+) -> dict[int, tuple[float, int]]:
+    """Each station's average reading over a window, and how many hours it covers.
+
+    Readings are averaged within each hour first, then across hours, so a
+    station reporting every fifteen minutes weighs each hour once, as an
+    hourly one does. Keyed by station id; a station with no plausible reading
+    in the window is absent.
+    """
+    hour = func.date_trunc("hour", Measurement.observed_at)
+    hourly = (
+        select(
+            Measurement.station_id.label("station_id"),
+            func.avg(Measurement.value_raw).label("value"),
+        )
+        .join(Station, Station.id == Measurement.station_id)
+        .where(
+            Measurement.pollutant == pollutant,
+            Measurement.is_plausible.is_(True),
+            Station.tier == tier,
+            Measurement.observed_at > since,
+            Measurement.observed_at <= until,
+        )
+        .group_by(Measurement.station_id, hour)
+        .subquery()
+    )
+    statement = select(hourly.c.station_id, func.avg(hourly.c.value), func.count()).group_by(
+        hourly.c.station_id
+    )
+    return {
+        int(station_id): (float(mean), int(hours))
+        for station_id, mean, hours in session.execute(statement).all()
+    }
+
+
 def readings_in_window(
     session: Session,
     pollutant: Pollutant,

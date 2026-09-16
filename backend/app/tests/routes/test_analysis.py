@@ -44,6 +44,7 @@ def stubbed_app(app: FastAPI, monkeypatch: pytest.MonkeyPatch) -> FastAPI:
     monkeypatch.setattr(
         observation_repository, "latest_reading_per_station", lambda *a, **k: latest_rows()
     )
+    monkeypatch.setattr(observation_repository, "daily_means", lambda *a, **k: {1: (48.0, 24)})
     monkeypatch.setattr(
         observation_repository, "readings_in_window", lambda *a, **k: reading_rows(hours=72)
     )
@@ -73,6 +74,22 @@ class TestStations:
         assert body["station_count"] == len(body["readings"])
         aqis = [reading["aqi"] for reading in body["readings"]]
         assert aqis == sorted(aqis, reverse=True)
+
+    def test_states_the_who_guideline_and_each_days_multiple_of_it(self, api: TestClient) -> None:
+        body = api.get("/v1/stations").json()
+        by_id = {reading["station_id"]: reading for reading in body["readings"]}
+
+        assert body["who_guideline_24h"] == 15.0
+        assert body["daily_mean_min_hours"] == 18
+        assert by_id[1]["who_multiple"] == pytest.approx(3.2)
+        # A station with no readings in the day has no average to compare.
+        assert by_id[2]["daily_mean"] is None
+        assert by_id[2]["who_multiple"] is None
+
+    def test_ozone_has_no_24_hour_guideline(self, api: TestClient) -> None:
+        assert (
+            api.get("/v1/stations", params={"pollutant": "o3"}).json()["who_guideline_24h"] is None
+        )
 
     def test_every_reading_carries_its_band_and_position(self, api: TestClient) -> None:
         reading = api.get("/v1/stations").json()["readings"][0]
