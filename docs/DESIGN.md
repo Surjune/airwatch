@@ -177,9 +177,11 @@ and a PDF they can attach to a grievance.
   index and gives a PM2.5 estimate only if the calibration exists, labelled with
   the date it was computed; the photo itself is not stored. A sensor reading's
   report prints the value as reported and its uncalibrated index.
-- **It prints the resident's language.** The PDF embeds Noto Sans with Tamil and
-  Devanagari fallbacks and shapes text with HarfBuzz, so a description written in
-  Tamil prints as Tamil rather than as boxes.
+- **It prints the resident's language, and English beneath it.** The PDF embeds
+  Noto Sans with Tamil and Devanagari fallbacks and shapes text with HarfBuzz, so
+  a description written in Tamil prints as Tamil rather than as boxes. The
+  official it is taken to may not read Tamil, so Gemini's English translation is
+  printed under it, labelled as a machine translation (see below).
 
 The layout lives in `app/documents/complaint_pdf.py`, a leaf that receives
 already-worded sections; every sentence is decided in `complaint_service`, where
@@ -235,9 +237,34 @@ The model is the only source that fills the hours, so it is stored and shown -- 
   offers the model's city-wide outlook instead of an empty page, and says plainly it cannot see
   where along a road the air changes.
 
+## WHO's guideline, and what it is compared with
+
+CPCB's index answers "how does this compare with India's standards". Residents
+also meet WHO's 2021 guideline in the news, and it is much stricter: 15 µg/m³ of
+PM2.5 over 24 hours against India's 60. A PM2.5 day CPCB calls *Satisfactory* can
+be four times WHO's level. So each monitor's reading carries a second comparison,
+*24 h avg 3.2× WHO*, beside its CPCB band.
+
+- **A daily level is compared with a daily average, never with an hour.** WHO's
+  PM levels are 24-hour averages. Setting an hourly reading against one would
+  overstate every evening peak. The stations endpoint therefore averages each
+  monitor's last 24 hours, first within each hour and then across hours, so a
+  station reporting every 15 minutes counts each hour once.
+- **A patchy day is not a day.** The average is stated only when at least 18 of
+  the 24 hours have readings: 75% data capture, the rule the EU air quality
+  directive sets for a daily mean. With less, the badge is omitted rather than
+  guessed.
+- **Guidance, not law.** WHO defines its 24-hour levels as the 99th percentile of
+  a year's days, so three or four days above them are allowed. One day above is a
+  comparison, not a breach, and the screen calls WHO's figure a guideline, never a
+  limit. Ozone (8-hour level only) and ammonia (none) are not compared.
+
+The levels live in `core/constants.py` and the arithmetic in `core/who.py`; the
+frontend only puts the API's multiple into words.
+
 ## Google Gemini, and what it is allowed to say
 
-Gemini does two jobs. Neither produces a number AirWatch publishes.
+Gemini does three jobs. None produces a number AirWatch publishes.
 
 **Reading a photograph.** The haze index says how polluted a photo looks; it cannot say what is
 polluting. Gemini is asked for the single most visible source, its own confidence, and one sentence
@@ -260,6 +287,23 @@ suggested inspection, and is the place a language model is most tempted to inven
   pass for "74": a strict check that occasionally drops a good brief costs nothing.
 - **Written once, on request.** Briefs are generated when someone presses the button, then stored,
   so every reader sees the same words and a console of forty alerts does not trigger forty requests.
+
+**Translating a complaint.** A description written in Tamil or Hindi is evidence an official in
+another office may not be able to read. The PDF prints it as written and, beneath it, in English.
+- **The resident's words stay the record.** The translation is labelled as a machine translation
+  by Gemini, naming the language it came from, and says the words above it are the record.
+- **Figures are checked here too.** A translation that states a number the original does not is
+  discarded. Tamil and Devanagari numerals count as the same figures as their ASCII digits, so
+  ५० translated as 50 passes.
+- **The description is data, not instructions.** It is sent between tags with an instruction to
+  translate anything that reads like a command rather than follow it, and the answer must fit a
+  schema of language, whether it is already English, and the English text.
+- **Once per text.** Translations are stored by a SHA-256 of the description, so every download of
+  every report quoting the same words prints the same English. A description Gemini finds to be
+  English is stored too, and not sent again.
+- **Never a gate.** Without a key, or when Gemini fails, the report is produced anyway. Beside a
+  description in a non-Latin script it says why no translation is shown; text in Latin letters
+  is left alone, since it is most likely English already.
 
 **Busy models.** A Gemini model can answer "high demand" for minutes. The client tries the next
 model instead of retrying the same one, and records which model wrote each answer.
