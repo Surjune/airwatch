@@ -13,6 +13,9 @@ Two rules govern every path through this module:
 * **A failing upstream fails loudly and alone.** One provider being down must not
   abort the others, but it must never be recorded as "no pollution found" either.
   Each source reports its own outcome, and the caller sees which succeeded.
+
+When a station's newest reading arrives hours after the last one stored, the
+hours in between are fetched too, so an upstream stall leaves no permanent hole.
 """
 
 from __future__ import annotations
@@ -22,7 +25,14 @@ from datetime import UTC, datetime, timedelta
 
 from app.core import aqi
 from app.core.config import Settings
-from app.core.constants import BACKFILL_DAYS, WEATHER_FORECAST_DAYS, WEATHER_PAST_DAYS
+from app.core.constants import (
+    BACKFILL_DAYS,
+    OPENAQ_CATCH_UP_GAP_HOURS,
+    OPENAQ_CATCH_UP_MAX_DAYS,
+    OPENAQ_CATCH_UP_POLLUTANTS,
+    WEATHER_FORECAST_DAYS,
+    WEATHER_PAST_DAYS,
+)
 from app.core.enums import Pollutant, StationTier
 from app.core.exceptions import AirWatchError
 from app.core.geo import LonLat
@@ -30,7 +40,12 @@ from app.core.h3_grid import point_to_cell
 from app.core.logging import get_logger
 from app.core.plausibility import is_plausible
 from app.external.firms_client import FirmsClient
-from app.external.openaq_client import OpenAQClient, OpenAQLocation, OpenAQReading
+from app.external.openaq_client import (
+    OpenAQClient,
+    OpenAQHourlyValue,
+    OpenAQLocation,
+    OpenAQReading,
+)
 from app.external.openmeteo_client import OpenMeteoClient
 from app.repositories import observation_repository, station_repository
 from app.repositories.observation_repository import FireRow, MeasurementRow, WeatherRow
@@ -113,6 +128,31 @@ def _storable(value: float, pollutant: Pollutant) -> bool:
         logger.warning("ingestion.negative_reading_dropped", pollutant=pollutant.value)
         return False
     return True
+
+
+def _hourly_rows(
+    station_id: int, pollutant: Pollutant, unit: str, hourly: list[OpenAQHourlyValue]
+) -> list[MeasurementRow]:
+    """Hourly aggregates as rows to store, converted into the pollutant's storage unit."""
+    rows: list[MeasurementRow] = []
+    for entry in hourly:
+        try:
+            value = aqi.to_aqi_unit(pollutant, entry.value, unit)
+        except AirWatchError:
+            continue
+        if not _storable(value, pollutant):
+            continue
+        rows.append(
+            MeasurementRow(
+                station_id=station_id,
+                observed_at=entry.period_start,
+                pollutant=pollutant,
+                value_raw=value,
+                unit=aqi.CONCENTRATION_UNIT[pollutant],
+                is_plausible=is_plausible(pollutant, value),
+            )
+        )
+    return rows
 
 
 def _log_implausible(station: str, rows: list[MeasurementRow]) -> None:
@@ -279,23 +319,7 @@ class IngestionService:
         for sensor_id in sensor_ids:
             _, unit = sensor_map[sensor_id]
             hourly = await client.sensor_hourly(sensor_id, date_from=date_from, date_to=date_to)
-            for entry in hourly:
-                try:
-                    value = aqi.to_aqi_unit(pollutant, entry.value, unit)
-                except AirWatchError:
-                    continue
-                if not _storable(value, pollutant):
-                    continue
-                rows.append(
-                    MeasurementRow(
-                        station_id=station_id,
-                        observed_at=entry.period_start,
-                        pollutant=pollutant,
-                        value_raw=value,
-                        unit=aqi.CONCENTRATION_UNIT[pollutant],
-                        is_plausible=is_plausible(pollutant, value),
-                    )
-                )
+            rows.extend(_hourly_rows(station_id, pollutant, unit, hourly))
 
         if not rows:
             return 0
@@ -322,7 +346,12 @@ class IngestionService:
                     readings = await client.latest_readings(location)
                     if not readings:
                         continue
+                    station_id, previous = self._last_stored(location)
                     stored += self._persist_location(location, readings)
+                    if station_id is not None:
+                        stored += await self._catch_up(
+                            client, location, station_id, readings, previous
+                        )
 
             return SourceResult(source=_OPENAQ_SOURCE, succeeded=True, records=stored)
         except AirWatchError as error:
@@ -340,6 +369,77 @@ class IngestionService:
                 error_code=error.code,
                 error_message=error.message,
             )
+
+    def _last_stored(
+        self, location: OpenAQLocation
+    ) -> tuple[int | None, dict[Pollutant, datetime]]:
+        """A known station's id and when each pollutant was last stored for it."""
+        with session_scope() as session:
+            station_id = station_repository.get_station_id(
+                session, source=_OPENAQ_SOURCE, source_station_id=str(location.id)
+            )
+            if station_id is None:
+                return None, {}
+            return station_id, observation_repository.latest_observed_at(session, station_id)
+
+    async def _catch_up(
+        self,
+        client: OpenAQClient,
+        location: OpenAQLocation,
+        station_id: int,
+        readings: list[OpenAQReading],
+        previous: dict[Pollutant, datetime],
+    ) -> int:
+        """Store the hours a station published that the hourly cycle never saw.
+
+        ``/latest`` holds one value per sensor. When OpenAQ's relay stalls and
+        then resumes, every hour in between would stay missing: 24-hour averages
+        fall short of the hours they need, and detection loses the stretch. A
+        gap is filled once, from the sensor's hourly history, because the newest
+        reading is stored as it is found. A failed fill is logged and left for
+        the backfill command; it never costs the cycle the other stations.
+        """
+        earliest = datetime.now(UTC) - timedelta(days=OPENAQ_CATCH_UP_MAX_DAYS)
+        rows: list[MeasurementRow] = []
+        for reading in readings:
+            last = previous.get(reading.pollutant)
+            if (
+                last is None
+                or reading.pollutant.value not in OPENAQ_CATCH_UP_POLLUTANTS
+                or reading.observed_at - last <= timedelta(hours=OPENAQ_CATCH_UP_GAP_HOURS)
+            ):
+                continue
+            since = max(last, earliest)
+            try:
+                hourly = await client.sensor_hourly(
+                    reading.sensor_id, date_from=since, date_to=reading.observed_at
+                )
+            except AirWatchError as error:
+                logger.warning(
+                    "ingestion.catch_up_failed",
+                    location_id=location.id,
+                    pollutant=reading.pollutant.value,
+                    error_code=error.code,
+                )
+                continue
+            # Only the hours strictly between the two stored readings: neither is
+            # rewritten with an hourly aggregate.
+            missed = [entry for entry in hourly if since < entry.period_start < reading.observed_at]
+            rows.extend(_hourly_rows(station_id, reading.pollutant, reading.unit, missed))
+            logger.info(
+                "ingestion.gap_filled",
+                location_id=location.id,
+                pollutant=reading.pollutant.value,
+                last_stored=last.isoformat(),
+                newest=reading.observed_at.isoformat(),
+                hours_found=len(missed),
+            )
+
+        if not rows:
+            return 0
+        _log_implausible(location.name, rows)
+        with session_scope() as session:
+            return observation_repository.upsert_measurements(session, rows)
 
     def _persist_location(self, location: OpenAQLocation, readings: list[OpenAQReading]) -> int:
         """Store one station and its readings, converting units on the way in."""

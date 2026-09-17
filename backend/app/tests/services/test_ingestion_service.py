@@ -1,4 +1,4 @@
-"""Tests for classifying OpenAQ locations, and for how much wind history is kept.
+"""Tests for classifying OpenAQ locations, wind history, and catching up missed hours.
 
 The regression these guard: every location was once stored as a reference
 monitor, which put five AirGradient units into detection and validation as if
@@ -8,17 +8,25 @@ they were regulatory analysers.
 from __future__ import annotations
 
 from contextlib import nullcontext
+from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
 import respx
 
 from app.core.config import Settings
-from app.core.constants import BACKFILL_DAYS, HOURS_PER_DAY, OPENMETEO_BASE_URL
-from app.core.enums import StationTier
-from app.external.openaq_client import OpenAQLocation
+from app.core.constants import (
+    BACKFILL_DAYS,
+    HOURS_PER_DAY,
+    OPENAQ_BASE_URL,
+    OPENAQ_CATCH_UP_GAP_HOURS,
+    OPENAQ_CATCH_UP_MAX_DAYS,
+    OPENMETEO_BASE_URL,
+)
+from app.core.enums import Pollutant, StationTier
+from app.external.openaq_client import OpenAQClient, OpenAQLocation, OpenAQReading
 from app.repositories import observation_repository
-from app.repositories.observation_repository import WeatherRow
+from app.repositories.observation_repository import MeasurementRow, WeatherRow
 from app.services import ingestion_service
 from app.services.ingestion_service import IngestionService, station_tier
 
@@ -104,3 +112,157 @@ def weather_body() -> dict[str, object]:
             "precipitation": [0.0],
         }
     }
+
+
+#: The newest reading in these tests, on the half hour as Indian stations report,
+#: and relative to now so the history window never ages out from under them.
+NEWEST = datetime.now(UTC).replace(minute=30, second=0, microsecond=0) - timedelta(hours=1)
+STATION_ID = 7
+
+
+def reading(pollutant: Pollutant, sensor_id: int, observed_at: datetime) -> OpenAQReading:
+    return OpenAQReading(
+        location_id=1,
+        sensor_id=sensor_id,
+        pollutant=pollutant,
+        value=40.0,
+        # Already normalised: the client maps OpenAQ's "µg/m³" before a reading exists.
+        unit="ug/m3",
+        observed_at=observed_at,
+        coordinates=(77.2, 28.6),
+    )
+
+
+def hours_body(starts: list[datetime]) -> dict[str, object]:
+    return {
+        "meta": {"found": len(starts)},
+        "results": [
+            {
+                "value": 50.0 + index,
+                "period": {
+                    "datetimeFrom": {"utc": start.isoformat()},
+                    "datetimeTo": {"utc": (start + timedelta(hours=1)).isoformat()},
+                },
+                "coverage": {"percentComplete": 100.0},
+            }
+            for index, start in enumerate(starts)
+        ],
+    }
+
+
+class TestCatchUp:
+    """The hours a stalled relay held back are stored once it resumes."""
+
+    @pytest.fixture
+    def stored(self, monkeypatch: pytest.MonkeyPatch) -> list[MeasurementRow]:
+        rows: list[MeasurementRow] = []
+
+        def upsert(_session: object, batch: list[MeasurementRow]) -> int:
+            rows.extend(batch)
+            return len(batch)
+
+        monkeypatch.setattr(ingestion_service, "session_scope", nullcontext)
+        monkeypatch.setattr(observation_repository, "upsert_measurements", upsert)
+        return rows
+
+    async def _catch_up(
+        self,
+        settings: Settings,
+        readings: list[OpenAQReading],
+        previous: dict[Pollutant, datetime],
+    ) -> int:
+        site = location(is_monitor=True, parameters=ANALYSER_SITE)
+        async with OpenAQClient(
+            "test-key", backoff_base_seconds=0.0, min_request_interval_seconds=0.0
+        ) as client:
+            return await IngestionService(settings)._catch_up(
+                client, site, STATION_ID, readings, previous
+            )
+
+    @respx.mock
+    async def test_stores_the_hours_between_the_last_stored_reading_and_the_newest(
+        self, settings: Settings, stored: list[MeasurementRow]
+    ) -> None:
+        last = NEWEST - timedelta(hours=5)
+        respx.get(f"{OPENAQ_BASE_URL}/sensors/0/hours").mock(
+            return_value=httpx.Response(
+                200, json=hours_body([last + timedelta(hours=step) for step in range(6)])
+            )
+        )
+
+        written = await self._catch_up(
+            settings, [reading(Pollutant.PM25, 0, NEWEST)], {Pollutant.PM25: last}
+        )
+
+        # The four hours in between; neither end is rewritten.
+        assert written == 4
+        assert [row.observed_at for row in stored] == [
+            last + timedelta(hours=step) for step in range(1, 5)
+        ]
+        assert {row.station_id for row in stored} == {STATION_ID}
+        assert {row.pollutant for row in stored} == {Pollutant.PM25}
+
+    @respx.mock
+    async def test_an_ordinary_delay_costs_no_request(
+        self, settings: Settings, stored: list[MeasurementRow]
+    ) -> None:
+        route = respx.get(f"{OPENAQ_BASE_URL}/sensors/0/hours")
+        last = NEWEST - timedelta(hours=OPENAQ_CATCH_UP_GAP_HOURS)
+
+        written = await self._catch_up(
+            settings, [reading(Pollutant.PM25, 0, NEWEST)], {Pollutant.PM25: last}
+        )
+
+        assert written == 0
+        assert not route.called
+
+    @respx.mock
+    async def test_gases_and_first_readings_are_not_caught_up(
+        self, settings: Settings, stored: list[MeasurementRow]
+    ) -> None:
+        route = respx.get(url__regex=rf"{OPENAQ_BASE_URL}/sensors/\d+/hours")
+        long_ago = NEWEST - timedelta(days=2)
+
+        written = await self._catch_up(
+            settings,
+            [reading(Pollutant.NO2, 2, NEWEST), reading(Pollutant.PM10, 1, NEWEST)],
+            {Pollutant.NO2: long_ago},
+        )
+
+        assert written == 0
+        assert not route.called
+
+    @respx.mock
+    async def test_reaches_back_no_further_than_the_history_views_read(
+        self, settings: Settings, stored: list[MeasurementRow]
+    ) -> None:
+        route = respx.get(f"{OPENAQ_BASE_URL}/sensors/1/hours").mock(
+            return_value=httpx.Response(200, json=hours_body([]))
+        )
+
+        await self._catch_up(
+            settings,
+            [reading(Pollutant.PM10, 1, NEWEST)],
+            {Pollutant.PM10: NEWEST - timedelta(days=60)},
+        )
+
+        requested_from = route.calls.last.request.url.params["datetime_from"]
+        earliest = datetime.now(UTC) - timedelta(days=OPENAQ_CATCH_UP_MAX_DAYS)
+        assert requested_from == earliest.date().isoformat()
+
+    @respx.mock
+    async def test_a_failed_fill_is_logged_and_the_cycle_goes_on(
+        self, settings: Settings, stored: list[MeasurementRow]
+    ) -> None:
+        respx.get(f"{OPENAQ_BASE_URL}/sensors/0/hours").mock(
+            return_value=httpx.Response(404, json={"detail": "not found"})
+        )
+
+        written = await self._catch_up(
+            settings,
+            [reading(Pollutant.PM25, 0, NEWEST)],
+            {Pollutant.PM25: NEWEST - timedelta(hours=10)},
+        )
+
+        assert written == 0
+        assert stored == []

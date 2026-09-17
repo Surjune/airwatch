@@ -266,6 +266,48 @@ class TestReadingsInWindow:
         assert timestamps == sorted(timestamps)
 
 
+class TestLatestObservedAt:
+    def test_gives_each_pollutants_newest_time_for_one_station(self, session: Session) -> None:
+        station_id = _station(session)
+        other = _station(session, station_id="test-2")
+        observation_repository.upsert_measurements(
+            session,
+            [
+                MeasurementRow(
+                    station_id=station_id,
+                    observed_at=NOW - timedelta(hours=hours),
+                    pollutant=pollutant,
+                    value_raw=50.0,
+                    unit="ug/m3",
+                    # A flagged reading was still received, so it still counts.
+                    is_plausible=hours != 0,
+                )
+                for pollutant, hours in (
+                    (Pollutant.PM25, 3),
+                    (Pollutant.PM25, 0),
+                    (Pollutant.PM10, 9),
+                )
+            ]
+            + [
+                MeasurementRow(
+                    station_id=other,
+                    observed_at=NOW + timedelta(hours=1),
+                    pollutant=Pollutant.PM25,
+                    value_raw=50.0,
+                    unit="ug/m3",
+                )
+            ],
+        )
+        session.flush()
+
+        latest = observation_repository.latest_observed_at(session, station_id)
+
+        assert latest == {Pollutant.PM25: NOW, Pollutant.PM10: NOW - timedelta(hours=9)}
+
+    def test_a_station_with_nothing_stored_has_nothing(self, session: Session) -> None:
+        assert observation_repository.latest_observed_at(session, _station(session)) == {}
+
+
 class TestDailyMeans:
     def _store(
         self, session: Session, station_id: int, readings: list[tuple[datetime, float]]

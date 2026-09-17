@@ -625,6 +625,23 @@ OPENAQ_MAX_PAGE_LIMIT: Final[int] = 1000
 #: with decade-old air.
 STATION_STALE_AFTER_DAYS: Final[int] = 7
 
+#: Hours between the last reading stored for a station's pollutant and its
+#: newest one beyond which the worker fetches the hours in between. The hourly
+#: cycle stores only each sensor's latest value, so hours missed while OpenAQ's
+#: relay stalled would otherwise stay missing for good -- on 16 September 2026
+#: it stopped relaying every CPCB station outside Delhi at 16:30 UTC. Three
+#: hours leaves room for ordinary publishing delay without a request per
+#: station on every cycle.
+OPENAQ_CATCH_UP_GAP_HOURS: Final[int] = 3
+
+#: Furthest back a catch-up reaches, in days: the history every view reads.
+OPENAQ_CATCH_UP_MAX_DAYS: Final[int] = BACKFILL_DAYS
+
+#: Pollutants whose missed hours are fetched. The two that detection,
+#: forecasting and the WHO comparison read; the official index comes from
+#: CPCB's own feed. Limiting it keeps a Delhi catch-up near a hundred requests.
+OPENAQ_CATCH_UP_POLLUTANTS: Final[tuple[str, ...]] = ("pm25", "pm10")
+
 
 #: Per-request timeout for upstream APIs, in seconds.
 HTTP_TIMEOUT_SECONDS: Final[float] = 30.0

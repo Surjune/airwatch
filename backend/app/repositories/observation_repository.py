@@ -260,6 +260,19 @@ def latest_reading_per_station(
     return list(session.execute(statement).all())
 
 
+def latest_observed_at(session: Session, station_id: int) -> dict[Pollutant, datetime]:
+    """When each pollutant was last stored for a station, plausible or not."""
+    statement = (
+        select(Measurement.pollutant, func.max(Measurement.observed_at))
+        .where(Measurement.station_id == station_id)
+        .group_by(Measurement.pollutant)
+    )
+    return {
+        Pollutant(pollutant): observed_at
+        for pollutant, observed_at in session.execute(statement).all()
+    }
+
+
 def daily_means(
     session: Session,
     pollutant: Pollutant,
