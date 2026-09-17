@@ -10,6 +10,7 @@ can act.**
 Built for the *Clean Air & Climate Resilience* challenge · Live in Delhi-NCR, Kanpur and Coimbatore
 
 [**Live site**](https://airwatch-cbe.duckdns.org) ·
+[**Demo video**](https://youtu.be/y2hTGlsC_i0) ·
 [API docs](https://airwatch-cbe.duckdns.org/docs) ·
 [Validation](docs/VALIDATION.md) ·
 [Design notes](docs/DESIGN.md) ·
