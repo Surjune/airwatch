@@ -7,9 +7,16 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 /** Backend origin during development. The API is versioned under /v1. */
-const API_TARGET = 'http://localhost:8000';
+const LOCAL_API = 'http://localhost:8000';
 
-export default defineConfig({
+/**
+ * The deployed API, for `npm run dev:live`: a change can be looked at against
+ * real data without a local database. Read-only screens only; nothing here
+ * signs in.
+ */
+const LIVE_API = 'https://airwatch-cbe.duckdns.org';
+
+export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
@@ -18,11 +25,11 @@ export default defineConfig({
     port: 5173,
     // Proxying in development keeps the browser same-origin, so the CORS
     // allowlist only has to be correct in deployed environments.
-    proxy: { '/v1': { target: API_TARGET, changeOrigin: true } },
+    proxy: { '/v1': { target: mode === 'live' ? LIVE_API : LOCAL_API, changeOrigin: true } },
   },
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],
   },
-});
+}));
