@@ -10,6 +10,15 @@ const MS_PER_HOUR = 3_600_000;
  */
 export const RECENT_READING_HOURS = 6;
 
+/** Whether a reading is recent enough to describe the air now. */
+export function isRecent(
+  observedAt: string,
+  now: Date = new Date(),
+  maxAgeHours: number = RECENT_READING_HOURS,
+): boolean {
+  return (now.getTime() - new Date(observedAt).getTime()) / MS_PER_HOUR <= maxAgeHours;
+}
+
 export interface Ranked<T> {
   /** Readings recent enough to compare, worst first. */
   readonly recent: readonly T[];
@@ -29,10 +38,7 @@ export function rankRecent<T extends { readonly aqi: number; readonly observed_a
   now: Date = new Date(),
   maxAgeHours: number = RECENT_READING_HOURS,
 ): Ranked<T> {
-  const recent = readings.filter(
-    (reading) =>
-      (now.getTime() - new Date(reading.observed_at).getTime()) / MS_PER_HOUR <= maxAgeHours,
-  );
+  const recent = readings.filter((reading) => isRecent(reading.observed_at, now, maxAgeHours));
   return {
     recent: [...recent].sort((a, b) => b.aqi - a.aqi),
     staleCount: readings.length - recent.length,

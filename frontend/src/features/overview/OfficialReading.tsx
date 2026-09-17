@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import type { Resource } from '@/hooks/useAnalysis';
 import type { OfficialAqi, OfficialStation } from '@/hooks/useSources';
+import { isRecent } from '@/lib/readings';
 import { pollutantLabel, type Pollutant } from '@/lib/scope';
 import { istDateTime, timeAgo } from '@/lib/time';
 
@@ -88,7 +89,13 @@ function SubIndices({ station }: { readonly station: OfficialStation }) {
           <dd className="figure text-[13px] text-ink">{Math.round(value)}</dd>
         </div>
       ))}
-      {station.aqi === null ? (
+      {!isRecent(station.reported_at) ? (
+        <p className="w-full text-xs text-ink-subtle">
+          This station has not reported to CPCB since {istDateTime(station.reported_at)} IST. The
+          figures above are its last report, not today&apos;s air. AirWatch checks CPCB&apos;s feed
+          every hour and updates as soon as the station reports again.
+        </p>
+      ) : station.aqi === null ? (
         <p className="w-full text-xs text-ink-subtle">
           Too few pollutants reported in the last 3 hours for CPCB to state an overall index.
         </p>

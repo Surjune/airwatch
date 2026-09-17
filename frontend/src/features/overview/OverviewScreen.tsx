@@ -97,7 +97,7 @@ export function OverviewScreen({ onNavigate }: { readonly onNavigate: (key: Scre
           <SectionHeading id="now" index="01" title="Right now" />
           <div className="grid gap-4 lg:grid-cols-2">
             <OfficialReading official={official} cityLabel={cityLabel} />
-            <MonitorReadings stations={stations} pollutantLabel={label} />
+            <MonitorReadings stations={stations} model={model} pollutantLabel={label} />
           </div>
         </section>
 

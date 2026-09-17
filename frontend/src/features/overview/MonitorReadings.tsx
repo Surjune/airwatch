@@ -3,7 +3,9 @@ import { Card } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { WhoBadge } from '@/components/ui/WhoBadge';
+import { ModelStandIn } from '@/features/overview/ModelStandIn';
 import type { Resource, StationsResponse } from '@/hooks/useAnalysis';
+import type { RegionalModel } from '@/lib/regional-model';
 import { rankRecent, RECENT_READING_HOURS } from '@/lib/readings';
 import { timeAgo } from '@/lib/time';
 
@@ -27,9 +29,12 @@ const UNIT = 'µg/m³';
  */
 export function MonitorReadings({
   stations,
+  model,
   pollutantLabel,
 }: {
   readonly stations: Resource<StationsResponse>;
+  /** The regional model, offered in place of a current reading when no monitor has one. */
+  readonly model: Resource<RegionalModel>;
   readonly pollutantLabel: string;
 }) {
   const all = stations.data?.readings ?? [];
@@ -42,14 +47,16 @@ export function MonitorReadings({
       ? recent
       : [...all].sort((a, b) => b.observed_at.localeCompare(a.observed_at));
 
+  const nothingRecent = recent.length === 0;
+
   return (
     <Card
       eyebrow="Reference monitors · OpenAQ"
       title={`Latest ${pollutantLabel} at each monitor`}
       description={
-        recent.length > 0
-          ? `Reported in the last ${String(RECENT_READING_HOURS)} hours, highest first`
-          : `No monitor has reported in the last ${String(RECENT_READING_HOURS)} hours; the most recent readings are shown with their age`
+        nothingRecent
+          ? `No monitor has reported in the last ${String(RECENT_READING_HOURS)} hours. AirWatch checks every hour and shows new readings as soon as they arrive`
+          : `Reported in the last ${String(RECENT_READING_HOURS)} hours, highest first`
       }
       flush
     >
@@ -65,62 +72,70 @@ export function MonitorReadings({
         <div className="p-4">
           <Skeleton label="Loading stations" rows={5} />
         </div>
-      ) : readings.length === 0 ? (
-        <div className="p-4">
-          <StatusMessage
-            kind="empty"
-            title={`No monitor has reported ${pollutantLabel} recently`}
-            detail="That is a gap in monitoring, not clean air. Try the other pollutant: some sites report only one."
-          />
-        </div>
       ) : (
-        <ol className="divide-y divide-border">
-          {readings.slice(0, SHOWN).map((reading, index) => (
-            <li key={reading.station_id} className="flex items-center gap-3 px-4 py-2.5 sm:px-5">
-              <span className="figure w-4 shrink-0 text-xs text-ink-subtle">{index + 1}</span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-medium text-ink">{reading.name}</p>
-                <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-subtle">
-                  <span>
-                    {reading.category} · {timeAgo(reading.observed_at)}
+        <>
+          {nothingRecent && <ModelStandIn model={model} pollutantLabel={pollutantLabel} />}
+          {readings.length === 0 ? (
+            <div className="p-4">
+              <StatusMessage
+                kind="empty"
+                title={`No monitor has reported ${pollutantLabel} recently`}
+                detail="That is a gap in monitoring, not clean air. Try the other pollutant: some sites report only one."
+              />
+            </div>
+          ) : (
+            <ol className="divide-y divide-border">
+              {readings.slice(0, SHOWN).map((reading, index) => (
+                <li
+                  key={reading.station_id}
+                  className="flex items-center gap-3 px-4 py-2.5 sm:px-5"
+                >
+                  <span className="figure w-4 shrink-0 text-xs text-ink-subtle">{index + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-medium text-ink">{reading.name}</p>
+                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-subtle">
+                      <span>
+                        {reading.category} · {timeAgo(reading.observed_at)}
+                      </span>
+                      {guideline !== null &&
+                        reading.daily_mean !== null &&
+                        reading.who_multiple !== null && (
+                          <WhoBadge
+                            dailyMean={reading.daily_mean}
+                            multiple={reading.who_multiple}
+                            guideline={guideline}
+                            unit={UNIT}
+                          />
+                        )}
+                    </p>
+                  </div>
+                  <span className="figure shrink-0 text-right text-[13px] text-ink-muted">
+                    {reading.value.toFixed(0)}
+                    <span className="ml-0.5 text-[11px]">{UNIT}</span>
                   </span>
-                  {guideline !== null &&
-                    reading.daily_mean !== null &&
-                    reading.who_multiple !== null && (
-                      <WhoBadge
-                        dailyMean={reading.daily_mean}
-                        multiple={reading.who_multiple}
-                        guideline={guideline}
-                        unit={UNIT}
-                      />
-                    )}
-                </p>
-              </div>
-              <span className="figure shrink-0 text-right text-[13px] text-ink-muted">
-                {reading.value.toFixed(0)}
-                <span className="ml-0.5 text-[11px]">{UNIT}</span>
-              </span>
-              <span className="w-12 shrink-0 text-right">
-                <AqiChip aqi={reading.aqi} />
-              </span>
-            </li>
-          ))}
-          {recent.length > 0 && staleCount > 0 && (
-            <li className="px-4 py-2.5 text-xs text-ink-subtle sm:px-5">
-              {staleCount} {staleCount === 1 ? 'monitor has' : 'monitors have'} not reported in the
-              last {RECENT_READING_HOURS} hours and {staleCount === 1 ? 'is' : 'are'} left out of
-              this ranking.
-            </li>
+                  <span className="w-12 shrink-0 text-right">
+                    <AqiChip aqi={reading.aqi} />
+                  </span>
+                </li>
+              ))}
+              {recent.length > 0 && staleCount > 0 && (
+                <li className="px-4 py-2.5 text-xs text-ink-subtle sm:px-5">
+                  {staleCount} {staleCount === 1 ? 'monitor has' : 'monitors have'} not reported in
+                  the last {RECENT_READING_HOURS} hours and {staleCount === 1 ? 'is' : 'are'} left
+                  out of this ranking.
+                </li>
+              )}
+              {guideline !== null && stations.data && (
+                <li className="px-4 py-2.5 text-xs text-ink-subtle sm:px-5">
+                  WHO&apos;s 2021 guideline for a 24-hour average of {pollutantLabel} is {guideline}{' '}
+                  {UNIT}. It is health guidance, much stricter than India&apos;s legal limit. Each
+                  monitor&apos;s last 24 hours are compared with it once it has readings for{' '}
+                  {stations.data.daily_mean_min_hours} of them.
+                </li>
+              )}
+            </ol>
           )}
-          {guideline !== null && stations.data && (
-            <li className="px-4 py-2.5 text-xs text-ink-subtle sm:px-5">
-              WHO&apos;s 2021 guideline for a 24-hour average of {pollutantLabel} is {guideline}{' '}
-              {UNIT}. It is health guidance, much stricter than India&apos;s legal limit. Each
-              monitor&apos;s last 24 hours are compared with it once it has readings for{' '}
-              {stations.data.daily_mean_min_hours} of them.
-            </li>
-          )}
-        </ol>
+        </>
       )}
     </Card>
   );

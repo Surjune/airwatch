@@ -5,6 +5,7 @@ import type { HealthState } from '@/hooks/useHealth';
 import type { LowCostSensors, OfficialAqi, Satellite } from '@/hooks/useSources';
 import type { RegionalModel } from '@/lib/regional-model';
 import { TierTile } from '@/features/overview/TierTile';
+import { isRecent, RECENT_READING_HOURS } from '@/lib/readings';
 import { MONITORS_FOR_DETECTION, tierState } from '@/lib/tiers';
 
 interface NetworkTiersProps {
@@ -38,7 +39,18 @@ export function NetworkTiers({
   health,
   pollutantLabel,
 }: NetworkTiersProps) {
-  const monitorCount = stations.data?.station_count;
+  // Only what reported lately counts as reporting: a monitor silent for days is
+  // still on record, and counting it would describe a network that is not there.
+  const monitorCount = stations.data?.readings.filter((reading) =>
+    isRecent(reading.observed_at),
+  ).length;
+  const quietMonitors =
+    stations.data && monitorCount !== undefined ? stations.data.station_count - monitorCount : 0;
+  const officialCount = official.data?.stations.filter((station) =>
+    isRecent(station.reported_at),
+  ).length;
+  const quietOfficial =
+    official.data && officialCount !== undefined ? official.data.station_count - officialCount : 0;
   const residentCount =
     photos === null || readings.data === null
       ? undefined
@@ -52,15 +64,15 @@ export function NetworkTiers({
         tier="Tier 1 · ground truth"
         name="Reference monitors"
         value={monitorCount ?? '…'}
-        note={`Reporting ${pollutantLabel} now. Detection needs ${String(MONITORS_FOR_DETECTION)} in range to compare each with its neighbours.`}
+        note={`Reported ${pollutantLabel} in the last ${String(RECENT_READING_HOURS)} hours${quiet(quietMonitors)}. Detection needs ${String(MONITORS_FOR_DETECTION)} in range to compare each with its neighbours.`}
         state={tierState(monitorCount, MONITORS_FOR_DETECTION, Boolean(stations.error))}
       />
       <TierTile
         tier="Tier 1 · ground truth"
         name="CPCB official feed"
-        value={official.data?.station_count ?? '…'}
-        note="Stations in CPCB's live index, fetched hourly from data.gov.in and shown as published."
-        state={tierState(official.data?.station_count, 1, Boolean(official.error))}
+        value={officialCount ?? '…'}
+        note={`Stations in CPCB's live index that reported in the last ${String(RECENT_READING_HOURS)} hours${quiet(quietOfficial)}, fetched hourly from data.gov.in and shown as published.`}
+        state={tierState(officialCount, 1, Boolean(official.error))}
       />
       <TierTile
         tier="Tier 2 · dense, biased"
@@ -122,4 +134,10 @@ export function NetworkTiers({
       />
     </div>
   );
+}
+
+/** ", and 2 more on record gone quiet", or nothing when every station is current. */
+function quiet(count: number): string {
+  if (count <= 0) return '';
+  return `, and ${String(count)} more on record ${count === 1 ? 'has' : 'have'} gone quiet`;
 }
