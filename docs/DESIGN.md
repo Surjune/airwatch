@@ -215,7 +215,7 @@ Every source was checked for Coimbatore in September 2026:
 
 | Source | What it holds for Coimbatore |
 | --- | --- |
-| OpenAQ | Four government monitors on record: SIDCO Kurichi (reporting, days late), PSG College (silent since July), Tirupur and Ooty (silent since April) |
+| OpenAQ | Four government monitors on record: SIDCO Kurichi (silent except CO and weather since 14 September), PSG College (silent since July), Tirupur and Ooty (silent since April) |
 | CPCB live feed (data.gov.in) | SIDCO Kurichi only |
 | AirGradient public network | 183 sensors in India, none within 60 km |
 | Sensor.Community | None |
@@ -236,6 +236,30 @@ The model is the only source that fills the hours, so it is stored and shown -- 
 - **Where no route forecast is possible**, as on every Coimbatore corridor, the Forecast screen
   offers the model's city-wide outlook instead of an empty page, and says plainly it cannot see
   where along a road the air changes.
+
+## When an upstream goes quiet
+
+Every monitor reading reaches AirWatch through OpenAQ, and OpenAQ relays CPCB. Two kinds of
+silence have happened, and they are handled differently:
+
+- **A station stops.** SIDCO Kurichi, Coimbatore's one working monitor, stopped sending PM10,
+  NO₂, SO₂ and O₃ on 14 September 2026; CPCB's own feed went quiet for it the same night. Nothing
+  downstream can bring it back. What the page can do is say so: a station that has not reported
+  for six hours is described as silent, with the time of its last report, rather than as one whose
+  latest hour lacked a pollutant; tier counts include only stations that reported in those six
+  hours; and while no monitor in the city reports, Overview shows the CAMS model's current hour,
+  labelled as modelled and followed by its measured bias.
+- **The relay stops.** On 16 September 2026 OpenAQ stopped relaying every CPCB station in India
+  at 16:30 UTC, while its other providers (the US Embassy monitor, AirGradient) carried on. The
+  hourly cycle stores only each sensor's latest value, so the hours of a stall would have stayed
+  missing after it ended, thinning every 24-hour average and detection window across them. Now,
+  when a station's newest PM2.5 or PM10 reading is more than three hours after the last one
+  stored, the worker fetches the sensor's hourly history for the gap (up to 14 days), stores only
+  the hours strictly between, and logs how many it found. The gap is filled once; a failed fill is
+  logged and left for the backfill command without costing other stations their cycle.
+
+CPCB's data.gov.in feed cannot stand in for the missing hours: it publishes sub-indices, and
+turning an index back into a concentration would be a guess.
 
 ## WHO's guideline, and what it is compared with
 

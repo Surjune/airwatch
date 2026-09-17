@@ -25,7 +25,7 @@ Built for the *Clean Air & Climate Resilience* challenge · Live in Delhi-NCR, K
 | --- | --- |
 | **Problem** | India has only a few hundred official air monitors and reports a 24-hour city average. A three-hour plume from a landfill or bus depot never shows up, nobody knows its source, and the source is often in another district or state. |
 | **Solution** | AirWatch combines government monitors, low-cost and home sensors, residents' photos, satellite data, wind and fire detections. It spots unusual pollution, names likely sources, forecasts busy routes, and alerts the responsible authority. Google Gemini reads residents' photos, translates their complaints into English, and writes plain-language alert briefs. |
-| **Proof** | Deployed and updating hourly. It has already sent a real cross-state request (Uttar Pradesh → East Delhi). 985 backend and 146 frontend tests run in CI. |
+| **Proof** | Deployed and updating hourly. It has already sent a real cross-state request (Uttar Pradesh → East Delhi). 992 backend and 158 frontend tests run in CI. |
 | **Honesty** | Every number shows its uncertainty. Where there is no data, it says "unknown", never "clean". |
 
 ## Key terms
@@ -84,7 +84,7 @@ flowchart LR
 | :---: | :---: | :---: |
 | <img src="docs/images/overview-mobile.png" width="220" alt="Overview on a phone" /> | <img src="docs/images/map-mobile.png" width="220" alt="Map on a phone" /> | <img src="docs/images/contribute-mobile.png" width="220" alt="Contribute on a phone" /> |
 
-1. **Overview:** the official AQI, recent monitor readings (each with its last 24 hours against the
+1. **Overview** (opens on Delhi, which has the most monitors): the official AQI, recent monitor readings (each with its last 24 hours against the
    WHO guideline), which data exists for this city, top hotspots, and alerts sent.
 2. **Live map:** monitors (filled circles), community sensors (dashed rings), residents' readings
    (squares) and hotspots. Each hotspot lists likely sources with a percentage, such as
@@ -225,9 +225,14 @@ Interactive docs: [/docs](https://airwatch-cbe.duckdns.org/docs).
 
 - **Coimbatore** has four government monitors on record, but three (PSG College, Tirupur, Ooty)
   stopped reporting between April and July 2026 and SIDCO Kurichi's PM2.5 sensor is broken. So it
-  opens on PM10 and cannot detect hotspots. The official AQI, the CAMS model, satellite and citizen
-  data still cover it. No community sensor network (AirGradient, Sensor.Community) has a sensor
-  within 60 km.
+  opens on PM10 and cannot detect hotspots. On 14 September 2026 (21:30 IST) SIDCO Kurichi stopped
+  sending its other pollutants too, to OpenAQ and to CPCB alike. While it is silent, Overview says
+  so and shows the CAMS model's current value in its place. Satellite and citizen data still cover
+  the city. No community sensor network (AirGradient, Sensor.Community) has a sensor within 60 km.
+- **Monitor readings arrive through OpenAQ.** On 16 September 2026 OpenAQ stopped relaying every
+  CPCB station in India at 16:30 UTC, so readings paused in all three cities. The official index
+  kept updating from data.gov.in, and the hourly worker fetches the missed hours by itself once
+  the relay resumes.
 - **The CAMS model** averages over tens of kilometres, and its error differs by city. Measured on
   15 September 2026 against the monitors: 0.6× in Coimbatore (PM10), 1.2× in Kanpur and 1.8× in
   Delhi (PM2.5). That ratio is shown beside every value, and the model is never used for detection.
