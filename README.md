@@ -26,7 +26,7 @@ Built for the *Clean Air & Climate Resilience* challenge · Live in Delhi-NCR, K
 | --- | --- |
 | **Problem** | India has only a few hundred official air monitors and reports a 24-hour city average. A three-hour plume from a landfill or bus depot never shows up, nobody knows its source, and the source is often in another district or state. |
 | **Solution** | AirWatch combines government monitors, low-cost and home sensors, residents' photos, satellite data, wind and fire detections. It spots unusual pollution, names likely sources, forecasts busy routes, and alerts the responsible authority. Google Gemini reads residents' photos, translates their complaints into English, and writes plain-language alert briefs. |
-| **Proof** | Deployed and updating hourly. It has already sent a real cross-state request (Uttar Pradesh → East Delhi). 992 backend and 158 frontend tests run in CI. |
+| **Proof** | Deployed and updating hourly. It has already sent a real cross-state request (Uttar Pradesh → East Delhi). 1,045 backend and 160 frontend tests run in CI. |
 | **Honesty** | Every number shows its uncertainty. Where there is no data, it says "unknown", never "clean". |
 
 ## Key terms
@@ -230,10 +230,12 @@ Interactive docs: [/docs](https://airwatch-cbe.duckdns.org/docs).
   sending its other pollutants too, to OpenAQ and to CPCB alike. While it is silent, Overview says
   so and shows the CAMS model's current value in its place. Satellite and citizen data still cover
   the city. No community sensor network (AirGradient, Sensor.Community) has a sensor within 60 km.
-- **Monitor readings arrive through OpenAQ.** On 16 September 2026 OpenAQ stopped relaying every
-  CPCB station in India at 16:30 UTC, so readings paused in all three cities. The official index
-  kept updating from data.gov.in, and the hourly worker fetches the missed hours by itself once
-  the relay resumes.
+- **Monitor readings arrive through OpenAQ.** OpenAQ stopped relaying every CPCB station in India
+  on 16 September 2026 and again on 29 September, and data.gov.in's API refused connections from
+  25 September. The hourly worker fetches the missed hours by itself once OpenAQ resumes. Until
+  then a backup feed, the World Air Quality Index Project (aqicn.org), fills **22 of Delhi's 56
+  monitors** (DPCC and IMD sites), converted from the US AQI and marked "via aqicn.org". WAQI has
+  had nothing new from CPCB itself since 23 June 2026, so Kanpur and Coimbatore stay silent.
 - **The CAMS model** averages over tens of kilometres, and its error differs by city. Measured on
   15 September 2026 against the monitors: 0.6× in Coimbatore (PM10), 1.2× in Kanpur and 1.8× in
   Delhi (PM2.5). That ratio is shown beside every value, and the model is never used for detection.
@@ -258,7 +260,8 @@ More detail and the reasoning behind each design choice: [docs/DESIGN.md](docs/D
 
 ## Credits
 
-Data: OpenAQ · CPCB via data.gov.in · NASA FIRMS · Open-Meteo · Copernicus Sentinel-5P via Google
-Earth Engine · © OpenStreetMap contributors. Voice: Sarvam AI.
+Data: OpenAQ · CPCB via data.gov.in · DPCC, IMD and CPCB via the World Air Quality Index Project
+(aqicn.org, backup feed) · NASA FIRMS · Open-Meteo · Copernicus Sentinel-5P via Google Earth Engine ·
+© OpenStreetMap contributors. Voice: Sarvam AI.
 
 MIT licence.

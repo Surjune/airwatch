@@ -261,6 +261,50 @@ silence have happened, and they are handled differently:
 CPCB's data.gov.in feed cannot stand in for the missing hours: it publishes sub-indices, and
 turning an index back into a concentration would be a guess.
 
+### The backup feed: the World Air Quality Index Project
+
+On 29 September 2026 OpenAQ stopped relaying all 448 CPCB stations in India within the same hour,
+and data.gov.in's API refused connections, while the monitors kept publishing. The World Air
+Quality Index Project (WAQI, aqicn.org) still receives Delhi's: it reads DPCC's own portal and an
+IMD station directly. Its CPCB-fed stations, Kanpur's among them, have not updated since 23 June
+2026, so it cannot help Kanpur or Coimbatore. With a `WAQI_API_TOKEN`, the worker's
+`backup:<city>` step (`services/backup_feed_service.py`) fills the gap under these rules:
+
+- **Only where OpenAQ is silent.** A reference monitor is filled only when its newest PM2.5 or
+  PM10 is more than two hours old. With every monitor reporting, no request is made.
+- **Only the same instrument.** WAQI stations come from a map search of the city's view, never
+  from a "nearest station" lookup; for Coimbatore that lookup returns a Delhi site 2,000 km
+  away. A WAQI station pairs with a monitor within 1 km, or within 5 km when the site names
+  agree (WAQI places DPCC's Mundka 4.5 km from OpenAQ's position for it). Pairing is
+  one-to-one, closest first.
+- **Only the monitor's own agency.** The monitor's name ends with its agency ("- DPCC", "- IMD",
+  "- CPCB"), and WAQI's attribution must name the same body. That keeps out Clarity's community
+  sensors, which WAQI also lists in Delhi, and any second agency's instrument under the same site
+  name.
+- **Fresh, converted and marked.** A WAQI figure more than three hours old is skipped. PM2.5 and
+  PM10 are turned back from the US AQI into µg/m³; gases are not, because the US AQI quotes them
+  in parts per billion at its own reference conditions. Whole-number indices mean about
+  ±0.25 µg/m³ of rounding in the 51–100 band, under 1 µg/m³ at the top. The reading is stored
+  with origin `waqi`, and the monitor list and map tag it "via aqicn.org", with the attribution
+  WAQI's terms require.
+- **Never over OpenAQ, and retired when OpenAQ returns.** A WAQI figure is written only where
+  nothing is stored. An OpenAQ reading for the same hour replaces it, and OpenAQ's catch-up
+  removes the WAQI figures inside a gap it has refilled. Gaps are measured from OpenAQ's own
+  readings, so a stand-in cannot hide one.
+- **Not passed on.** WAQI's terms forbid redistributing its data as cached or archived data, so
+  the partner exchange API (`/v1/interop/observations`) serves OpenAQ readings only. Public
+  non-commercial use also requires notifying WAQI by email first.
+
+**Which US AQI table.** The US EPA lowered its PM2.5 breakpoints in May 2024, and the two tables
+disagree by up to a quarter outside 35.5–55.4 µg/m³. On 2 October 2026 WAQI's PM2.5 index was
+compared with OpenAQ's raw concentration for the same station and hour at 91 stations outside
+India (Korea, Japan, Taiwan, the Netherlands and the US). At the 42 where the tables give
+different answers, the **2012 table matched WAQI within one point at 36, the 2024 table at 2**.
+`WAQI_PM25_BREAKPOINTS` is the 2012 table.
+
+The first dry run against live data, on 2 October 2026, paired 22 of Delhi's 56 monitors (21 DPCC
+sites and IMD's Pusa), every one passing the agency check, with PM2.5 between 25 and 73 µg/m³.
+
 ## WHO's guideline, and what it is compared with
 
 CPCB's index answers "how does this compare with India's standards". Residents
