@@ -27,7 +27,7 @@ from app.core.constants import (
     PILOT_CITY_DEFAULT_POLLUTANT,
     PILOT_CITY_LABELS,
 )
-from app.core.enums import PilotCity, Pollutant, StationTier
+from app.core.enums import MeasurementOrigin, PilotCity, Pollutant, StationTier
 from app.core.geo import LonLat
 from app.core.h3_grid import H3Cell
 from app.core.logging import get_logger
@@ -69,6 +69,8 @@ class StationSnapshot:
     #: ``daily_mean`` as a multiple of WHO's 24-hour guideline level, or None
     #: when there is no average or WHO sets no 24-hour level for the pollutant.
     who_multiple: float | None
+    #: The relay the latest reading came through.
+    origin: MeasurementOrigin
 
 
 @dataclass(frozen=True, slots=True)
@@ -147,7 +149,7 @@ def latest_snapshots(
     snapshots: list[StationSnapshot] = []
 
     for row in observation_repository.latest_reading_per_station(session, pollutant, tier):
-        station_id, name, lon, lat, cell, observed_at, value, unit = row
+        station_id, name, lon, lat, cell, observed_at, value, unit, origin = row
         if not in_city((float(lon), float(lat)), city):
             continue
         sub_index = aqi.sub_index(pollutant, float(value))
@@ -169,6 +171,7 @@ def latest_snapshots(
                 who_multiple=(
                     None if daily_mean is None else who.multiple_of_guideline(pollutant, daily_mean)
                 ),
+                origin=MeasurementOrigin(origin),
             )
         )
 

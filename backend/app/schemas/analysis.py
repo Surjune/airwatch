@@ -13,7 +13,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.core.enums import PilotCity, Pollutant, SourceType
+from app.core.enums import MeasurementOrigin, PilotCity, Pollutant, SourceType
 
 
 class Position(BaseModel):
@@ -47,6 +47,13 @@ class StationReadingResponse(BaseModel):
             "daily_mean as a multiple of WHO's 2021 guideline level for a 24-hour average; "
             "below 1 is within it. Null when there is no daily_mean, or WHO sets no 24-hour "
             "level for this pollutant."
+        )
+    )
+    origin: MeasurementOrigin = Field(
+        description=(
+            "Relay the reading came through: openaq (CPCB's figure as published) or waqi "
+            "(the World Air Quality Index Project's US AQI figure converted back to a "
+            "concentration, approximate, used only while OpenAQ is silent)."
         )
     )
 

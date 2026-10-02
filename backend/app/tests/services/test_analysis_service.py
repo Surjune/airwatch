@@ -121,7 +121,7 @@ def wind_hours(hours: int = 12) -> list[FakeWeather]:
     ]
 
 
-def latest_rows() -> list[tuple[int, str, float, float, str, datetime, float, str]]:
+def latest_rows() -> list[tuple[int, str, float, float, str, datetime, float, str, str]]:
     """Build the rows ``latest_reading_per_station`` would return."""
     return [
         (
@@ -133,6 +133,7 @@ def latest_rows() -> list[tuple[int, str, float, float, str, datetime, float, st
             NOW,
             HOTSPOT_UGM3 if station_id == 1 else BACKGROUND_UGM3,
             "ug/m3",
+            "openaq",
         )
         for station_id, (lon, lat) in STATION_POSITIONS.items()
     ]
@@ -435,6 +436,7 @@ class TestDetectAndAttribute:
             pollutant: Pollutant,
             since: datetime,
             until: datetime | None = None,
+            **_: Any,
         ) -> list[Any]:
             seen["pollutant"] = pollutant
             seen["since"] = since
@@ -464,6 +466,7 @@ class TestDetectAndAttribute:
             pollutant: Pollutant,
             since: datetime,
             until: datetime | None = None,
+            **_: Any,
         ) -> list[Any]:
             seen["until"] = until
             return []

@@ -132,6 +132,7 @@ def _reading(snapshot: analysis_service.StationSnapshot) -> StationReadingRespon
         daily_mean=snapshot.daily_mean,
         daily_mean_hours=snapshot.daily_mean_hours,
         who_multiple=snapshot.who_multiple,
+        origin=snapshot.origin,
     )
 
 

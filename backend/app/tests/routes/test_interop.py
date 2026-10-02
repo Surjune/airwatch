@@ -19,6 +19,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from app.core.enums import MeasurementOrigin
 from app.repositories import observation_repository, station_repository
 from app.repositories.session import get_db_session
 from app.schemas.interop import CRS_URI
@@ -211,3 +212,20 @@ class TestModelCatalogue:
 
         assert datetime.fromisoformat(generated).tzinfo is not None
         assert datetime.fromisoformat(generated) <= datetime.now(UTC)
+
+
+def test_observations_never_pass_on_the_backup_feed(
+    api: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # WAQI's terms forbid redistributing its data as cached or archived data.
+    asked: list[object] = []
+
+    def readings(*_: Any, **kwargs: Any) -> Any:
+        asked.append(kwargs.get("origins"))
+        return reading_rows(hours=72)
+
+    monkeypatch.setattr(observation_repository, "readings_in_window", readings)
+
+    api.get("/v1/interop/observations")
+
+    assert asked == [(MeasurementOrigin.OPENAQ,)]

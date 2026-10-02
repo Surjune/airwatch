@@ -91,6 +91,11 @@ class TestStations:
             api.get("/v1/stations", params={"pollutant": "o3"}).json()["who_guideline_24h"] is None
         )
 
+    def test_every_reading_names_the_relay_it_came_through(self, api: TestClient) -> None:
+        readings = api.get("/v1/stations").json()["readings"]
+
+        assert {reading["origin"] for reading in readings} == {"openaq"}
+
     def test_every_reading_carries_its_band_and_position(self, api: TestClient) -> None:
         reading = api.get("/v1/stations").json()["readings"][0]
 

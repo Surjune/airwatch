@@ -24,7 +24,7 @@ from app.core.constants import (
     PUBLISHED_FUSION_MAE_UGM3,
     PUBLISHED_FUSION_R2,
 )
-from app.core.enums import Pollutant
+from app.core.enums import MeasurementOrigin, Pollutant
 from app.core.logging import get_logger
 from app.ml.forecast_features import federated_feature_names
 from app.ml.fusion_features import FEATURE_NAMES as FUSION_FEATURE_NAMES
@@ -165,7 +165,11 @@ def observations(
     reference = now or datetime.now(UTC)
     since = reference - timedelta(hours=window_hours)
 
-    matched = observation_repository.observed_readings_in_window(session, pollutant, since)
+    # Readings from the backup feed are left out: WAQI's terms forbid passing
+    # its data on as cached or archived data.
+    matched = observation_repository.observed_readings_in_window(
+        session, pollutant, since, origins=(MeasurementOrigin.OPENAQ,)
+    )
     truncated = len(matched) > MAX_FEATURES_PER_RESPONSE
 
     features = [

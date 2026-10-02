@@ -33,7 +33,7 @@ from app.core.constants import (
     WEATHER_FORECAST_DAYS,
     WEATHER_PAST_DAYS,
 )
-from app.core.enums import Pollutant, StationTier
+from app.core.enums import MeasurementOrigin, Pollutant, StationTier
 from app.core.exceptions import AirWatchError
 from app.core.geo import LonLat
 from app.core.h3_grid import point_to_cell
@@ -401,6 +401,7 @@ class IngestionService:
         """
         earliest = datetime.now(UTC) - timedelta(days=OPENAQ_CATCH_UP_MAX_DAYS)
         rows: list[MeasurementRow] = []
+        filled: list[tuple[Pollutant, datetime, datetime]] = []
         for reading in readings:
             last = previous.get(reading.pollutant)
             if (
@@ -426,6 +427,10 @@ class IngestionService:
             # rewritten with an hourly aggregate.
             missed = [entry for entry in hourly if since < entry.period_start < reading.observed_at]
             rows.extend(_hourly_rows(station_id, reading.pollutant, reading.unit, missed))
+            if missed:
+                # Only a gap OpenAQ actually refilled retires the stand-ins in it;
+                # where its history came back empty they are all there is.
+                filled.append((reading.pollutant, since, reading.observed_at))
             logger.info(
                 "ingestion.gap_filled",
                 location_id=location.id,
@@ -435,11 +440,29 @@ class IngestionService:
                 hours_found=len(missed),
             )
 
-        if not rows:
+        if not filled:
             return 0
         _log_implausible(location.name, rows)
         with session_scope() as session:
-            return observation_repository.upsert_measurements(session, rows)
+            stored = observation_repository.upsert_measurements(session, rows)
+            # The backup feed's converted figures stood in for these hours;
+            # OpenAQ's own readings now cover them.
+            replaced = sum(
+                observation_repository.delete_superseded(
+                    session,
+                    station_id,
+                    pollutant,
+                    origin=MeasurementOrigin.WAQI,
+                    after=since,
+                    until=until,
+                )
+                for pollutant, since, until in filled
+            )
+        if replaced:
+            logger.info(
+                "ingestion.backup_readings_replaced", location_id=location.id, replaced=replaced
+            )
+        return stored
 
     def _persist_location(self, location: OpenAQLocation, readings: list[OpenAQReading]) -> int:
         """Store one station and its readings, converting units on the way in."""

@@ -15,11 +15,13 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.enums import Pollutant, StationTier
+from app.core.enums import MeasurementOrigin, Pollutant, StationTier
 from app.core.h3_grid import point_to_cell
 from app.repositories import observation_repository, station_repository
+from app.repositories.models import Measurement
 from app.repositories.observation_repository import FireRow, MeasurementRow, WeatherRow
 
 pytestmark = pytest.mark.integration
@@ -306,6 +308,134 @@ class TestLatestObservedAt:
 
     def test_a_station_with_nothing_stored_has_nothing(self, session: Session) -> None:
         assert observation_repository.latest_observed_at(session, _station(session)) == {}
+
+
+class TestOrigins:
+    def _row(
+        self, station_id: int, hours_ago: int, value: float, origin: MeasurementOrigin
+    ) -> MeasurementRow:
+        return MeasurementRow(
+            station_id=station_id,
+            observed_at=NOW - timedelta(hours=hours_ago),
+            pollutant=Pollutant.PM25,
+            value_raw=value,
+            unit="ug/m3",
+            origin=origin,
+        )
+
+    def _stored(self, session: Session) -> list[tuple[datetime, float, str]]:
+        statement = select(
+            Measurement.observed_at, Measurement.value_raw, Measurement.origin
+        ).order_by(Measurement.observed_at)
+        return [(when, value, origin) for when, value, origin in session.execute(statement).all()]
+
+    def test_the_backup_feed_never_overwrites_an_openaq_reading(self, session: Session) -> None:
+        station_id = _station(session)
+        observation_repository.upsert_measurements(
+            session, [self._row(station_id, 0, 40.0, MeasurementOrigin.OPENAQ)]
+        )
+
+        written = observation_repository.insert_missing_measurements(
+            session,
+            [
+                self._row(station_id, 0, 99.0, MeasurementOrigin.WAQI),
+                self._row(station_id, 1, 55.0, MeasurementOrigin.WAQI),
+            ],
+        )
+        session.flush()
+
+        assert written == 1
+        assert self._stored(session) == [
+            (NOW - timedelta(hours=1), 55.0, "waqi"),
+            (NOW, 40.0, "openaq"),
+        ]
+
+    def test_openaq_takes_over_an_hour_the_backup_feed_filled(self, session: Session) -> None:
+        station_id = _station(session)
+        observation_repository.insert_missing_measurements(
+            session, [self._row(station_id, 0, 99.0, MeasurementOrigin.WAQI)]
+        )
+        observation_repository.upsert_measurements(
+            session, [self._row(station_id, 0, 41.0, MeasurementOrigin.OPENAQ)]
+        )
+        session.flush()
+
+        assert self._stored(session) == [(NOW, 41.0, "openaq")]
+
+    def test_retires_only_one_origins_readings_inside_the_window(self, session: Session) -> None:
+        station_id = _station(session)
+        observation_repository.insert_missing_measurements(
+            session,
+            [self._row(station_id, hours, 60.0, MeasurementOrigin.WAQI) for hours in (1, 2, 3, 6)],
+        )
+        observation_repository.upsert_measurements(
+            session, [self._row(station_id, 4, 30.0, MeasurementOrigin.OPENAQ)]
+        )
+        session.flush()
+
+        removed = observation_repository.delete_superseded(
+            session,
+            station_id,
+            Pollutant.PM25,
+            origin=MeasurementOrigin.WAQI,
+            after=NOW - timedelta(hours=5),
+            until=NOW - timedelta(hours=1),
+        )
+        session.flush()
+
+        assert removed == 3
+        assert [(when, origin) for when, _, origin in self._stored(session)] == [
+            (NOW - timedelta(hours=6), "waqi"),
+            (NOW - timedelta(hours=4), "openaq"),
+        ]
+
+    def test_a_gap_is_measured_from_openaqs_own_readings(self, session: Session) -> None:
+        # Stand-ins must not hide the gap OpenAQ's catch-up is meant to refill.
+        station_id = _station(session)
+        observation_repository.upsert_measurements(
+            session, [self._row(station_id, 10, 30.0, MeasurementOrigin.OPENAQ)]
+        )
+        observation_repository.insert_missing_measurements(
+            session, [self._row(station_id, 1, 60.0, MeasurementOrigin.WAQI)]
+        )
+        session.flush()
+
+        assert observation_repository.latest_observed_at(session, station_id) == {
+            Pollutant.PM25: NOW - timedelta(hours=10)
+        }
+        assert observation_repository.newest_by_station(
+            session, [Pollutant.PM25], StationTier.REFERENCE
+        ) == {(station_id, Pollutant.PM25): NOW - timedelta(hours=1)}
+
+    def test_readings_can_be_limited_to_some_relays(self, session: Session) -> None:
+        station_id = _station(session)
+        observation_repository.upsert_measurements(
+            session, [self._row(station_id, 2, 30.0, MeasurementOrigin.OPENAQ)]
+        )
+        observation_repository.insert_missing_measurements(
+            session, [self._row(station_id, 1, 60.0, MeasurementOrigin.WAQI)]
+        )
+        session.flush()
+
+        since = NOW - timedelta(days=1)
+        everything = observation_repository.readings_in_window(session, Pollutant.PM25, since)
+        openaq_only = observation_repository.readings_in_window(
+            session, Pollutant.PM25, since, origins=(MeasurementOrigin.OPENAQ,)
+        )
+
+        assert len(everything) == 2
+        assert [row[6] for row in openaq_only] == [30.0]
+
+    def test_the_latest_reading_names_its_relay(self, session: Session) -> None:
+        station_id = _station(session)
+        observation_repository.insert_missing_measurements(
+            session, [self._row(station_id, 0, 60.0, MeasurementOrigin.WAQI)]
+        )
+        session.flush()
+
+        row = observation_repository.latest_reading_per_station(session, Pollutant.PM25)[0]
+
+        assert row[8] == "waqi"
 
 
 class TestDailyMeans:

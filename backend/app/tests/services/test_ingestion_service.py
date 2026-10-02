@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from contextlib import nullcontext
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import httpx
 import pytest
@@ -161,8 +162,14 @@ class TestCatchUp:
             rows.extend(batch)
             return len(batch)
 
+        def delete(_session: object, station_id: int, pollutant: Pollutant, **window: Any) -> int:
+            self.retired.append((station_id, pollutant, window["after"], window["until"]))
+            return 2
+
+        self.retired: list[tuple[int, Pollutant, datetime, datetime]] = []
         monkeypatch.setattr(ingestion_service, "session_scope", nullcontext)
         monkeypatch.setattr(observation_repository, "upsert_measurements", upsert)
+        monkeypatch.setattr(observation_repository, "delete_superseded", delete)
         return rows
 
     async def _catch_up(
@@ -266,3 +273,34 @@ class TestCatchUp:
 
         assert written == 0
         assert stored == []
+
+    @respx.mock
+    async def test_retires_the_backup_feeds_stand_ins_for_the_hours_it_refilled(
+        self, settings: Settings, stored: list[MeasurementRow]
+    ) -> None:
+        last = NEWEST - timedelta(hours=5)
+        respx.get(f"{OPENAQ_BASE_URL}/sensors/0/hours").mock(
+            return_value=httpx.Response(
+                200, json=hours_body([last + timedelta(hours=step) for step in range(6)])
+            )
+        )
+
+        await self._catch_up(settings, [reading(Pollutant.PM25, 0, NEWEST)], {Pollutant.PM25: last})
+
+        assert self.retired == [(STATION_ID, Pollutant.PM25, last, NEWEST)]
+
+    @respx.mock
+    async def test_keeps_the_stand_ins_where_openaq_has_nothing_for_the_gap(
+        self, settings: Settings, stored: list[MeasurementRow]
+    ) -> None:
+        respx.get(f"{OPENAQ_BASE_URL}/sensors/0/hours").mock(
+            return_value=httpx.Response(200, json=hours_body([]))
+        )
+
+        await self._catch_up(
+            settings,
+            [reading(Pollutant.PM25, 0, NEWEST)],
+            {Pollutant.PM25: NEWEST - timedelta(hours=10)},
+        )
+
+        assert self.retired == []

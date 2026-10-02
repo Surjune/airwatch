@@ -15,11 +15,11 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import Row, func, select, update
+from sqlalchemy import Row, delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from app.core.enums import Pollutant, StationTier
+from app.core.enums import MeasurementOrigin, Pollutant, StationTier
 from app.core.geo import LonLat
 from app.core.h3_grid import H3Cell, point_to_cell
 from app.core.observations import ObservedReading
@@ -36,6 +36,7 @@ class MeasurementRow:
     value_raw: float
     unit: str
     is_plausible: bool = True
+    origin: MeasurementOrigin = MeasurementOrigin.OPENAQ
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,20 +73,8 @@ def _point_wkt(point: LonLat) -> str:
     return f"SRID=4326;POINT({lon} {lat})"
 
 
-def upsert_measurements(session: Session, rows: Sequence[MeasurementRow]) -> int:
-    """Persist readings, replacing any already stored for the same key.
-
-    The raw value is updated but ``value_calibrated`` is deliberately left alone:
-    a re-ingested raw reading must not silently discard a calibration that a
-    later model run produced for it.
-
-    Returns:
-        The number of rows submitted.
-    """
-    if not rows:
-        return 0
-
-    payload = [
+def _payload(rows: Sequence[MeasurementRow]) -> list[dict[str, object]]:
+    return [
         {
             "station_id": row.station_id,
             "observed_at": row.observed_at,
@@ -93,10 +82,27 @@ def upsert_measurements(session: Session, rows: Sequence[MeasurementRow]) -> int
             "value_raw": row.value_raw,
             "unit": row.unit,
             "is_plausible": row.is_plausible,
+            "origin": row.origin.value,
         }
         for row in rows
     ]
 
+
+def upsert_measurements(session: Session, rows: Sequence[MeasurementRow]) -> int:
+    """Persist readings, replacing any already stored for the same key.
+
+    The raw value is updated but ``value_calibrated`` is deliberately left alone:
+    a re-ingested raw reading must not silently discard a calibration that a
+    later model run produced for it. The origin is replaced too, so a reading
+    OpenAQ delivers takes over an hour the backup feed had filled.
+
+    Returns:
+        The number of rows submitted.
+    """
+    if not rows:
+        return 0
+
+    payload = _payload(rows)
     statement = insert(Measurement).values(payload)
     statement = statement.on_conflict_do_update(
         index_elements=["station_id", "observed_at", "pollutant"],
@@ -104,10 +110,78 @@ def upsert_measurements(session: Session, rows: Sequence[MeasurementRow]) -> int
             "value_raw": statement.excluded.value_raw,
             "unit": statement.excluded.unit,
             "is_plausible": statement.excluded.is_plausible,
+            "origin": statement.excluded.origin,
         },
     )
     session.execute(statement)
     return len(payload)
+
+
+def insert_missing_measurements(session: Session, rows: Sequence[MeasurementRow]) -> int:
+    """Persist readings only where nothing is stored for the same key.
+
+    For the backup feed: a converted figure must never overwrite a reading
+    OpenAQ delivered for the same station and hour.
+
+    Returns:
+        The number of rows written.
+    """
+    if not rows:
+        return 0
+    statement = (
+        insert(Measurement)
+        .values(_payload(rows))
+        .on_conflict_do_nothing(index_elements=["station_id", "observed_at", "pollutant"])
+        .returning(Measurement.station_id)
+    )
+    return len(session.execute(statement).all())
+
+
+def delete_superseded(
+    session: Session,
+    station_id: int,
+    pollutant: Pollutant,
+    *,
+    origin: MeasurementOrigin,
+    after: datetime,
+    until: datetime,
+) -> int:
+    """Remove one origin's readings for a station inside ``(after, until]``.
+
+    Run once OpenAQ has back-filled a gap, so the backup feed's converted
+    figures do not sit beside the originals in hours they no longer stand in for.
+
+    Returns:
+        The number of readings removed.
+    """
+    statement = (
+        delete(Measurement)
+        .where(
+            Measurement.station_id == station_id,
+            Measurement.pollutant == pollutant,
+            Measurement.origin == origin.value,
+            Measurement.observed_at > after,
+            Measurement.observed_at <= until,
+        )
+        .returning(Measurement.station_id)
+    )
+    return len(session.execute(statement).all())
+
+
+def newest_by_station(
+    session: Session, pollutants: Sequence[Pollutant], tier: StationTier
+) -> dict[tuple[int, Pollutant], datetime]:
+    """When each station of a tier last had a reading stored, per pollutant, from any relay."""
+    statement = (
+        select(Measurement.station_id, Measurement.pollutant, func.max(Measurement.observed_at))
+        .join(Station, Station.id == Measurement.station_id)
+        .where(Measurement.pollutant.in_(pollutants), Station.tier == tier)
+        .group_by(Measurement.station_id, Measurement.pollutant)
+    )
+    return {
+        (int(station_id), Pollutant(pollutant)): observed_at
+        for station_id, pollutant, observed_at in session.execute(statement).all()
+    }
 
 
 def upsert_weather(session: Session, rows: Sequence[WeatherRow]) -> int:
@@ -226,7 +300,7 @@ def latest_measurement_at(session: Session) -> datetime | None:
 
 def latest_reading_per_station(
     session: Session, pollutant: Pollutant, tier: StationTier = StationTier.REFERENCE
-) -> list[Row[tuple[int, str, float, float, str, datetime, float, str]]]:
+) -> list[Row[tuple[int, str, float, float, str, datetime, float, str, str]]]:
     """Return each station's most recent reading for a pollutant, for one tier.
 
     Reference monitors by default. Low-cost sensors read systematically high in
@@ -247,6 +321,7 @@ def latest_reading_per_station(
             Measurement.observed_at,
             Measurement.value_raw,
             Measurement.unit,
+            Measurement.origin,
         )
         .join(Measurement, Measurement.station_id == Station.id)
         .where(
@@ -260,11 +335,17 @@ def latest_reading_per_station(
     return list(session.execute(statement).all())
 
 
-def latest_observed_at(session: Session, station_id: int) -> dict[Pollutant, datetime]:
-    """When each pollutant was last stored for a station, plausible or not."""
+def latest_observed_at(
+    session: Session, station_id: int, origin: MeasurementOrigin = MeasurementOrigin.OPENAQ
+) -> dict[Pollutant, datetime]:
+    """When each pollutant was last stored for a station from one relay, plausible or not.
+
+    OpenAQ's by default: a gap OpenAQ left is still a gap to fill with its own
+    readings, even where the backup feed stood in for it meanwhile.
+    """
     statement = (
         select(Measurement.pollutant, func.max(Measurement.observed_at))
-        .where(Measurement.station_id == station_id)
+        .where(Measurement.station_id == station_id, Measurement.origin == origin.value)
         .group_by(Measurement.pollutant)
     )
     return {
@@ -319,13 +400,16 @@ def readings_in_window(
     pollutant: Pollutant,
     since: datetime,
     until: datetime | None = None,
+    *,
+    origins: Sequence[MeasurementOrigin] | None = None,
 ) -> list[Row[tuple[int, str, float, float, str, datetime, float]]]:
     """Every plausible reading for a pollutant in a time window.
 
     ``until`` is optional because the live API always means "since then, up to
     now". It exists for replaying a recorded episode, where an unbounded window
     would quietly include observations from after the episode and make the
-    replay depend on whatever else the database happens to hold.
+    replay depend on whatever else the database happens to hold. ``origins``
+    narrows the readings to some relays; every relay by default.
     """
     statement = (
         select(
@@ -349,6 +433,8 @@ def readings_in_window(
     )
     if until is not None:
         statement = statement.where(Measurement.observed_at < until)
+    if origins is not None:
+        statement = statement.where(Measurement.origin.in_([origin.value for origin in origins]))
     return list(session.execute(statement).all())
 
 
@@ -357,6 +443,8 @@ def observed_readings_in_window(
     pollutant: Pollutant,
     since: datetime,
     until: datetime | None = None,
+    *,
+    origins: Sequence[MeasurementOrigin] | None = None,
 ) -> list[ObservedReading]:
     """Readings since a point in time, shaped for analysis.
 
@@ -375,7 +463,7 @@ def observed_readings_in_window(
             value=float(value),
         )
         for station_id, name, lon, lat, cell, observed_at, value in readings_in_window(
-            session, pollutant, since, until
+            session, pollutant, since, until, origins=origins
         )
     ]
 

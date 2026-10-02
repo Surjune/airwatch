@@ -41,6 +41,20 @@ class SatelliteProduct(StrEnum):
     AEROSOL_INDEX = "aerosol_index"
 
 
+class MeasurementOrigin(StrEnum):
+    """Which upstream a stored reading came from.
+
+    Recorded per reading because the same monitor can be read through two
+    relays: OpenAQ, which carries CPCB's concentrations as published, and the
+    World Air Quality Index Project, which carries them converted to the US AQI.
+    The second is only a stand-in while the first is silent, and is replaced the
+    moment the first catches up.
+    """
+
+    OPENAQ = "openaq"
+    WAQI = "waqi"
+
+
 class StationTier(StrEnum):
     """Provenance tier of an observation, which sets how much it is trusted.
 

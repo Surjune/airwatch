@@ -56,6 +56,7 @@ from app.core.enums import (
     AlertStatus,
     ComplaintCategory,
     HotspotStatus,
+    MeasurementOrigin,
     Pollutant,
     SatelliteProduct,
     SourceType,
@@ -216,6 +217,13 @@ class Measurement(Base):
     #: False when the reading failed a plausibility check. Kept rather than
     #: deleted, so a bad sensor is visible as a pattern instead of vanishing.
     is_plausible: Mapped[bool] = mapped_column(nullable=False, default=True)
+
+    #: The relay the reading came through. OpenAQ's carry CPCB's figures as
+    #: published; WAQI's were converted from the US AQI, stand in only while
+    #: OpenAQ is silent, and are replaced when it catches up.
+    origin: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default=MeasurementOrigin.OPENAQ.value
+    )
 
     station: Mapped[Station] = relationship(back_populates="measurements")
 
