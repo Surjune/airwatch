@@ -22,7 +22,14 @@ from app.core.us_aqi import concentration
 from app.external.waqi_client import WaqiStation
 from app.repositories import observation_repository, station_repository
 from app.repositories.observation_repository import MeasurementRow
-from app.services.backup_feed_service import city_bbox, fill_city, match_stations
+from app.services.backup_feed_service import (
+    agency,
+    city_bbox,
+    credits_agency,
+    fill_city,
+    match_stations,
+    site_key,
+)
 from app.tests.external.test_waqi_client import ANAND_VIHAR
 
 NOW = datetime(2026, 10, 2, 8, 0, tzinfo=UTC)
@@ -42,8 +49,8 @@ BOUNDS = [
 ]
 
 
-def waqi_station(uid: int, lon: float, lat: float) -> WaqiStation:
-    return WaqiStation(uid=uid, name=str(uid), coordinates=(lon, lat))
+def waqi_station(uid: int, lon: float, lat: float, name: str = "") -> WaqiStation:
+    return WaqiStation(uid=uid, name=name or str(uid), coordinates=(lon, lat))
 
 
 @pytest.fixture
@@ -109,6 +116,34 @@ class TestMatching:
 
         assert list(matched) == [1]
 
+    def test_a_same_named_site_may_sit_a_few_kilometres_off(self) -> None:
+        # WAQI placed DPCC's Mundka about 4.5 km from OpenAQ's position for it.
+        mundka = [(5, "Mundka, Delhi - DPCC", (77.0329, 28.6823))]
+
+        waqi_mundka = waqi_station(77, 77.0784, 28.6823, "Mundka, Delhi, Delhi, India")
+
+        matched = match_stations([waqi_mundka], mundka)
+        unnamed = match_stations([waqi_mundka], [(5, "Elsewhere - DPCC", (77.0329, 28.6823))])
+
+        assert list(matched) == [5]
+        assert unnamed == {}
+
+    def test_reduces_site_names_for_comparison(self) -> None:
+        assert site_key("R.K. Puram, Delhi, Delhi, India") == site_key("R K Puram, Delhi - DPCC")
+        assert site_key("Punjabi Bagh, Delhi") != site_key("Pusa, Delhi - IMD")
+
+    def test_requires_the_monitors_own_agency(self) -> None:
+        dpcc = [
+            "Delhi Pollution Control Commitee (Government of NCT of Delhi) http://dpccairdata.com/"
+        ]
+
+        assert agency("Anand Vihar, New Delhi - DPCC") == "DPCC"
+        assert credits_agency(dpcc, "Anand Vihar, New Delhi - DPCC")
+        # DPCC's Pusa is not IMD's Pusa, and a community sensor is nobody's monitor.
+        assert not credits_agency(dpcc, "Pusa, Delhi - IMD")
+        assert not credits_agency(["Clarity https://clarity.io"], "Okhla Phase-2, Delhi - DPCC")
+        assert not credits_agency(dpcc, "A monitor with no agency in its name")
+
     def test_the_box_covers_the_city_view(self) -> None:
         west, south, east, north = city_bbox(PilotCity.DELHI)
 
@@ -146,7 +181,11 @@ class TestFill:
         )
         respx.get(f"{WAQI_BASE_URL}/feed/@2553/").mock(return_value=feed())
         respx.get(f"{WAQI_BASE_URL}/feed/@2554/").mock(
-            return_value=feed(idx=2554, iaqi={"pm25": {"v": 88}})
+            return_value=feed(
+                idx=2554,
+                iaqi={"pm25": {"v": 88}},
+                attributions=[{"name": "CPCB - India Central Pollution Control Board", "url": ""}],
+            )
         )
 
         outcome = await fill_city(token, object(), PilotCity.DELHI, now=NOW)  # type: ignore[arg-type]
@@ -162,7 +201,7 @@ class TestFill:
         assert {row.pollutant for row in stored} == {Pollutant.PM25, Pollutant.PM10}
 
     @respx.mock
-    async def test_never_stores_a_station_that_does_not_credit_cpcb(
+    async def test_never_stores_a_station_that_does_not_credit_the_monitors_agency(
         self, token: Settings, stored: list[MeasurementRow], monkeypatch: pytest.MonkeyPatch
     ) -> None:
         # A community sensor standing beside a monitor must not become one.

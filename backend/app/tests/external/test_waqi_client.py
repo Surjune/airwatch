@@ -20,8 +20,8 @@ ANAND_VIHAR: dict[str, Any] = {
     "idx": 2553,
     "attributions": [
         {
-            "url": "http://www.cpcb.gov.in/CAAQM/",
-            "name": "CPCB - India Central Pollution Control Board",
+            "url": "http://dpccairdata.com/",
+            "name": "Delhi Pollution Control Commitee (Government of NCT of Delhi)",
         },
         {"url": "https://waqi.info/", "name": "World Air Quality Index Project"},
     ],
@@ -51,7 +51,7 @@ async def test_reads_a_station_feed_into_utc() -> None:
     assert feed.observed_at == datetime(2026, 10, 2, 7, 30, tzinfo=UTC)
     assert feed.coordinates == pytest.approx((77.315809, 28.647622))
     assert feed.indices["pm25"] == 132
-    assert any("cpcb" in source.lower() for source in feed.attributions)
+    assert any("delhi pollution control" in source.lower() for source in feed.attributions)
 
 
 @respx.mock

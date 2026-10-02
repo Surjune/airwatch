@@ -9,9 +9,11 @@ four rules:
 * **Only where OpenAQ is silent.** A station is filled only when its newest
   stored PM2.5 or PM10 reading is more than two hours old, and a WAQI figure
   never overwrites a reading OpenAQ delivered.
-* **Only the same instrument.** A WAQI station is used only if it lies within a
-  kilometre of an AirWatch reference monitor and credits CPCB as its source, so
-  a community sensor beside a monitor can never be stored as one.
+* **Only the same instrument.** A WAQI station is paired with a reference
+  monitor within a kilometre, or within five when the site names agree, and is
+  used only if it credits the monitor's own agency (DPCC, CPCB, IMD...). A
+  community sensor beside a monitor, or another agency's instrument under the
+  same name, can never be stored as the monitor.
 * **Converted, and marked as such.** WAQI reports US AQI figures; they are
   turned back into concentrations with the US EPA table and stored with origin
   ``waqi``, which the screens and the API both show.
@@ -25,6 +27,7 @@ data, so these readings are kept out of the partner exchange API.
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
@@ -36,10 +39,11 @@ from app.core.config import Settings
 from app.core.constants import (
     CITY_VIEW_RADIUS_M,
     PILOT_CITY_CENTRES,
-    WAQI_CPCB_ATTRIBUTION_MARKER,
+    WAQI_AGENCY_SOURCES,
     WAQI_FALLBACK_AFTER_HOURS,
     WAQI_MATCH_RADIUS_M,
     WAQI_MAX_AGE_HOURS,
+    WAQI_NAME_MATCH_RADIUS_M,
     WAQI_POLLUTANTS,
 )
 from app.core.enums import MeasurementOrigin, PilotCity, Pollutant, StationTier
@@ -57,6 +61,12 @@ _POLLUTANTS = tuple(Pollutant(name) for name in WAQI_POLLUTANTS)
 
 #: Metres per degree of latitude, for the bounding box sent to WAQI.
 _METRES_PER_DEGREE = 111_320.0
+
+#: Everything but letters and digits, removed when comparing site names.
+_NOT_ALNUM = re.compile(r"[^a-z0-9]")
+
+#: What separates a monitor's site from its agency in its name ("... - DPCC").
+_AGENCY_SEPARATOR = " - "
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,19 +90,49 @@ def city_bbox(city: PilotCity) -> tuple[float, float, float, float]:
     return lon - lon_span, lat - lat_span, lon + lon_span, lat + lat_span
 
 
+def site_key(name: str) -> str:
+    """A site's name reduced for comparison.
+
+    "R.K. Puram, Delhi, Delhi, India" and "R K Puram, Delhi - DPCC" agree.
+    """
+    return _NOT_ALNUM.sub("", name.split(",")[0].lower())
+
+
+def agency(monitor_name: str) -> str | None:
+    """The agency a monitor's name ends with, if it is one WAQI can be checked against."""
+    if _AGENCY_SEPARATOR not in monitor_name:
+        return None
+    suffix = monitor_name.rsplit(_AGENCY_SEPARATOR, 1)[1].strip().upper()
+    return suffix if suffix in WAQI_AGENCY_SOURCES else None
+
+
+def credits_agency(attributions: list[str], monitor_name: str) -> bool:
+    """Whether WAQI's sources include the agency that runs the monitor."""
+    owner = agency(monitor_name)
+    if owner is None:
+        return False
+    sources = " ".join(attributions).lower()
+    return any(marker in sources for marker in WAQI_AGENCY_SOURCES[owner])
+
+
 def match_stations(
     candidates: list[WaqiStation], monitors: list[tuple[int, str, LonLat]]
 ) -> dict[int, WaqiStation]:
-    """Pair each monitor with the nearest WAQI station within the match radius.
+    """Pair each monitor with the nearest WAQI station that may be the same instrument.
 
-    One-to-one: a WAQI station nearest to two monitors goes to the closer one,
-    so two monitors can never be filled from the same instrument.
+    Within the match radius on position alone, or within the wider name radius
+    when the site names agree. One-to-one and closest first: a WAQI station
+    near two monitors goes to the closer one, so two monitors can never be
+    filled from the same instrument.
     """
     pairs: list[tuple[float, int, WaqiStation]] = []
-    for station_id, _, position in monitors:
+    for station_id, name, position in monitors:
         for candidate in candidates:
             distance = haversine_distance_m(position, candidate.coordinates)
-            if distance <= WAQI_MATCH_RADIUS_M:
+            same_site = site_key(name) == site_key(candidate.name)
+            if distance <= WAQI_MATCH_RADIUS_M or (
+                same_site and distance <= WAQI_NAME_MATCH_RADIUS_M
+            ):
                 pairs.append((distance, station_id, candidate))
     pairs.sort(key=lambda pair: pair[0])
     matched: dict[int, WaqiStation] = {}
@@ -139,15 +179,19 @@ async def fill_city(
     if not silent:
         return BackupOutcome(city=city, silent_stations=0, matched_stations=0, stored=0)
 
+    names = {station_id: name for station_id, name, _ in silent}
     rows: list[MeasurementRow] = []
     async with WaqiClient(token) as client:
         matched = match_stations(await client.stations_in_bounds(city_bbox(city)), silent)
         for station_id, candidate in matched.items():
             feed = await client.feed(candidate.uid)
-            if not any(
-                WAQI_CPCB_ATTRIBUTION_MARKER in source.lower() for source in feed.attributions
-            ):
-                logger.info("backup_feed.not_cpcb", uid=candidate.uid, name=feed.name)
+            if not credits_agency(feed.attributions, names[station_id]):
+                logger.info(
+                    "backup_feed.agency_mismatch",
+                    uid=candidate.uid,
+                    waqi_name=feed.name,
+                    monitor=names[station_id],
+                )
                 continue
             if feed.observed_at < reference - timedelta(hours=WAQI_MAX_AGE_HOURS):
                 continue

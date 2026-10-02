@@ -1165,15 +1165,31 @@ WAQI_FALLBACK_AFTER_HOURS: Final[int] = 2
 WAQI_MAX_AGE_HOURS: Final[int] = 3
 
 #: Furthest a WAQI station may be from an AirWatch reference monitor and still
-#: be taken as the same instrument, in metres. Both carry CPCB's own coordinates,
-#: which agree to tens of metres; Delhi's nearest pair of distinct monitors is
-#: well over a kilometre apart.
+#: be taken as the same instrument on position alone, in metres. Most of WAQI's
+#: Delhi sites sit within a few hundred metres of the coordinates OpenAQ gives;
+#: Delhi's nearest pair of distinct monitors is well over a kilometre apart.
 WAQI_MATCH_RADIUS_M: Final[float] = 1000.0
 
-#: Text an attribution must contain for a WAQI station to count as a CPCB
-#: monitor. WAQI also lists community sensors, which must never be stored as a
-#: reference reading, whatever monitor they happen to stand beside.
-WAQI_CPCB_ATTRIBUTION_MARKER: Final[str] = "cpcb"
+#: Furthest a WAQI station with the same site name may be, in metres. WAQI places
+#: some DPCC sites a few kilometres from where OpenAQ does -- Mundka 4.5 km, Punjabi
+#: Bagh 1.5 km, R K Puram 1.2 km on 2 October 2026 -- so a matching name widens
+#: the search. The agency check below still has to pass.
+WAQI_NAME_MATCH_RADIUS_M: Final[float] = 5000.0
+
+#: The agency an AirWatch monitor's name ends with ("Anand Vihar, New Delhi -
+#: DPCC"), and the text WAQI's attribution must contain for the same agency. A
+#: WAQI station is used only when it credits the monitor's own agency, which
+#: keeps out community sensors (WAQI lists Clarity units in Delhi) and a second
+#: agency's instrument under the same site name (DPCC's Pusa is not IMD's Pusa).
+WAQI_AGENCY_SOURCES: Final[dict[str, tuple[str, ...]]] = {
+    "DPCC": ("delhi pollution control",),
+    "CPCB": ("cpcb", "central pollution control"),
+    "IMD": ("india meteorological",),
+    "IITM": ("tropical meteorology", "safar"),
+    "UPPCB": ("uttar pradesh pollution control",),
+    "HSPCB": ("haryana state pollution control",),
+    "TNPCB": ("tamil nadu pollution control",),
+}
 
 #: Minimum gap between WAQI requests, in seconds. The free quota is 1,000
 #: requests a minute; a Delhi fill makes about fifty.
