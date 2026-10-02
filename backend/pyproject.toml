@@ -10,7 +10,8 @@ dependencies = [
     "uvicorn[standard]>=0.32",
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
-    "sqlalchemy>=2.0.36",
+    # Held below 2.1, whose new Row typing the repositories have not adopted yet.
+    "sqlalchemy>=2.0.36,<2.1",
     "geoalchemy2>=0.15",
     "psycopg[binary]>=3.2",
     "alembic>=1.14",
