@@ -24,6 +24,7 @@ from app.services import (
     alert_delivery_service,
     alert_service,
     analysis_service,
+    backup_feed_service,
     fixture_service,
     official_aqi_service,
     plausibility_service,
@@ -251,6 +252,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     model.add_argument("--city", choices=sorted(PILOT_CITIES), default="coimbatore")
 
+    backup = subparsers.add_parser(
+        "backup-feed",
+        help="Fill silent reference monitors from the World Air Quality Index (needs a token)",
+    )
+    backup.add_argument("--city", choices=sorted(PILOT_CITIES), default="delhi")
+
     subparsers.add_parser(
         "voice-guide",
         help="Generate the spoken guide's audio in advance, so no listener waits for it",
@@ -297,6 +304,18 @@ def main(argv: list[str] | None = None) -> int:
             stored = asyncio.run(regional_model_service.ingest_city(session, PilotCity(args.city)))
         print("")
         print(f"CAMS model {args.city}: {stored} hourly values stored")
+        return 0
+
+    if args.command == "backup-feed":
+        with session_scope() as session:
+            filled = asyncio.run(
+                backup_feed_service.fill_city(settings, session, PilotCity(args.city))
+            )
+        print("")
+        print(
+            f"backup feed {args.city}: {filled.stored} readings stored for "
+            f"{filled.matched_stations} of {filled.silent_stations} silent monitors"
+        )
         return 0
 
     if args.command == "voice-guide":

@@ -23,6 +23,7 @@ from app.core.exceptions import UpstreamUnavailableError
 from app.services import (
     alert_delivery_service,
     alert_service,
+    backup_feed_service,
     official_aqi_service,
     regional_model_service,
 )
@@ -293,3 +294,28 @@ def test_the_regional_model_is_fetched_for_every_city_without_a_key(
 
     assert len(calls.modelled) == len(PILOT_CITY_CENTRES)
     assert all(step.succeeded for step in report.steps if step.name.startswith("model:"))
+
+
+def test_the_backup_feed_runs_only_with_a_token(
+    settings: Settings, calls: Calls, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    filled: list[Any] = []
+
+    async def fake_fill(_settings: Settings, _session: object, city: Any, **_: Any) -> Any:
+        filled.append(city)
+        return backup_feed_service.BackupOutcome(
+            city=city, silent_stations=3, matched_stations=2, stored=4
+        )
+
+    monkeypatch.setattr(backup_feed_service, "fill_city", fake_fill)
+
+    without = worker.run_cycle(settings, now=NOW)
+    assert filled == []
+    assert not any(step.name.startswith("backup:") for step in without.steps)
+
+    keyed = settings.model_copy(update={"waqi_api_token": "test-waqi-token"})
+    report = worker.run_cycle(keyed, now=NOW)
+
+    assert len(filled) == len(PILOT_CITY_CENTRES)
+    backup_steps = [step for step in report.steps if step.name.startswith("backup:")]
+    assert all(step.succeeded for step in backup_steps)

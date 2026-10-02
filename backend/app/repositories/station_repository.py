@@ -106,6 +106,19 @@ def list_stations(session: Session, *, tier: StationTier | None = None) -> list[
     return list(session.execute(statement).scalars())
 
 
+def stations_with_coordinates(
+    session: Session, *, tier: StationTier
+) -> list[tuple[int, str, LonLat]]:
+    """Each station of a tier as (id, name, (lon, lat))."""
+    statement = select(Station.id, Station.name, Station.geom.ST_X(), Station.geom.ST_Y()).where(
+        Station.tier == tier
+    )
+    return [
+        (int(station_id), str(name), (float(lon), float(lat)))
+        for station_id, name, lon, lat in session.execute(statement).all()
+    ]
+
+
 def upsert_pollution_source(
     session: Session,
     *,

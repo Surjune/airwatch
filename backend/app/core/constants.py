@@ -1147,6 +1147,84 @@ OFFICIAL_SUB_INDEX_MAX_AGE_HOURS: Final[int] = 3
 
 
 # ---------------------------------------------------------------------------
+# Backup monitor feed: the World Air Quality Index Project (aqicn.org)
+# ---------------------------------------------------------------------------
+
+#: WAQI's JSON API root. The token travels as a query parameter, as the API
+#: requires; the client masks it in anything it logs.
+WAQI_BASE_URL: Final[str] = "https://api.waqi.info"
+
+#: Hours a reference monitor may go without a stored PM2.5 or PM10 reading
+#: before its value is taken from WAQI instead. CPCB publishes hourly and OpenAQ
+#: relays it within the hour, so two hours without one is a stall, not a delay.
+WAQI_FALLBACK_AFTER_HOURS: Final[int] = 2
+
+#: Oldest WAQI reading that is still stored, in hours. WAQI keeps showing a
+#: station's last value after it stops reporting, and a stale value stored as a
+#: fresh hour would describe different air.
+WAQI_MAX_AGE_HOURS: Final[int] = 3
+
+#: Furthest a WAQI station may be from an AirWatch reference monitor and still
+#: be taken as the same instrument, in metres. Both carry CPCB's own coordinates,
+#: which agree to tens of metres; Delhi's nearest pair of distinct monitors is
+#: well over a kilometre apart.
+WAQI_MATCH_RADIUS_M: Final[float] = 1000.0
+
+#: Text an attribution must contain for a WAQI station to count as a CPCB
+#: monitor. WAQI also lists community sensors, which must never be stored as a
+#: reference reading, whatever monitor they happen to stand beside.
+WAQI_CPCB_ATTRIBUTION_MARKER: Final[str] = "cpcb"
+
+#: Minimum gap between WAQI requests, in seconds. The free quota is 1,000
+#: requests a minute; a Delhi fill makes about fifty.
+WAQI_MIN_REQUEST_INTERVAL_SECONDS: Final[float] = 0.1
+
+#: Pollutants taken from WAQI: the two every view, the detector and the WHO
+#: comparison read. Gases are left out, because the US AQI quotes them in parts
+#: per billion at reference conditions that do not match CPCB's.
+WAQI_POLLUTANTS: Final[tuple[str, ...]] = ("pm25", "pm10")
+
+#: US EPA AQI breakpoints, as (concentration low, concentration high, index low,
+#: index high), concentrations in ug/m^3. WAQI reports every pollutant on the US
+#: scale, so its figures are turned back into concentrations with these tables.
+#: Source: US EPA, Technical Assistance Document for the Reporting of Daily Air
+#: Quality (2018, and the May 2024 revision for PM2.5).
+US_AQI_BREAKPOINTS_PM25_2012: Final[tuple[AQIBreakpoint, ...]] = (
+    (0.0, 12.0, 0.0, 50.0),
+    (12.1, 35.4, 51.0, 100.0),
+    (35.5, 55.4, 101.0, 150.0),
+    (55.5, 150.4, 151.0, 200.0),
+    (150.5, 250.4, 201.0, 300.0),
+    (250.5, 350.4, 301.0, 400.0),
+    (350.5, 500.4, 401.0, 500.0),
+)
+US_AQI_BREAKPOINTS_PM25_2024: Final[tuple[AQIBreakpoint, ...]] = (
+    (0.0, 9.0, 0.0, 50.0),
+    (9.1, 35.4, 51.0, 100.0),
+    (35.5, 55.4, 101.0, 150.0),
+    (55.5, 125.4, 151.0, 200.0),
+    (125.5, 225.4, 201.0, 300.0),
+    (225.5, 325.4, 301.0, 500.0),
+)
+US_AQI_BREAKPOINTS_PM10: Final[tuple[AQIBreakpoint, ...]] = (
+    (0.0, 54.0, 0.0, 50.0),
+    (55.0, 154.0, 51.0, 100.0),
+    (155.0, 254.0, 101.0, 150.0),
+    (255.0, 354.0, 151.0, 200.0),
+    (355.0, 424.0, 201.0, 300.0),
+    (425.0, 504.0, 301.0, 400.0),
+    (505.0, 604.0, 401.0, 500.0),
+)
+
+#: The PM2.5 table WAQI's figures are read with. The two tables agree between
+#: 35.5 and 55.4 ug/m^3 and differ elsewhere, by up to a quarter at the top, so
+#: the table is confirmed by comparing WAQI with stations OpenAQ carries as raw
+#: concentrations at the same hour before the feed is switched on (see
+#: docs/DESIGN.md, "When an upstream goes quiet").
+WAQI_PM25_BREAKPOINTS: Final[tuple[AQIBreakpoint, ...]] = US_AQI_BREAKPOINTS_PM25_2012
+
+
+# ---------------------------------------------------------------------------
 # WHO air quality guidelines
 # ---------------------------------------------------------------------------
 

@@ -49,6 +49,7 @@ from app.repositories.session import session_scope
 from app.services import (
     alert_delivery_service,
     alert_service,
+    backup_feed_service,
     official_aqi_service,
     regional_model_service,
     satellite_service,
@@ -129,6 +130,21 @@ def run_cycle(settings: Settings, *, now: datetime | None = None) -> CycleReport
             return f"{outcome.total_records} records"
 
         _run_step(report, f"ingest:{city}", ingest)
+
+    # The backup monitor feed runs only with a WAQI token, and makes no request
+    # while OpenAQ is keeping every monitor current.
+    if settings.has("waqi_api_token"):
+        for city in PilotCity:
+
+            def backup(city: PilotCity = city) -> str:
+                with session_scope() as session:
+                    outcome = asyncio.run(backup_feed_service.fill_city(settings, session, city))
+                return (
+                    f"{outcome.stored} readings for {outcome.matched_stations} of "
+                    f"{outcome.silent_stations} silent monitors"
+                )
+
+            _run_step(report, f"backup:{city.value}", backup)
 
     # CPCB's live feed is fetched only when a data.gov.in key is configured, for
     # the same reason as fires: a step that cannot succeed must not fail hourly.

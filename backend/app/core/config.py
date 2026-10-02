@@ -30,6 +30,7 @@ CREDENTIAL_SOURCES: dict[str, tuple[str, str]] = {
     "gee_service_account_email": ("Google Earth Engine", "GEE_SERVICE_ACCOUNT_EMAIL"),
     "sarvam_api_key": ("Sarvam AI (voice guide)", "SARVAM_API_KEY"),
     "gemini_api_key": ("Google Gemini", "GEMINI_API_KEY"),
+    "waqi_api_token": ("World Air Quality Index (backup monitor feed)", "WAQI_API_TOKEN"),
 }
 
 
@@ -115,6 +116,7 @@ class Settings(BaseSettings):
     #: visible pollution source and writes plain-language alert briefs. Without
     #: it both are skipped with a stated reason; nothing else depends on it.
     gemini_api_key: str = ""
+    waqi_api_token: str = ""
 
     @field_validator("operator_api_key")
     @classmethod
