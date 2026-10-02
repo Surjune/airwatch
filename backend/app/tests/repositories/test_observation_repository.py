@@ -66,7 +66,7 @@ class TestCoordinateOrder:
         session.flush()
 
         row = observation_repository.latest_reading_per_station(session, Pollutant.PM25)[0]
-        _, _, lon, lat, _, _, _, _ = row
+        _, _, lon, lat, _, _, _, _, _ = row
 
         assert lon == pytest.approx(DELHI[0])
         assert lat == pytest.approx(DELHI[1])
