@@ -20,6 +20,7 @@ function reading(overrides: Partial<StationReading>): StationReading {
     daily_mean: 48,
     daily_mean_hours: 24,
     who_multiple: 3.2,
+    origin: 'openaq',
     ...overrides,
   };
 }
@@ -151,5 +152,27 @@ describe('MonitorReadings', () => {
 
     expect(screen.getByText('Meanwhile · CAMS regional model')).toBeInTheDocument();
     expect(screen.getByText('No monitor has reported PM10 recently')).toBeInTheDocument();
+  });
+
+  it('marks a backup reading and credits where it came from', () => {
+    render(
+      <MonitorReadings
+        stations={loaded([reading({ origin: 'waqi' })])}
+        model={NO_MODEL}
+        pollutantLabel="PM2.5"
+      />,
+    );
+
+    expect(screen.getByText(/via aqicn\.org/, { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getByText(/World Air Quality Index Project/)).toBeInTheDocument();
+    expect(screen.getByText('Reference monitors · OpenAQ · aqicn.org')).toBeInTheDocument();
+  });
+
+  it('says nothing about the backup feed while OpenAQ is reporting', () => {
+    render(
+      <MonitorReadings stations={loaded([reading({})])} model={NO_MODEL} pollutantLabel="PM2.5" />,
+    );
+
+    expect(screen.queryByText(/aqicn/)).not.toBeInTheDocument();
   });
 });

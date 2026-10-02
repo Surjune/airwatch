@@ -1557,6 +1557,18 @@ export interface components {
             readings: components["schemas"]["StationReadingResponse"][];
         };
         /**
+         * MeasurementOrigin
+         * @description Which upstream a stored reading came from.
+         *
+         *     Recorded per reading because the same monitor can be read through two
+         *     relays: OpenAQ, which carries CPCB's concentrations as published, and the
+         *     World Air Quality Index Project, which carries them converted to the US AQI.
+         *     The second is only a stand-in while the first is silent, and is replaced the
+         *     moment the first catches up.
+         * @enum {string}
+         */
+        MeasurementOrigin: "openaq" | "waqi";
+        /**
          * ModelCard
          * @description What a partner city needs in order to decide whether to adopt a model.
          *
@@ -2392,6 +2404,8 @@ export interface components {
              * @description daily_mean as a multiple of WHO's 2021 guideline level for a 24-hour average; below 1 is within it. Null when there is no daily_mean, or WHO sets no 24-hour level for this pollutant.
              */
             who_multiple: number | null;
+            /** @description Relay the reading came through: openaq (CPCB's figure as published) or waqi (the World Air Quality Index Project's US AQI figure converted back to a concentration, approximate, used only while OpenAQ is silent). */
+            origin: components["schemas"]["MeasurementOrigin"];
         };
         /**
          * StationsResponse

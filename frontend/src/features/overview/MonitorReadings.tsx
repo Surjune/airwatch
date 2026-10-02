@@ -5,6 +5,7 @@ import { StatusMessage } from '@/components/ui/StatusMessage';
 import { WhoBadge } from '@/components/ui/WhoBadge';
 import { ModelStandIn } from '@/features/overview/ModelStandIn';
 import type { Resource, StationsResponse } from '@/hooks/useAnalysis';
+import { BACKUP_NOTE, BACKUP_TAG, isBackup } from '@/lib/origin';
 import type { RegionalModel } from '@/lib/regional-model';
 import { rankRecent, RECENT_READING_HOURS } from '@/lib/readings';
 import { timeAgo } from '@/lib/time';
@@ -48,10 +49,14 @@ export function MonitorReadings({
       : [...all].sort((a, b) => b.observed_at.localeCompare(a.observed_at));
 
   const nothingRecent = recent.length === 0;
+  const shown = readings.slice(0, SHOWN);
+  const anyBackup = shown.some((reading) => isBackup(reading.origin));
 
   return (
     <Card
-      eyebrow="Reference monitors · OpenAQ"
+      eyebrow={
+        anyBackup ? 'Reference monitors · OpenAQ · aqicn.org' : 'Reference monitors · OpenAQ'
+      }
       title={`Latest ${pollutantLabel} at each monitor`}
       description={
         nothingRecent
@@ -85,7 +90,7 @@ export function MonitorReadings({
             </div>
           ) : (
             <ol className="divide-y divide-border">
-              {readings.slice(0, SHOWN).map((reading, index) => (
+              {shown.map((reading, index) => (
                 <li
                   key={reading.station_id}
                   className="flex items-center gap-3 px-4 py-2.5 sm:px-5"
@@ -96,6 +101,7 @@ export function MonitorReadings({
                     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-subtle">
                       <span>
                         {reading.category} · {timeAgo(reading.observed_at)}
+                        {isBackup(reading.origin) && ` · ${BACKUP_TAG}`}
                       </span>
                       {guideline !== null &&
                         reading.daily_mean !== null &&
@@ -118,6 +124,9 @@ export function MonitorReadings({
                   </span>
                 </li>
               ))}
+              {anyBackup && (
+                <li className="px-4 py-2.5 text-xs text-ink-subtle sm:px-5">{BACKUP_NOTE}</li>
+              )}
               {recent.length > 0 && staleCount > 0 && (
                 <li className="px-4 py-2.5 text-xs text-ink-subtle sm:px-5">
                   {staleCount} {staleCount === 1 ? 'monitor has' : 'monitors have'} not reported in

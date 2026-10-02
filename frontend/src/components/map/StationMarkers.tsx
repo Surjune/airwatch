@@ -3,6 +3,7 @@ import { CircleMarker, Popup } from 'react-leaflet';
 import type { StationReading } from '@/hooks/useAnalysis';
 import { aqiColour } from '@/lib/aqi';
 import { toLeaflet } from '@/lib/geo';
+import { BACKUP_TAG, isBackup } from '@/lib/origin';
 import { istDateTime } from '@/lib/time';
 import { formatMultiple, withinGuideline } from '@/lib/who';
 
@@ -28,7 +29,10 @@ export function StationMarkers({ readings }: { readonly readings: readonly Stati
           <Popup>
             <div className="text-sm">
               <p className="font-medium">{reading.name}</p>
-              <p className="mt-0.5 text-xs font-medium text-ok">Reference monitor</p>
+              <p className="mt-0.5 text-xs font-medium text-ok">
+                Reference monitor
+                {isBackup(reading.origin) && ` · ${BACKUP_TAG} (converted from US AQI)`}
+              </p>
               <p className="figure mt-1">
                 {reading.value.toFixed(0)} {reading.unit} · AQI {reading.aqi.toFixed(0)}
               </p>
