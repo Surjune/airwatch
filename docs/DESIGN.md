@@ -305,6 +305,42 @@ different answers, the **2012 table matched WAQI within one point at 36, the 202
 The first dry run against live data, on 2 October 2026, paired 22 of Delhi's 56 monitors (21 DPCC
 sites and IMD's Pusa), every one passing the agency check, with PM2.5 between 25 and 73 µg/m³.
 
+### Official figures without data.gov.in: TNPCB and the daily bulletin
+
+data.gov.in's API refused every connection from 25 September 2026, from a home connection in
+India and from the server alike. On 8 October every other route to CPCB's figures was tried:
+
+| Source | Kanpur | Coimbatore | Used |
+| --- | --- | --- | --- |
+| CPCB's live dashboard (`airquality.cpcb.gov.in/ccr`) | live | live | No: it needs a CAPTCHA and its API answers in encrypted form, which is a refusal of automated use |
+| TNPCB's AQI page (`tnpcb.gov.in/aqi.php`) | -- | updated hourly | **Yes**, for Tamil Nadu |
+| UPPCB's website | archives only | -- | No |
+| CPCB's daily AQI bulletin (PDF) | daily | daily | **Yes**, for every city |
+| WAQI | stale since 23 June | stale since 23 June | Delhi only (above) |
+| IQAir | current, but four stations with one identical value | -- | No: looks estimated, and the free API is city-level US AQI only |
+
+**TNPCB.** The page carries, per Tamil Nadu station, exactly what data.gov.in carries: each
+pollutant's minimum, maximum and average CPCB sub-index over 24 hours, stamped in IST, and says the
+data is obtained from CPCB. `external/tnpcb_client.py` reads the station entries out of the page's
+script; a page with none, or an entry of a new shape, is a typed error. TNPCB gives no
+coordinates, so a station is placed where CPCB's own feed last put it, or where OpenAQ puts the
+monitor of the same name, and left out if neither knows it. Each stored sub-index records its
+relay (`data.gov.in` or `tnpcb`), and the card names it. TNPCB's site states no reuse terms beyond
+"All rights reserved"; the figures are CPCB's, which CPCB publishes openly on data.gov.in, and
+AirWatch credits both.
+
+**The daily bulletin.** CPCB publishes one PDF a day (`AQI_Bulletin_YYYYMMDD.pdf`) giving each
+city's AQI as the average of its reporting stations over the 24 hours to 4 pm IST, the prominent
+pollutants, and how many of the city's stations took part. It appeared every day of the outage.
+`external/cpcb_bulletin_client.py` reads the rows from the PDF's text; a bulletin whose heading
+names another day, or with no rows, is an error. On 8 October all 263 rows of the day's bulletin
+parsed but one, a wrapped "Aurangabad" line that is not a pilot city. The worker fetches today's
+bulletin until it has it and yesterday's while today's is not out, so a day costs a few requests.
+
+The overview leads with CPCB's hourly figure when current; failing that, AirWatch's live index;
+failing that, the bulletin while it is under 30 hours past its 4 pm; failing all three, CPCB's last
+report marked as old. The bulletin's line stays under whichever leads.
+
 ## WHO's guideline, and what it is compared with
 
 CPCB's index answers "how does this compare with India's standards". Residents

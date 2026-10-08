@@ -26,7 +26,7 @@ Built for the *Clean Air & Climate Resilience* challenge · Live in Delhi-NCR, K
 | --- | --- |
 | **Problem** | India has only a few hundred official air monitors and reports a 24-hour city average. A three-hour plume from a landfill or bus depot never shows up, nobody knows its source, and the source is often in another district or state. |
 | **Solution** | AirWatch combines government monitors, low-cost and home sensors, residents' photos, satellite data, wind and fire detections. It spots unusual pollution, names likely sources, forecasts busy routes, and alerts the responsible authority. Google Gemini reads residents' photos, translates their complaints into English, and writes plain-language alert briefs. |
-| **Proof** | Deployed and updating hourly. It has already sent a real cross-state request (Uttar Pradesh → East Delhi). 1,051 backend and 163 frontend tests run in CI. |
+| **Proof** | Deployed and updating hourly. It has already sent a real cross-state request (Uttar Pradesh → East Delhi). 1,077 backend and 166 frontend tests run in CI. |
 | **Honesty** | Every number shows its uncertainty. Where there is no data, it says "unknown", never "clean". |
 
 ## Key terms
@@ -88,7 +88,8 @@ flowchart LR
 1. **Overview** (opens on Delhi, which has the most monitors): the official AQI, recent monitor readings (each with its last 24 hours against the
    WHO guideline), which data exists for this city, top hotspots, and alerts sent. While CPCB's
    official index is out of date, AirWatch's own index from the monitors' latest hour takes its
-   place, labelled as AirWatch's and shown beside CPCB's last figure.
+   place, labelled as AirWatch's and shown beside CPCB's last figure. With no hourly figure at all,
+   CPCB's daily bulletin leads; its line stays under the card either way.
 2. **Live map:** monitors (filled circles), community sensors (dashed rings), residents' readings
    (squares) and hotspots. Each hotspot lists likely sources with a percentage, such as
    *Khora → Ghazipur landfill, 69%*.
@@ -216,6 +217,7 @@ Interactive docs: [/docs](https://airwatch-cbe.duckdns.org/docs).
 | --- | --- |
 | `GET /v1/official-aqi` · `/stations` · `/sensors` · `/satellite` | Official AQI, monitor readings with 24-hour averages against the WHO guideline, community sensors, satellite data |
 | `GET /v1/live-index?city=delhi` | AirWatch's index from each monitor's latest hourly PM2.5 and PM10, on CPCB's scale |
+| `GET /v1/bulletin?city=kanpur` | The city's line in CPCB's daily AQI bulletin: the 24-hour average to 4 pm IST |
 | `GET /v1/regional-model?city=coimbatore&pollutant=pm10` | CAMS modelled hours, 72 h outlook, and the model's bias against the city's monitors |
 | `GET /v1/hotspots` | Hotspots with likely sources |
 | `GET /v1/forecast/corridor` · `/exposure/advisory` | Route forecast and best time to travel |
@@ -240,6 +242,12 @@ Interactive docs: [/docs](https://airwatch-cbe.duckdns.org/docs).
   monitors** (DPCC and IMD sites), converted from the US AQI and marked "via aqicn.org". WAQI has
   had nothing new from CPCB itself since 23 June 2026, so Kanpur and Coimbatore stay silent.
   OpenAQ relayed again from 30 September to 7 October (20:00 IST), then stopped once more.
+- **Official figures when data.gov.in is down.** For Coimbatore, CPCB's hourly sub-indices are
+  read from TNPCB's AQI page instead, which republishes them for Tamil Nadu and kept updating.
+  It is a web page, not an API, so a redesign would stop it (as a logged error, never a wrong
+  figure). Kanpur has no hourly official source left: CPCB's live dashboard needs a CAPTCHA and
+  encrypts its data, and UPPCB publishes only archives. For Kanpur the newest official figure is
+  CPCB's **daily bulletin**, the 24-hour average to 4 pm, shown as exactly that.
 - **The live index** that stands in for CPCB's official one while it is out of date is AirWatch's
   own: each monitor's latest hour of PM2.5 and PM10 on CPCB's scale. CPCB averages 24 hours and
   adds gases, so its figure can differ, and the card says so.
@@ -267,8 +275,8 @@ More detail and the reasoning behind each design choice: [docs/DESIGN.md](docs/D
 
 ## Credits
 
-Data: OpenAQ · CPCB via data.gov.in · DPCC, IMD and CPCB via the World Air Quality Index Project
-(aqicn.org, backup feed) · NASA FIRMS · Open-Meteo · Copernicus Sentinel-5P via Google Earth Engine ·
+Data: OpenAQ · CPCB via data.gov.in, via TNPCB (tnpcb.gov.in) and CPCB's daily AQI bulletin ·
+DPCC, IMD and CPCB via the World Air Quality Index Project (aqicn.org, backup feed) · NASA FIRMS · Open-Meteo · Copernicus Sentinel-5P via Google Earth Engine ·
 © OpenStreetMap contributors. Voice: Sarvam AI.
 
 MIT licence.
