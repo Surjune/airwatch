@@ -227,51 +227,14 @@ Interactive docs: [/docs](https://airwatch-cbe.duckdns.org/docs).
 | `GET /v1/federation/status` · `/interop/*` | Model sharing results and data exchange for partner cities |
 | `GET /v1/guide/{screen}?language=ta` | Spoken screen guide (text and audio) |
 
-## Known limitations
+## What's next
 
-- **Coimbatore** has four government monitors on record, but three (PSG College, Tirupur, Ooty)
-  stopped reporting between April and July 2026 and SIDCO Kurichi's PM2.5 sensor is broken. So it
-  opens on PM10 and cannot detect hotspots. On 14 September 2026 (21:30 IST) SIDCO Kurichi stopped
-  sending its other pollutants too, to OpenAQ and to CPCB alike. While it is silent, Overview says
-  so and shows the CAMS model's current value in its place. Satellite and citizen data still cover
-  the city. No community sensor network (AirGradient, Sensor.Community) has a sensor within 60 km.
-- **Monitor readings arrive through OpenAQ.** OpenAQ stopped relaying every CPCB station in India
-  on 16 September 2026 and again on 29 September, and data.gov.in's API refused connections from
-  25 September. The hourly worker fetches the missed hours by itself once OpenAQ resumes. Until
-  then a backup feed, the World Air Quality Index Project (aqicn.org), fills **22 of Delhi's 56
-  monitors** (DPCC and IMD sites), converted from the US AQI and marked "via aqicn.org". WAQI has
-  had nothing new from CPCB itself since 23 June 2026, so Kanpur and Coimbatore stay silent.
-  OpenAQ relayed again from 30 September to 7 October (20:00 IST), then stopped once more.
-- **Official figures when data.gov.in is down.** For Coimbatore, CPCB's hourly sub-indices are
-  read from TNPCB's AQI page instead, which republishes them for Tamil Nadu and kept updating.
-  It is a web page, not an API, so a redesign would stop it (as a logged error, never a wrong
-  figure). Kanpur has no hourly official source left: CPCB's live dashboard needs a CAPTCHA and
-  encrypts its data, and UPPCB publishes only archives. For Kanpur the newest official figure is
-  CPCB's **daily bulletin**, the 24-hour average to 4 pm, shown as exactly that.
-- **The live index** that stands in for CPCB's official one while it is out of date is AirWatch's
-  own: each monitor's latest hour of PM2.5 and PM10 on CPCB's scale. CPCB averages 24 hours and
-  adds gases, so its figure can differ, and the card says so.
-- **The CAMS model** averages over tens of kilometres, and its error differs by city. Measured on
-  15 September 2026 against the monitors: 0.6× in Coimbatore (PM10), 1.2× in Kanpur and 1.8× in
-  Delhi (PM2.5). That ratio is shown beside every value, and the model is never used for detection.
-- **Photos** give no PM2.5 figure until 30 photos taken near monitors calibrate them.
-- **Low-cost and home sensors** are shown but not used in analysis until their error is measured.
-- **The forecast** knows the daily pattern, but cannot say whether tomorrow will be worse than today.
-- **Likely sources** are ranked guesses from simple wind tracing, not proof; unregistered sources are
-  missed.
-- **Satellite** pixels are about 36 km², too coarse to pinpoint a single chimney.
-- **Alerts** are delivered by webhook only (no SMS or email), and operators share one login key.
-- **Federation** nodes currently run on one server; real multi-state use needs secure connections.
-- **Gemini's photo reading** is the model's own judgement with an uncalibrated confidence; it can
-  mistake fog for smoke. It is labelled as a suggestion and never changes a measurement.
-- **Complaint translations** are machine translations. For an important complaint, an official
-  should confirm the meaning with someone who reads the language.
-- **The WHO comparison** needs 18 hours of readings in the last 24, so a monitor with gaps shows
-  none. WHO's levels are health guidance, not Indian law.
-- **The voice guide** explains screens but doesn't read live figures; native speakers should review
-  the Hindi and Tamil wording.
-
-More detail and the reasoning behind each design choice: [docs/DESIGN.md](docs/DESIGN.md).
+- **SMS and email alerts** alongside today's webhook, and a separate login for each officer.
+- **Hosting in India** (AWS Mumbai), so hourly state-board feeds such as TNPCB's can be read
+  directly as well as CPCB's.
+- **Calibrated citizen data:** photos and household sensors join the analysis once enough readings
+  taken beside official monitors have been collected to correct them.
+- **Federation across states:** each state's board runs its own node, connected securely.
 
 ## Credits
 

@@ -14,7 +14,7 @@ must be raised before implementing.
 | Database | PostgreSQL 16 + PostGIS 3.4 + TimescaleDB via Docker Compose | Spatial queries and sensor time-series in one engine; container is reproducible. |
 | Spatial unit | H3 hexagons, resolution 8 (~0.46 km²) | One index shared by fusion, hotspots, forecasts and federated features. Cross-city model sharing is only coherent if every node uses the same grid. |
 | Map library | Leaflet + OpenStreetMap tiles | No access token, so the app runs on a clean clone with zero third-party signup. |
-| Auth | None in v1; per-IP rate limiting + locked CORS | Tracked as a Known Limitation in the README. |
+| Auth | None in v1; per-IP rate limiting + locked CORS | Per-officer logins are listed under "What's next" in the README. |
 | Frontend types | Generated from the FastAPI OpenAPI spec via `openapi-typescript` | Never hand-edit generated files. |
 | Federated framework | Flower, FedAvg with FedProx option | Non-IID city distributions; Flower supports both simulation and real deployment. |
 | Task runner | `npm run <task>` from the repo root | `make` is not available on Windows; root `package.json` proxies to both workspaces. |
@@ -154,7 +154,7 @@ GeoJSON is always `(lon, lat)`. Leaflet is always `(lat, lon)`. Convert at the b
 ## Commits
 
 - No commented-out code, no dead code, no unresolved `TODO` in committed state. Deferred work goes
-  in the README's "Known limitations" section.
+  in the README's "What's next" section.
 - Commit after every completed task, scoped conventional messages
   (`feat(ingestion): add FIRMS VIIRS client`), pushed immediately.
 - Every commit leaves the repo in a working state.
