@@ -546,6 +546,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/live-index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A live index from each monitor's latest hour
+         * @description Each monitor's latest particulate readings in the city, on CPCB's scale.
+         */
+        get: operations["live_index_v1_live_index_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/operator/session": {
         parameters: {
             query?: never;
@@ -1539,6 +1559,59 @@ export interface components {
             min_neighbours: number;
             /** Hotspots */
             hotspots: components["schemas"]["HotspotResponse"][];
+        };
+        /**
+         * LiveIndexResponse
+         * @description Every reference monitor's latest index in a city, worst first, however old.
+         */
+        LiveIndexResponse: {
+            city: components["schemas"]["PilotCity"];
+            /** Basis */
+            basis: string;
+            /** Station Count */
+            station_count: number;
+            /** Stations */
+            stations: components["schemas"]["LiveStationResponse"][];
+        };
+        /**
+         * LiveStationResponse
+         * @description One monitor's latest particulate readings on CPCB's scale.
+         */
+        LiveStationResponse: {
+            /** Station Id */
+            station_id: number;
+            /** Name */
+            name: string;
+            position: components["schemas"]["Position"];
+            /**
+             * Observed At
+             * Format: date-time
+             * @description The newest reading combined here.
+             */
+            observed_at: string;
+            /**
+             * Oldest Observed At
+             * Format: date-time
+             * @description The oldest reading combined here. A pollutant more than three hours older than the newest is left out as not currently reporting.
+             */
+            oldest_observed_at: string;
+            /**
+             * Aqi
+             * @description The higher of the PM2.5 and PM10 sub-indices, each from the monitor's latest hourly reading. AirWatch's figure, not CPCB's: CPCB averages 24 hours and adds gases.
+             */
+            aqi: number;
+            /** Category */
+            category: string;
+            dominant_pollutant: components["schemas"]["Pollutant"];
+            /** Sub Indices */
+            sub_indices: {
+                [key: string]: number;
+            };
+            /**
+             * Origins
+             * @description The relays the combined readings came through.
+             */
+            origins: components["schemas"]["MeasurementOrigin"][];
         };
         /**
          * LowCostSensorsResponse
@@ -3405,6 +3478,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OfficialAqiResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    live_index_v1_live_index_get: {
+        parameters: {
+            query: {
+                city: components["schemas"]["PilotCity"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveIndexResponse"];
                 };
             };
             /** @description Validation Error */

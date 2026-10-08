@@ -2,9 +2,10 @@ import { AqiChip } from '@/components/ui/AqiChip';
 import { Card } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StatusMessage } from '@/components/ui/StatusMessage';
+import { LiveIndex } from '@/features/overview/LiveIndex';
 import type { Resource } from '@/hooks/useAnalysis';
-import type { OfficialAqi, OfficialStation } from '@/hooks/useSources';
-import { isRecent } from '@/lib/readings';
+import type { LiveIndex as LiveIndexData, OfficialAqi, OfficialStation } from '@/hooks/useSources';
+import { isRecent, rankRecent } from '@/lib/readings';
 import { pollutantLabel, type Pollutant } from '@/lib/scope';
 import { istDateTime, timeAgo } from '@/lib/time';
 
@@ -17,24 +18,37 @@ const OTHERS_SHOWN = 4;
  * It leads because it is the number a resident has already seen in the news, so
  * everything AirWatch adds is read against it. The headline station is the one
  * with the highest index; an index is stated only where CPCB would state one.
+ *
+ * While CPCB's figure is out of date and the monitors are still reporting,
+ * AirWatch's own index from their latest hour leads instead, beside CPCB's last
+ * figure. With neither current, CPCB's last report stays, marked as old.
  */
 export function OfficialReading({
   official,
+  live,
   cityLabel,
 }: {
   readonly official: Resource<OfficialAqi>;
+  readonly live: Resource<LiveIndexData>;
   readonly cityLabel: string;
 }) {
   const { data, error, isLoading } = official;
   const ranked = [...(data?.stations ?? [])].sort((a, b) => (b.aqi ?? -1) - (a.aqi ?? -1));
   const [lead, ...others] = ranked;
+  const officialCurrent = lead !== undefined && isRecent(lead.reported_at);
+  const [liveLead, ...liveOthers] = rankRecent(live.data?.stations ?? []).recent;
+  const waiting = isLoading || (!officialCurrent && live.isLoading);
+
+  if (!waiting && !officialCurrent && liveLead) {
+    return <LiveIndex lead={liveLead} others={liveOthers} official={lead} cityLabel={cityLabel} />;
+  }
 
   return (
     <Card eyebrow="Official CPCB index · data.gov.in" title={`What CPCB reports for ${cityLabel}`}>
-      {error ? (
-        <StatusMessage kind="error" title="Official feed unavailable" detail={error.message} />
-      ) : isLoading ? (
+      {waiting ? (
         <Skeleton label="Loading the official feed" rows={4} />
+      ) : error ? (
+        <StatusMessage kind="error" title="Official feed unavailable" detail={error.message} />
       ) : !lead ? (
         <StatusMessage
           kind="empty"

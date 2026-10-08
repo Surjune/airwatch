@@ -23,6 +23,7 @@ import { useCitizen } from '@/hooks/useCitizen';
 import { useCitizenSensors } from '@/hooks/useCitizenSensors';
 import { useHealth } from '@/hooks/useHealth';
 import {
+  useLiveIndex,
   useLowCostSensors,
   useOfficialAqi,
   useRegionalModel,
@@ -54,6 +55,7 @@ export function OverviewScreen({ onNavigate }: { readonly onNavigate: (key: Scre
   const stations = useStations(pollutant, city);
   const hotspots = useHotspots(DETECTION_WINDOW_HOURS, pollutant, city);
   const official = useOfficialAqi(city);
+  const live = useLiveIndex(city);
   const sensors = useLowCostSensors(pollutant, city);
   const satellite = useSatellite(city, product);
   const model = useRegionalModel(city, pollutant);
@@ -96,7 +98,7 @@ export function OverviewScreen({ onNavigate }: { readonly onNavigate: (key: Scre
         <section aria-labelledby="now" className="space-y-4">
           <SectionHeading id="now" index="01" title="Right now" />
           <div className="grid gap-4 lg:grid-cols-2">
-            <OfficialReading official={official} cityLabel={cityLabel} />
+            <OfficialReading official={official} live={live} cityLabel={cityLabel} />
             <MonitorReadings stations={stations} model={model} pollutantLabel={label} />
           </div>
         </section>
