@@ -18,11 +18,11 @@ path sanitiser also masks it in case the portal echoes the request back.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-from zoneinfo import ZoneInfo
+from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.core import cpcb
 from app.core.constants import (
     CPCB_AQI_BASE_URL,
     CPCB_AQI_RESOURCE_ID,
@@ -35,24 +35,6 @@ from app.core.logging import get_logger
 from app.external.base import JsonValue, UpstreamClient
 
 logger = get_logger(__name__)
-
-#: The portal's pollutant labels, mapped to AirWatch's identifiers.
-_POLLUTANTS: dict[str, Pollutant] = {
-    "PM2.5": Pollutant.PM25,
-    "PM10": Pollutant.PM10,
-    "NO2": Pollutant.NO2,
-    "SO2": Pollutant.SO2,
-    "OZONE": Pollutant.O3,
-    "CO": Pollutant.CO,
-    "NH3": Pollutant.NH3,
-}
-
-#: The portal timestamps in Indian Standard Time as ``dd-mm-yyyy HH:MM:SS``.
-_TIMESTAMP_FORMAT = "%d-%m-%Y %H:%M:%S"
-_IST = ZoneInfo("Asia/Kolkata")
-
-#: What the portal writes when a sensor has no value for the period.
-_MISSING = "NA"
 
 
 class CpcbRecord(BaseModel):
@@ -137,15 +119,11 @@ class CpcbAqiClient(UpstreamClient):
             ) from error
 
     def _parse(self, record: CpcbRecord) -> SubIndexReading | None:
-        pollutant = _POLLUTANTS.get(record.pollutant_id.strip().upper())
-        if pollutant is None or record.avg_value.strip() == _MISSING:
+        pollutant = cpcb.pollutant(record.pollutant_id)
+        if pollutant is None or record.avg_value.strip() == cpcb.MISSING:
             return None
         try:
-            reported_at = (
-                datetime.strptime(record.last_update.strip(), _TIMESTAMP_FORMAT)
-                .replace(tzinfo=_IST)
-                .astimezone(UTC)
-            )
+            reported_at = cpcb.parse_timestamp(record.last_update)
             coordinates = validate_lon_lat(float(record.longitude), float(record.latitude))
             average = float(record.avg_value)
         except (ValueError, InvalidGeometryError) as error:
@@ -160,16 +138,6 @@ class CpcbAqiClient(UpstreamClient):
             pollutant=pollutant,
             reported_at=reported_at,
             sub_index=average,
-            sub_index_min=_optional_float(record.min_value),
-            sub_index_max=_optional_float(record.max_value),
+            sub_index_min=cpcb.optional_value(record.min_value),
+            sub_index_max=cpcb.optional_value(record.max_value),
         )
-
-
-def _optional_float(raw: str) -> float | None:
-    text = raw.strip()
-    if text == _MISSING or not text:
-        return None
-    try:
-        return float(text)
-    except ValueError:
-        return None

@@ -55,6 +55,18 @@ class MeasurementOrigin(StrEnum):
     WAQI = "waqi"
 
 
+class OfficialRelay(StrEnum):
+    """Where AirWatch read one of CPCB's official sub-indices.
+
+    The figures are CPCB's either way. data.gov.in publishes them for every
+    station in India; TNPCB's website republishes them for Tamil Nadu's, and
+    keeps doing so when data.gov.in's API is down.
+    """
+
+    DATA_GOV_IN = "data.gov.in"
+    TNPCB = "tnpcb"
+
+
 class StationTier(StrEnum):
     """Provenance tier of an observation, which sets how much it is trusted.
 

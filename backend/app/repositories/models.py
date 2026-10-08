@@ -40,7 +40,7 @@ from sqlalchemy import (
 from sqlalchemy import (
     Enum as SqlEnum,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from app.core.constants import (
@@ -57,6 +57,7 @@ from app.core.enums import (
     ComplaintCategory,
     HotspotStatus,
     MeasurementOrigin,
+    OfficialRelay,
     Pollutant,
     SatelliteProduct,
     SourceType,
@@ -343,6 +344,10 @@ class OfficialSubIndex(Base):
     sub_index: Mapped[float] = mapped_column(Float, nullable=False)
     sub_index_min: Mapped[float | None] = mapped_column(Float, nullable=True)
     sub_index_max: Mapped[float | None] = mapped_column(Float, nullable=True)
+    #: Where the figure was read: data.gov.in, or TNPCB's website for Tamil Nadu.
+    relay: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default=OfficialRelay.DATA_GOV_IN.value
+    )
 
     __table_args__ = (
         UniqueConstraint(
@@ -350,6 +355,33 @@ class OfficialSubIndex(Base):
         ),
         CheckConstraint("sub_index >= 0", name="ck_official_sub_index_non_negative"),
         Index("ix_official_city_reported", "city", "reported_at"),
+    )
+
+
+class CpcbBulletin(Base):
+    """A city's line in CPCB's daily AQI bulletin, as CPCB published it.
+
+    A daily figure -- the average of the city's stations over the 24 hours to
+    4 pm IST -- kept apart from the hourly station sub-indices it summarises.
+    """
+
+    __tablename__ = "cpcb_bulletins"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    city: Mapped[str] = mapped_column(String(128), nullable=False)
+    day: Mapped[date] = mapped_column(Date, nullable=False)
+    aqi: Mapped[int] = mapped_column(Integer, nullable=False)
+    category: Mapped[str] = mapped_column(String(32), nullable=False)
+    prominent_pollutants: Mapped[list[str]] = mapped_column(ARRAY(String(8)), nullable=False)
+    stations_reporting: Mapped[int] = mapped_column(Integer, nullable=False)
+    stations_total: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("city", "day", name="uq_bulletin_city_day"),
+        CheckConstraint("aqi >= 0", name="ck_bulletin_aqi_non_negative"),
+        CheckConstraint(
+            "stations_reporting <= stations_total", name="ck_bulletin_stations_within_total"
+        ),
     )
 
 

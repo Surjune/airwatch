@@ -17,6 +17,7 @@ from app.middleware import RateLimitMiddleware, RequestContextMiddleware
 from app.routes import (
     alerts,
     analysis,
+    bulletin,
     citizen,
     citizen_sensors,
     complaints,
@@ -119,6 +120,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(satellite.router, prefix=API_PREFIX)
     app.include_router(official_aqi.router, prefix=API_PREFIX)
     app.include_router(live_index.router, prefix=API_PREFIX)
+    app.include_router(bulletin.router, prefix=API_PREFIX)
     app.include_router(operator.router, prefix=API_PREFIX)
     app.include_router(guide.router, prefix=API_PREFIX)
     app.include_router(regional_model.router, prefix=API_PREFIX)

@@ -6,7 +6,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.core.enums import PilotCity, Pollutant
+from app.core.enums import OfficialRelay, PilotCity, Pollutant
 from app.schemas.analysis import Position
 
 
@@ -33,6 +33,9 @@ class OfficialStationResponse(BaseModel):
     )
     category: str | None
     dominant_pollutant: Pollutant | None
+    relay: OfficialRelay = Field(
+        description="Where AirWatch read the newest figure: data.gov.in, or TNPCB's website."
+    )
 
 
 class OfficialAqiResponse(BaseModel):

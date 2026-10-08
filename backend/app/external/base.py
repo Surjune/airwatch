@@ -204,6 +204,26 @@ class UpstreamClient:
         response = await self._get(path, params=params, headers=headers)
         return response.text
 
+    async def get_bytes(
+        self,
+        path: str,
+        *,
+        headers: dict[str, str] | None = None,
+    ) -> bytes:
+        """GET a path and return the raw body as bytes.
+
+        For documents rather than data: CPCB publishes its daily AQI bulletin
+        only as a PDF.
+
+        Raises:
+            UpstreamTimeoutError: Every attempt timed out.
+            UpstreamUnavailableError: The upstream could not be reached.
+            UpstreamRateLimitedError: The provider's quota is exhausted.
+            UpstreamResponseError: The request was rejected.
+        """
+        response = await self._get(path, headers=headers)
+        return response.content
+
     async def _get(
         self,
         path: str,

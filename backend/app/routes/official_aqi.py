@@ -18,7 +18,7 @@ from app.services import official_aqi_service
 
 router = APIRouter(prefix="/official-aqi", tags=["official"])
 
-_SOURCE = "CPCB real-time AQI, published on data.gov.in"
+_SOURCE = "CPCB real-time AQI, published on data.gov.in and, for Tamil Nadu, by TNPCB"
 
 
 @router.get("", response_model=OfficialAqiResponse, summary="CPCB's latest AQI in a city")
@@ -44,6 +44,7 @@ def official_aqi(
                 aqi=station.aqi,
                 category=station.category,
                 dominant_pollutant=station.dominant_pollutant,
+                relay=station.relay,
             )
             for station in stations
         ],

@@ -25,6 +25,7 @@ from app.services import (
     alert_service,
     analysis_service,
     backup_feed_service,
+    bulletin_service,
     fixture_service,
     official_aqi_service,
     plausibility_service,
@@ -259,6 +260,13 @@ def main(argv: list[str] | None = None) -> int:
     backup.add_argument("--city", choices=sorted(PILOT_CITIES), default="delhi")
 
     subparsers.add_parser(
+        "official-tnpcb", help="Fetch CPCB's sub-indices for Tamil Nadu from TNPCB's website"
+    )
+    subparsers.add_parser(
+        "bulletin", help="Fetch CPCB's newest daily AQI bulletin for the pilot cities"
+    )
+
+    subparsers.add_parser(
         "voice-guide",
         help="Generate the spoken guide's audio in advance, so no listener waits for it",
     )
@@ -278,6 +286,31 @@ def main(argv: list[str] | None = None) -> int:
         for station in stations:
             figure = f"AQI {station.aqi:.0f}" if station.aqi is not None else "no AQI stated"
             print(f"  {station.station_name:<48} {figure:<14} {station.reported_at.isoformat()}")
+        return 0
+
+    if args.command == "official-tnpcb":
+        with session_scope() as session:
+            stored = asyncio.run(official_aqi_service.ingest_tnpcb(session))
+            stations = official_aqi_service.latest_for_city(session, PilotCity.COIMBATORE)
+        print("")
+        print(f"official AQI via TNPCB: {stored} sub-indices stored")
+        for station in stations:
+            figure = f"AQI {station.aqi:.0f}" if station.aqi is not None else "no AQI stated"
+            print(f"  {station.station_name:<48} {figure:<14} {station.reported_at.isoformat()}")
+        return 0
+
+    if args.command == "bulletin":
+        with session_scope() as session:
+            newest = asyncio.run(bulletin_service.ingest(session))
+            lines = [bulletin_service.latest_for_city(session, city) for city in PilotCity]
+        print("")
+        print(f"CPCB bulletin {newest.day.isoformat()}: {newest.stored} city lines stored")
+        for line in lines:
+            if line is not None:
+                print(
+                    f"  {line.city.value:<12} AQI {line.aqi:<4} {line.category:<13} "
+                    f"{line.stations_reporting}/{line.stations_total} stations, {line.day}"
+                )
         return 0
 
     if args.command == "satellite":

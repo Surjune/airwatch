@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
+import httpx
 import pytest
+import respx
 from sqlalchemy.orm import Session
 
-from app.core.constants import OFFICIAL_SUB_INDEX_MAX_AGE_HOURS
-from app.core.enums import PilotCity, Pollutant
-from app.repositories import official_aqi_repository
+from app.core.constants import OFFICIAL_SUB_INDEX_MAX_AGE_HOURS, TNPCB_AQI_PATH, TNPCB_BASE_URL
+from app.core.enums import OfficialRelay, PilotCity, Pollutant
+from app.repositories import official_aqi_repository, station_repository
 from app.repositories.official_aqi_repository import OfficialRow
-from app.services.official_aqi_service import latest_for_city, station_aqi
+from app.services.official_aqi_service import ingest_tnpcb, latest_for_city, station_aqi
+from app.tests.external.test_tnpcb_client import MANALI_VILLAGE, SIDCO, page
 
 NOW = datetime(2026, 9, 13, 8, 30, tzinfo=UTC)
 
@@ -100,3 +104,86 @@ def test_pollutants_published_an_hour_apart_still_make_an_index(session: Session
     }
     assert station.reported_at == NOW
     assert station.oldest_reported_at == earlier
+
+
+#: Where CPCB's feed puts SIDCO Kurichi, and where OpenAQ puts it.
+SIDCO_OFFICIAL = (76.978996, 10.942451)
+SIDCO_OPENAQ = (76.9790, 10.9425)
+
+
+class TestIngestTnpcb:
+    @pytest.fixture
+    def stored(self, monkeypatch: pytest.MonkeyPatch) -> list[OfficialRow]:
+        rows: list[OfficialRow] = []
+
+        def upsert(_session: Any, batch: list[OfficialRow]) -> int:
+            rows.extend(batch)
+            return len(batch)
+
+        monkeypatch.setattr(official_aqi_repository, "upsert_sub_indices", upsert)
+        monkeypatch.setattr(
+            official_aqi_repository,
+            "positions_by_station",
+            lambda *_: {SIDCO["name"]: SIDCO_OFFICIAL},
+        )
+        monkeypatch.setattr(
+            station_repository,
+            "stations_with_coordinates",
+            lambda *_, **__: [(9, SIDCO["name"], SIDCO_OPENAQ)],
+        )
+        return rows
+
+    @respx.mock
+    async def test_stores_the_pilot_cities_stations_marked_as_tnpcbs(
+        self, stored: list[OfficialRow]
+    ) -> None:
+        respx.get(f"{TNPCB_BASE_URL}{TNPCB_AQI_PATH}").mock(
+            return_value=httpx.Response(
+                200, text=page(("Coimbatore", SIDCO), ("Chennai", MANALI_VILLAGE))
+            )
+        )
+
+        count = await ingest_tnpcb(object())  # type: ignore[arg-type]
+
+        assert count == len(stored) == 3
+        assert {row.station_name for row in stored} == {SIDCO["name"]}
+        assert {row.relay for row in stored} == {OfficialRelay.TNPCB}
+        assert {row.state for row in stored} == {"Tamil Nadu"}
+        # CPCB's own position for the station wins over OpenAQ's.
+        assert {row.coordinates for row in stored} == {SIDCO_OFFICIAL}
+
+    @respx.mock
+    async def test_leaves_out_a_station_it_cannot_place(
+        self, stored: list[OfficialRow], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(official_aqi_repository, "positions_by_station", lambda *_: {})
+        monkeypatch.setattr(station_repository, "stations_with_coordinates", lambda *_, **__: [])
+        respx.get(f"{TNPCB_BASE_URL}{TNPCB_AQI_PATH}").mock(
+            return_value=httpx.Response(200, text=page(("Coimbatore", SIDCO)))
+        )
+
+        assert await ingest_tnpcb(object()) == 0  # type: ignore[arg-type]
+        assert stored == []
+
+
+@pytest.mark.integration
+def test_reports_which_relay_the_newest_figure_came_through(session: Session) -> None:
+    earlier = NOW - timedelta(hours=1)
+    tnpcb = [
+        OfficialRow(**{**vars_of(_row(pollutant, value, NOW)), "relay": OfficialRelay.TNPCB})
+        for pollutant, value in ((Pollutant.PM10, 28), (Pollutant.NO2, 22))
+    ]
+    official_aqi_repository.upsert_sub_indices(session, [_row(Pollutant.CO, 44, earlier), *tnpcb])
+    session.flush()
+
+    station = latest_for_city(session, PilotCity.COIMBATORE)[0]
+
+    assert station.relay is OfficialRelay.TNPCB
+    assert official_aqi_repository.positions_by_station(session) == {
+        "SIDCO Kurichi, Coimbatore - TNPCB": pytest.approx((76.979, 10.9425))
+    }
+
+
+def vars_of(row: OfficialRow) -> dict[str, Any]:
+    """A stored row's fields, to rebuild it with one changed."""
+    return {name: getattr(row, name) for name in row.__dataclass_fields__}

@@ -559,6 +559,32 @@ CPCB_AQI_RESOURCE_ID: Final[str] = "3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69"
 #: station-pollutant rows, so one page covers any pilot city.
 CPCB_MAX_PAGE_LIMIT: Final[int] = 1000
 
+#: TNPCB's website, which republishes CPCB's sub-indices for every Tamil Nadu
+#: CAAQMS station, Coimbatore's SIDCO Kurichi among them, hourly.
+TNPCB_BASE_URL: Final[str] = "https://tnpcb.gov.in"
+
+#: The page carrying them, as data in its script: one entry per station with
+#: each pollutant's 24-hour minimum, maximum and average sub-index.
+TNPCB_AQI_PATH: Final[str] = "/aqi.php"
+
+#: The state every TNPCB station is in; the page does not repeat it per station.
+TNPCB_STATE: Final[str] = "Tamil Nadu"
+
+#: Where CPCB publishes its daily AQI bulletin: one PDF a day giving each city's
+#: AQI as the average of its stations over the 24 hours to 4 pm IST. It kept
+#: appearing every day while the hourly feeds were down.
+CPCB_BULLETIN_BASE_URL: Final[str] = "https://cpcb.gov.in"
+
+#: The bulletin's path, by the day it covers as ``YYYYMMDD``.
+CPCB_BULLETIN_PATH: Final[str] = "/upload/Downloads/AQI_Bulletin_{day}.pdf"
+
+#: Hour of the day, IST, that the bulletin's 24-hour averages run to.
+CPCB_BULLETIN_HOUR_IST: Final[int] = 16
+
+#: Days before today the worker looks back for a bulletin it has not stored. The
+#: day's bulletin appears after 4 pm IST, so until then yesterday's is current.
+CPCB_BULLETIN_LOOKBACK_DAYS: Final[int] = 1
+
 #: FIRMS active-fire source. VIIRS on Suomi-NPP resolves fires at 375 m, against
 #: MODIS at 1 km, which matters because a single stubble field is well under a
 #: MODIS pixel.

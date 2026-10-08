@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 import pytest
@@ -24,6 +24,7 @@ from app.services import (
     alert_delivery_service,
     alert_service,
     backup_feed_service,
+    bulletin_service,
     official_aqi_service,
     regional_model_service,
 )
@@ -41,6 +42,8 @@ class Calls:
     dispatched: int = 0
     delivered: int = 0
     modelled: list[object] = field(default_factory=list)
+    tnpcb: int = 0
+    bulletins: int = 0
 
 
 @dataclass(frozen=True)
@@ -96,6 +99,14 @@ def calls(monkeypatch: pytest.MonkeyPatch, settings: Settings) -> Calls:
         recorded.modelled.append(city)
         return 1
 
+    async def fake_tnpcb(_session: object) -> int:
+        recorded.tnpcb += 1
+        return 7
+
+    async def fake_bulletin(_session: object) -> bulletin_service.BulletinOutcome:
+        recorded.bulletins += 1
+        return bulletin_service.BulletinOutcome(day=date(2026, 9, 12), stored=3)
+
     @contextmanager
     def fake_session() -> Any:
         yield object()
@@ -108,6 +119,8 @@ def calls(monkeypatch: pytest.MonkeyPatch, settings: Settings) -> Calls:
     monkeypatch.setattr(alert_service, "dispatch", fake_dispatch)
     monkeypatch.setattr(alert_delivery_service, "deliver_pending", fake_deliver)
     monkeypatch.setattr(regional_model_service, "ingest_city", fake_model)
+    monkeypatch.setattr(official_aqi_service, "ingest_tnpcb", fake_tnpcb)
+    monkeypatch.setattr(bulletin_service, "ingest", fake_bulletin)
     return recorded
 
 
@@ -142,7 +155,19 @@ class TestOptionalSources:
         report = worker.run_cycle(settings, now=NOW.replace(hour=12))
 
         names = [step.name for step in report.steps]
-        assert not any(name.startswith(("official:", "satellite:")) for name in names)
+        assert not any(name.startswith("satellite:") for name in names)
+        # Only the keyless TNPCB relay runs; data.gov.in's steps need a key.
+        assert [name for name in names if name.startswith("official:")] == ["official:tnpcb"]
+
+    def test_tnpcb_and_the_daily_bulletin_run_every_cycle_without_a_key(
+        self, settings: Settings, calls: Calls
+    ) -> None:
+        report = worker.run_cycle(settings, now=NOW)
+
+        assert (calls.tnpcb, calls.bulletins) == (1, 1)
+        steps = {step.name: step for step in report.steps}
+        assert steps["official:tnpcb"].succeeded
+        assert steps["bulletin"].summary == "3 city lines stored, newest 2026-09-12"
 
     def test_official_aqi_is_fetched_for_every_city_when_a_key_exists(
         self, settings: Settings, calls: Calls, monkeypatch: pytest.MonkeyPatch

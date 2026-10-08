@@ -50,6 +50,7 @@ from app.services import (
     alert_delivery_service,
     alert_service,
     backup_feed_service,
+    bulletin_service,
     official_aqi_service,
     regional_model_service,
     satellite_service,
@@ -157,6 +158,23 @@ def run_cycle(settings: Settings, *, now: datetime | None = None) -> CycleReport
                 return f"{stored} sub-indices"
 
             _run_step(report, f"official:{city.value}", official)
+
+    # TNPCB's website republishes CPCB's figures for Tamil Nadu and needs no key:
+    # one page a cycle covers Coimbatore, and kept doing so while data.gov.in was down.
+    def official_tnpcb() -> str:
+        with session_scope() as session:
+            stored = asyncio.run(official_aqi_service.ingest_tnpcb(session))
+        return f"{stored} sub-indices"
+
+    _run_step(report, "official:tnpcb", official_tnpcb)
+
+    # CPCB's daily bulletin: fetched until the day's is held, then left alone.
+    def bulletin() -> str:
+        with session_scope() as session:
+            outcome = asyncio.run(bulletin_service.ingest(session))
+        return f"{outcome.stored} city lines stored, newest {outcome.day.isoformat()}"
+
+    _run_step(report, "bulletin", bulletin)
 
     # The CAMS model needs no key, so it runs every cycle: one request a city
     # refreshes its fortnight of history and its four-day forecast.
