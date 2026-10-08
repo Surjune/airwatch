@@ -8,6 +8,14 @@ export function isBackup(origin: MeasurementOrigin): boolean {
   return origin === 'waqi';
 }
 
+/** Where AirWatch read one of CPCB's official sub-indices. */
+export type OfficialRelay = components['schemas']['OfficialRelay'];
+
+/** How the official card names where CPCB's figure was read. */
+export function officialRelayLabel(relay: OfficialRelay): string {
+  return relay === 'tnpcb' ? 'via TNPCB' : 'data.gov.in';
+}
+
 /** The short tag shown beside a backup reading. */
 export const BACKUP_TAG = 'via aqicn.org';
 

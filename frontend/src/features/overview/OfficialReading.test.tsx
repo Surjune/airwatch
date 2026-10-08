@@ -2,7 +2,14 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import type { Resource } from '@/hooks/useAnalysis';
-import type { LiveIndex, LiveStation, OfficialAqi, OfficialStation } from '@/hooks/useSources';
+import type {
+  Bulletin,
+  CityBulletin,
+  LiveIndex,
+  LiveStation,
+  OfficialAqi,
+  OfficialStation,
+} from '@/hooks/useSources';
 import { BACKUP_NOTE } from '@/lib/origin';
 
 import { OfficialReading } from './OfficialReading';
@@ -20,6 +27,7 @@ function station(overrides: Partial<OfficialStation>): OfficialStation {
     aqi: null,
     category: null,
     dominant_pollutant: null,
+    relay: 'data.gov.in',
     ...overrides,
   };
 }
@@ -69,6 +77,30 @@ function live(stations: LiveStation[]): Resource<LiveIndex> {
 
 const NO_LIVE = live([]);
 
+function dailyLine(overrides: Partial<CityBulletin>): CityBulletin {
+  return {
+    day: '2026-10-08',
+    averaged_until: new Date(Date.now() - 5 * HOUR_MS).toISOString(),
+    aqi: 44,
+    category: 'Good',
+    prominent_pollutants: ['pm25', 'no2'],
+    stations_reporting: 2,
+    stations_total: 4,
+    source_url: 'https://cpcb.gov.in/upload/Downloads/AQI_Bulletin_20261008.pdf',
+    ...overrides,
+  };
+}
+
+function bulletin(line: CityBulletin | null): Resource<Bulletin> {
+  return {
+    data: { city: 'kanpur', source: 'CPCB daily AQI bulletin', bulletin: line },
+    error: null,
+    isLoading: false,
+  };
+}
+
+const NO_BULLETIN = bulletin(null);
+
 describe('OfficialReading', () => {
   it('says a silent station has stopped reporting, rather than blaming the last few hours', () => {
     const threeDaysAgo = new Date(Date.now() - 72 * HOUR_MS).toISOString();
@@ -78,21 +110,29 @@ describe('OfficialReading', () => {
           station({ reported_at: threeDaysAgo, oldest_reported_at: threeDaysAgo }),
         ])}
         live={NO_LIVE}
+        bulletin={NO_BULLETIN}
         cityLabel="Coimbatore"
       />,
     );
 
-    expect(screen.getByText(/has not reported to CPCB since/)).toBeInTheDocument();
+    expect(screen.getByText(/carried nothing new for this station since/)).toBeInTheDocument();
     expect(screen.queryByText(/Too few pollutants/)).not.toBeInTheDocument();
   });
 
   it('explains a missing index when a reporting station sent too few pollutants', () => {
     render(
-      <OfficialReading official={loaded([station({})])} live={NO_LIVE} cityLabel="Coimbatore" />,
+      <OfficialReading
+        official={loaded([station({})])}
+        live={NO_LIVE}
+        bulletin={NO_BULLETIN}
+        cityLabel="Coimbatore"
+      />,
     );
 
     expect(screen.getByText(/Too few pollutants reported in the last 3 hours/)).toBeInTheDocument();
-    expect(screen.queryByText(/has not reported to CPCB since/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/carried nothing new for this station since/),
+    ).not.toBeInTheDocument();
   });
 
   it('leads with the monitors’ live index while CPCB’s figure is out of date', () => {
@@ -101,6 +141,7 @@ describe('OfficialReading', () => {
       <OfficialReading
         official={loaded([station({ reported_at: lastWeek, aqi: 154, category: 'Moderate' })])}
         live={live([liveStation({})])}
+        bulletin={NO_BULLETIN}
         cityLabel="Delhi-NCR"
       />,
     );
@@ -117,6 +158,7 @@ describe('OfficialReading', () => {
       <OfficialReading
         official={loaded([station({ aqi: 154, category: 'Moderate' })])}
         live={live([liveStation({})])}
+        bulletin={NO_BULLETIN}
         cityLabel="Delhi-NCR"
       />,
     );
@@ -131,11 +173,63 @@ describe('OfficialReading', () => {
       <OfficialReading
         official={loaded([station({ reported_at: lastWeek, oldest_reported_at: lastWeek })])}
         live={live([liveStation({ observed_at: lastWeek, oldest_observed_at: lastWeek })])}
+        bulletin={NO_BULLETIN}
         cityLabel="Kanpur"
       />,
     );
 
     expect(screen.getByText('What CPCB reports for Kanpur')).toBeInTheDocument();
-    expect(screen.getByText(/has not reported to CPCB since/)).toBeInTheDocument();
+    expect(screen.getByText(/carried nothing new for this station since/)).toBeInTheDocument();
+  });
+
+  it('leads with CPCB’s daily bulletin when no hourly figure is current', () => {
+    const lastWeek = new Date(Date.now() - 168 * HOUR_MS).toISOString();
+    const yesterday = new Date(Date.now() - 24 * HOUR_MS).toISOString();
+    render(
+      <OfficialReading
+        official={loaded([station({ reported_at: lastWeek, aqi: 120, category: 'Moderate' })])}
+        live={live([liveStation({ observed_at: yesterday, oldest_observed_at: yesterday })])}
+        bulletin={bulletin(dailyLine({}))}
+        cityLabel="Kanpur"
+      />,
+    );
+
+    expect(screen.getByText('CPCB daily bulletin · 24-hour average')).toBeInTheDocument();
+    expect(screen.getByText(/2 of 4 stations/)).toBeInTheDocument();
+    expect(screen.getByText(/so this is the newest official figure/)).toBeInTheDocument();
+    expect(screen.getByText(/CPCB’s last hourly report/)).toBeInTheDocument();
+  });
+
+  it('keeps CPCB’s last report when the bulletin is out of date too', () => {
+    const lastWeek = new Date(Date.now() - 168 * HOUR_MS).toISOString();
+    render(
+      <OfficialReading
+        official={loaded([station({ reported_at: lastWeek, oldest_reported_at: lastWeek })])}
+        live={NO_LIVE}
+        bulletin={bulletin(dailyLine({ averaged_until: lastWeek }))}
+        cityLabel="Kanpur"
+      />,
+    );
+
+    expect(screen.getByText('What CPCB reports for Kanpur')).toBeInTheDocument();
+    expect(screen.queryByText('CPCB daily bulletin · 24-hour average')).not.toBeInTheDocument();
+    expect(screen.getByText(/carried nothing new for this station since/)).toBeInTheDocument();
+  });
+
+  it('names TNPCB as the relay, and keeps the bulletin in view under a current figure', () => {
+    render(
+      <OfficialReading
+        official={loaded([station({ aqi: 51, category: 'Satisfactory', relay: 'tnpcb' })])}
+        live={NO_LIVE}
+        bulletin={bulletin(dailyLine({}))}
+        cityLabel="Coimbatore"
+      />,
+    );
+
+    expect(screen.getByText('Official CPCB index · via TNPCB')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'CPCB’s daily bulletin' })).toHaveAttribute(
+      'href',
+      'https://cpcb.gov.in/upload/Downloads/AQI_Bulletin_20261008.pdf',
+    );
   });
 });

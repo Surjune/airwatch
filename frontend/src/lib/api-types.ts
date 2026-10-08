@@ -566,6 +566,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/bulletin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * CPCB's daily AQI for a city
+         * @description The city's line in CPCB's newest daily bulletin that has one.
+         */
+        get: operations["city_bulletin_v1_bulletin_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/operator/session": {
         parameters: {
             query?: never;
@@ -845,6 +865,16 @@ export interface components {
             description?: string | null;
         };
         /**
+         * BulletinResponse
+         * @description A city's figure in CPCB's daily bulletin, or null when none is stored.
+         */
+        BulletinResponse: {
+            city: components["schemas"]["PilotCity"];
+            /** Source */
+            source: string;
+            bulletin: components["schemas"]["CityBulletinResponse"] | null;
+        };
+        /**
          * CalibrationStatusResponse
          * @description Whether a photograph can currently yield a concentration.
          */
@@ -956,6 +986,41 @@ export interface components {
             /** Reports */
             reports: components["schemas"]["CitizenReportSummary"][];
             calibration: components["schemas"]["CalibrationStatusResponse"];
+        };
+        /**
+         * CityBulletinResponse
+         * @description A city's line in the newest bulletin that has one.
+         */
+        CityBulletinResponse: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /**
+             * Averaged Until
+             * Format: date-time
+             * @description When the 24-hour average ran to: 4 pm IST on the bulletin's day.
+             */
+            averaged_until: string;
+            /** Aqi */
+            aqi: number;
+            /** Category */
+            category: string;
+            /** Prominent Pollutants */
+            prominent_pollutants: components["schemas"]["Pollutant"][];
+            /**
+             * Stations Reporting
+             * @description The city's stations that took part.
+             */
+            stations_reporting: number;
+            /** Stations Total */
+            stations_total: number;
+            /**
+             * Source Url
+             * @description The bulletin as CPCB published it.
+             */
+            source_url: string;
         };
         /**
          * CityResponse
@@ -1948,6 +2013,16 @@ export interface components {
             stations: components["schemas"]["OfficialStationResponse"][];
         };
         /**
+         * OfficialRelay
+         * @description Where AirWatch read one of CPCB's official sub-indices.
+         *
+         *     The figures are CPCB's either way. data.gov.in publishes them for every
+         *     station in India; TNPCB's website republishes them for Tamil Nadu's, and
+         *     keeps doing so when data.gov.in's API is down.
+         * @enum {string}
+         */
+        OfficialRelay: "data.gov.in" | "tnpcb";
+        /**
          * OfficialStationResponse
          * @description One station's latest official figures.
          */
@@ -1981,6 +2056,8 @@ export interface components {
             /** Category */
             category: string | null;
             dominant_pollutant: components["schemas"]["Pollutant"] | null;
+            /** @description Where AirWatch read the newest figure: data.gov.in, or TNPCB's website. */
+            relay: components["schemas"]["OfficialRelay"];
         };
         /**
          * OperatorSessionResponse
@@ -3509,6 +3586,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LiveIndexResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    city_bulletin_v1_bulletin_get: {
+        parameters: {
+            query: {
+                city: components["schemas"]["PilotCity"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulletinResponse"];
                 };
             };
             /** @description Validation Error */

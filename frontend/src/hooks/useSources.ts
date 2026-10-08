@@ -10,6 +10,8 @@ export type OfficialAqi = components['schemas']['OfficialAqiResponse'];
 export type OfficialStation = components['schemas']['OfficialStationResponse'];
 export type LiveIndex = components['schemas']['LiveIndexResponse'];
 export type LiveStation = components['schemas']['LiveStationResponse'];
+export type Bulletin = components['schemas']['BulletinResponse'];
+export type CityBulletin = components['schemas']['CityBulletinResponse'];
 export type LowCostSensors = components['schemas']['LowCostSensorsResponse'];
 export type Satellite = components['schemas']['SatelliteResponse'];
 export type SatelliteProduct = components['schemas']['SatelliteProduct'];
@@ -62,6 +64,11 @@ export function useOfficialAqi(city: string): Resource<OfficialAqi> {
 /** AirWatch's index from each monitor's latest PM2.5 and PM10 in a city. */
 export function useLiveIndex(city: string): Resource<LiveIndex> {
   return useQuery<LiveIndex>('/live-index', { city });
+}
+
+/** A city's line in CPCB's newest daily AQI bulletin. */
+export function useBulletin(city: string): Resource<Bulletin> {
+  return useQuery<Bulletin>('/bulletin', { city });
 }
 
 /** Uncalibrated low-cost sensor readings in a city. */

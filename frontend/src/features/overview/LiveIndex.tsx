@@ -1,6 +1,7 @@
 import { AqiChip } from '@/components/ui/AqiChip';
 import { Card } from '@/components/ui/Card';
-import type { LiveStation, OfficialStation } from '@/hooks/useSources';
+import { BulletinLine } from '@/features/overview/BulletinLine';
+import type { CityBulletin, LiveStation, OfficialStation } from '@/hooks/useSources';
 import { BACKUP_NOTE, BACKUP_TAG, isBackup } from '@/lib/origin';
 import { pollutantLabel, type Pollutant } from '@/lib/scope';
 import { istDateTime, timeAgo } from '@/lib/time';
@@ -20,6 +21,7 @@ export function LiveIndex({
   lead,
   others,
   official,
+  bulletin,
   cityLabel,
 }: {
   /** The monitor with the highest current index. */
@@ -28,6 +30,8 @@ export function LiveIndex({
   readonly others: readonly LiveStation[];
   /** CPCB's last figure for the city's worst station, however old, if there is one. */
   readonly official: OfficialStation | undefined;
+  /** CPCB's newest daily bulletin line for the city, if one is stored. */
+  readonly bulletin: CityBulletin | null;
   readonly cityLabel: string;
 }) {
   const shown = [lead, ...others.slice(0, OTHERS_SHOWN)];
@@ -86,6 +90,7 @@ export function LiveIndex({
             <AqiChip aqi={official.aqi} />
           </li>
         )}
+        {bulletin !== null && <BulletinLine bulletin={bulletin} />}
         {anyBackup && <li className="py-2 text-xs text-ink-subtle">{BACKUP_NOTE}</li>}
       </ul>
     </Card>

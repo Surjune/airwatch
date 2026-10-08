@@ -10,6 +10,13 @@ const MS_PER_HOUR = 3_600_000;
  */
 export const RECENT_READING_HOURS = 6;
 
+/**
+ * Oldest CPCB daily bulletin, in hours past the 4 pm its average runs to, that
+ * still counts as current: the next one runs to 4 pm the following day and
+ * appears some time after, so a day and a few hours.
+ */
+export const BULLETIN_RECENT_HOURS = 30;
+
 /** Whether a reading is recent enough to describe the air now. */
 export function isRecent(
   observedAt: string,
