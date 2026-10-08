@@ -1145,6 +1145,13 @@ AQI_MIN_POLLUTANTS: Final[int] = 3
 #: the pollutant is treated as not currently reported.
 OFFICIAL_SUB_INDEX_MAX_AGE_HOURS: Final[int] = 3
 
+#: How much older than a monitor's newest reading its other pollutant's latest
+#: may be and still be combined into AirWatch's live index, in hours. OpenAQ
+#: relays a station's PM2.5 and PM10 up to an hour or two apart; past three
+#: hours the pollutant has stopped reporting and is left out, as in the official
+#: feed above.
+LIVE_INDEX_COMBINE_HOURS: Final[int] = 3
+
 
 # ---------------------------------------------------------------------------
 # Backup monitor feed: the World Air Quality Index Project (aqicn.org)

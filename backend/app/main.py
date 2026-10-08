@@ -24,6 +24,7 @@ from app.routes import (
     guide,
     health,
     interop,
+    live_index,
     official_aqi,
     operator,
     regional_model,
@@ -117,6 +118,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(federation.router, prefix=API_PREFIX)
     app.include_router(satellite.router, prefix=API_PREFIX)
     app.include_router(official_aqi.router, prefix=API_PREFIX)
+    app.include_router(live_index.router, prefix=API_PREFIX)
     app.include_router(operator.router, prefix=API_PREFIX)
     app.include_router(guide.router, prefix=API_PREFIX)
     app.include_router(regional_model.router, prefix=API_PREFIX)
