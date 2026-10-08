@@ -230,8 +230,8 @@ Interactive docs: [/docs](https://airwatch-cbe.duckdns.org/docs).
 ## What's next
 
 - **SMS and email alerts** alongside today's webhook, and a separate login for each officer.
-- **Hosting on Google Cloud in India** (Mumbai, `asia-south1`), so hourly state-board feeds such as TNPCB's can be read
-  directly as well as CPCB's.
+- **Hosting on Google Cloud in India** (Mumbai, `asia-south1`), so hourly state-board feeds
+  such as TNPCB's can be read directly as well as CPCB's.
 - **Calibrated citizen data:** photos and household sensors join the analysis once enough readings
   taken beside official monitors have been collected to correct them.
 - **Federation across states:** each state's board runs its own node, connected securely.
